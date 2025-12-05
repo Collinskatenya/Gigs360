@@ -1,6 +1,4 @@
-"""
-Django settings for radagig project.
-"""
+
 from pathlib import Path
 import os
 
@@ -141,3 +139,18 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# ... (Add this to the very bottom of your settings.py file) ...
+
+# ==============================================
+# AUTHENTICATION REDIRECTS
+# ==============================================
+
+# Where to send a user if they try to access a protected page without logging in
+LOGIN_URL = 'login'
+
+# Where to send a user immediately after they successfully log in
+LOGIN_REDIRECT_URL = 'dashboard'
+
+# Where to send a user after they log out
+LOGOUT_REDIRECT_URL = 'home'

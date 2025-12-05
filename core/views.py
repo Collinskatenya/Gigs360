@@ -1,13 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, get_user_model
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from django.utils.encoding import force_bytes, force_str
-from django.template.loader import render_to_string
-from django.contrib.sites.shortcuts import get_current_site
-from django.core.mail import EmailMessage
-from django.http import HttpResponse
+from django.contrib.auth.decorators import login_required
 from .forms import SignUpForm
-from .tokens import account_activation_token
 
 User = get_user_model()
 
@@ -19,46 +13,61 @@ def signup(request):
         form = SignUpForm(request.POST)
         if form.is_valid():
             user = form.save(commit=False)
-            user.is_active = False # Deactivate account until email confirmed
+            # CRITICAL FIX: Set active to True so they can login immediately
+            user.is_active = True 
             user.save()
-
-            # Email Logic
-            current_site = get_current_site(request)
-            mail_subject = 'Activate your Gigs360 Account'
-            message = render_to_string('registration/acc_active_email.html', {
-                'user': user,
-                'domain': current_site.domain,
-                'uid': urlsafe_base64_encode(force_bytes(user.pk)),
-                'token': account_activation_token.make_token(user),
-            })
-            to_email = form.cleaned_data.get('email')
-            email = EmailMessage(
-                mail_subject, message, to=[to_email]
-            )
-            email.send()
-
-            # Return success flag to template to trigger Pop-Up
-            return render(request, 'registration/signup.html', {
-                'form': SignUpForm(),
-                'success_popup': True # This triggers the SweetAlert
-            })
+            
+            # Log the user in directly
+            login(request, user)
+            
+            # Redirect to dashboard
+            return redirect('dashboard')
     else:
         form = SignUpForm()
     
     return render(request, 'registration/signup.html', {'form': form})
 
+@login_required
+def dashboard(request):
+    user = request.user
+    # Fallback if account_type is somehow missing
+    role = getattr(user, 'account_type', 'freelancer')
+    
+    context = {
+        'role': role,
+        'role_label': role.title(),
+        'user': user,
+    }
+
+    # 1. FREELANCER DATA
+    if role == 'freelancer':
+        context.update({
+            'stat_1_label': 'Upcoming Gigs', 'stat_1_value': '0', 'stat_1_icon': 'bi-calendar-event',
+            'stat_2_label': 'Pending Pay',   'stat_2_value': 'KES 0.00', 'stat_2_icon': 'bi-hourglass-split',
+            'stat_3_label': 'Profile Views', 'stat_3_value': '0', 'stat_3_icon': 'bi-eye',
+            'todo_list': ['Complete Profile', 'Upload Portfolio']
+        })
+
+    # 2. VENDOR DATA
+    elif role == 'vendor':
+        context.update({
+            'stat_1_label': 'Items Rented',  'stat_1_value': '0 / 0', 'stat_1_icon': 'bi-camera-video',
+            'stat_2_label': 'Revenue',       'stat_2_value': 'KES 0.00', 'stat_2_icon': 'bi-cash-stack',
+            'stat_3_label': 'Overdue',       'stat_3_value': '0 Items', 'stat_3_icon': 'bi-exclamation-triangle',
+            'todo_list': ['Add Inventory Items', 'Verify Business Details']
+        })
+
+    # 3. AGENCY DATA
+    elif role == 'agency':
+        context.update({
+            'stat_1_label': 'Active Events', 'stat_1_value': '0', 'stat_1_icon': 'bi-building',
+            'stat_2_label': 'Talent Hired',  'stat_2_value': '0', 'stat_2_icon': 'bi-people',
+            'stat_3_label': 'Budget Spent',  'stat_3_value': 'KES 0.00', 'stat_3_icon': 'bi-pie-chart',
+            'todo_list': ['Create First Event', 'Invite Vendors']
+        })
+
+    return render(request, 'core/dashboard_home.html', context)
+
+# This view is no longer needed since we removed email verification for now
 def activate(request, uidb64, token):
-    try:
-        uid = force_str(urlsafe_base64_decode(uidb64))
-        user = User.objects.get(pk=uid)
-    except(TypeError, ValueError, OverflowError, User.DoesNotExist):
-        user = None
-        
-    if user is not None and account_activation_token.check_token(user, token):
-        user.is_active = True
-        user.save()
-        login(request, user)
-        # Redirect to login with success message, or dashboard
-        return redirect('home')
-    else:
-        return HttpResponse('Activation link is invalid!')
+    return redirect('home')

@@ -1,0 +1,160 @@
+{% extends 'core/dashboard_base.html' %}
+
+{% block dashboard_content %}
+
+<!-- 1. WELCOME HEADER -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm bg-primary text-white overflow-hidden position-relative rounded-4">
+            <!-- Background Decoration -->
+            <div class="position-absolute top-0 end-0 bg-white opacity-10 rounded-circle" style="width: 150px; height: 150px; margin-top: -40px; margin-right: -40px;"></div>
+            
+            <div class="card-body p-4 position-relative z-1">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="badge bg-white text-primary text-uppercase fw-bold mb-2 px-3 py-1 rounded-pill">
+                            <i class="bi bi-person-badge-fill me-1"></i> {{ role_label }} Workspace
+                        </span>
+                        <h2 class="fw-bold mb-1">Welcome back, {{ user.first_name|default:user.username }}! 👋</h2>
+                        <p class="mb-0 opacity-75">Here is your business overview for today.</p>
+                    </div>
+                    <!-- Role Icon -->
+                    <div class="d-none d-md-block">
+                        <i class="bi {% if role == 'freelancer' %}bi-camera-fill{% elif role == 'vendor' %}bi-box-seam-fill{% else %}bi-briefcase-fill{% endif %} display-1 text-white opacity-25"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 2. KEY METRICS GRID -->
+<div class="row g-4 mb-5">
+    <!-- Card 1 -->
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100 rounded-4">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="bg-primary-subtle text-primary p-3 rounded-3 me-3">
+                    <i class="bi {{ stat_1_icon }} fs-3"></i>
+                </div>
+                <div>
+                    <p class="text-muted small text-uppercase fw-bold mb-1">{{ stat_1_label }}</p>
+                    <h3 class="fw-bold mb-0 text-dark">{{ stat_1_value }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Card 2 -->
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100 rounded-4">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="bg-success-subtle text-success p-3 rounded-3 me-3">
+                    <i class="bi {{ stat_2_icon }} fs-3"></i>
+                </div>
+                <div>
+                    <p class="text-muted small text-uppercase fw-bold mb-1">{{ stat_2_label }}</p>
+                    <h3 class="fw-bold mb-0 text-dark">{{ stat_2_value }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card 3 -->
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100 rounded-4">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="bg-warning-subtle text-warning p-3 rounded-3 me-3">
+                    <i class="bi {{ stat_3_icon }} fs-3"></i>
+                </div>
+                <div>
+                    <p class="text-muted small text-uppercase fw-bold mb-1">{{ stat_3_label }}</p>
+                    <h3 class="fw-bold mb-0 text-dark">{{ stat_3_value }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 3. QUICK ACTIONS -->
+<h5 class="fw-bold mb-3 text-secondary">Quick Actions</h5>
+<div class="row g-3 mb-5">
+
+    {% if role == 'freelancer' %}
+        <div class="col-6 col-md-3">
+            <a href="#" class="btn btn-outline-primary w-100 py-3 fw-bold border-2 rounded-3 h-100 d-flex flex-column align-items-center justify-content-center gap-2">
+                <i class="bi bi-file-earmark-plus fs-3"></i>
+                <span>Create Quote</span>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a href="#" class="btn btn-outline-dark w-100 py-3 fw-bold border-2 rounded-3 h-100 d-flex flex-column align-items-center justify-content-center gap-2">
+                <i class="bi bi-images fs-3"></i>
+                <span>Portfolio</span>
+            </a>
+        </div>
+    {% endif %}
+
+    {% if role == 'vendor' %}
+        <div class="col-6 col-md-3">
+            <a href="#" class="btn btn-outline-primary w-100 py-3 fw-bold border-2 rounded-3 h-100 d-flex flex-column align-items-center justify-content-center gap-2">
+                <i class="bi bi-qr-code-scan fs-3"></i>
+                <span>Check Out</span>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a href="#" class="btn btn-outline-success w-100 py-3 fw-bold border-2 rounded-3 h-100 d-flex flex-column align-items-center justify-content-center gap-2">
+                <i class="bi bi-box-arrow-in-down fs-3"></i>
+                <span>Check In</span>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a href="#" class="btn btn-outline-dark w-100 py-3 fw-bold border-2 rounded-3 h-100 d-flex flex-column align-items-center justify-content-center gap-2">
+                <i class="bi bi-plus-circle fs-3"></i>
+                <span>Add Item</span>
+            </a>
+        </div>
+    {% endif %}
+
+    {% if role == 'agency' %}
+        <div class="col-6 col-md-3">
+            <a href="#" class="btn btn-outline-primary w-100 py-3 fw-bold border-2 rounded-3 h-100 d-flex flex-column align-items-center justify-content-center gap-2">
+                <i class="bi bi-calendar-plus fs-3"></i>
+                <span>New Event</span>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a href="#" class="btn btn-outline-dark w-100 py-3 fw-bold border-2 rounded-3 h-100 d-flex flex-column align-items-center justify-content-center gap-2">
+                <i class="bi bi-search fs-3"></i>
+                <span>Find Talent</span>
+            </a>
+        </div>
+    {% endif %}
+
+</div>
+
+<!-- 4. TODO LIST -->
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-header bg-white py-3 border-bottom">
+                <h6 class="fw-bold mb-0">Pending Tasks</h6>
+            </div>
+            <ul class="list-group list-group-flush">
+                {% for task in todo_list %}
+                    <li class="list-group-item py-3 d-flex align-items-center">
+                        <input class="form-check-input me-3 rounded-circle" type="checkbox" style="width: 1.2em; height: 1.2em;">
+                        <span class="text-dark">{{ task }}</span>
+                    </li>
+                {% empty %}
+                    <li class="list-group-item py-4 text-center text-muted">
+                        <i class="bi bi-check2-all fs-1 d-block mb-2 text-success"></i>
+                        All caught up! Great job.
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
