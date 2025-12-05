@@ -1,0 +1,646 @@
+
+{% extends 'base.html' %}
+{% block title %}Gigs360 | The OS for Creatives{% endblock %}
+
+{% block content %}
+
+<!-- HERO SECTION: FOCAL POINT -->
+<section class="p-0 position-relative">
+    <div id="heroCarousel" class="carousel slide carousel-fade" data-bs-ride="carousel" data-bs-interval="6000">
+        
+        <div class="carousel-indicators mb-4">
+            <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" class="active"></button>
+            <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1"></button>
+            <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="2"></button>
+        </div>
+
+        <div class="carousel-inner text-white">
+            
+            <!-- Slide 1: Secure Ganji -->
+            <div class="carousel-item active" style="height: 85vh; min-height: 600px;">
+                <!-- Gradient Overlay: Blue -->
+                <div class="position-absolute w-100 h-100" style="background: radial-gradient(circle at center, #0d6efd 0%, #000 85%); z-index: -1;"></div>
+                
+                <div class="container h-100 d-flex align-items-center justify-content-center text-center">
+                    <div class="col-lg-9">
+                        <span class="badge bg-white text-primary mb-3 px-4 py-2 rounded-pill shadow fw-bold">
+                            <i class="bi bi-wallet2 me-2"></i> FINANCIAL SECURITY
+                        </span>
+                        <h1 class="display-2 fw-bold mb-3">Secure Ganji.<br>Zero Stress.</h1>
+                        <p class="lead mb-5 opacity-75 mx-auto" style="max-width: 600px;">
+                            We automate M-Pesa deposits and hold funds in Escrow. 
+                            Never hear "Kuja Kesho" ever again.
+                        </p>
+                        <div class="d-flex justify-content-center gap-3">
+                            <a href="{% url 'login' %}" class="btn btn-warning btn-lg fw-bold px-5 rounded-pill shadow">Start Getting Paid</a>
+                            <a href="#how-it-works" class="btn btn-outline-light btn-lg px-5 rounded-pill">How it Works</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 2: Asset Tracking -->
+            <div class="carousel-item" style="height: 85vh; min-height: 600px;">
+                <!-- Gradient Overlay: Dark Gray -->
+                <div class="position-absolute w-100 h-100" style="background: radial-gradient(circle at center, #495057 0%, #000 85%); z-index: -1;"></div>
+                
+                <div class="container h-100 d-flex align-items-center justify-content-center text-center">
+                    <div class="col-lg-9">
+                        <span class="badge bg-white text-dark mb-3 px-4 py-2 rounded-pill shadow fw-bold">
+                            <i class="bi bi-qr-code-scan me-2"></i> ASSET PROTECTION
+                        </span>
+                        <h1 class="display-2 fw-bold mb-3">Protect Your Gear.<br>Track Every Cable.</h1>
+                        <p class="lead mb-5 opacity-75 mx-auto" style="max-width: 600px;">
+                            Digital Check-in/Check-out via QR Codes. Stop inventory shrinkage and know exactly who has your Sony A7S.
+                        </p>
+                        <div class="d-flex justify-content-center gap-3">
+                            <a href="{% url 'login' %}" class="btn btn-light btn-lg fw-bold px-5 rounded-pill shadow text-dark">Try Inventory Tool</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 3: Contracts -->
+            <div class="carousel-item" style="height: 85vh; min-height: 600px;">
+                <!-- Gradient Overlay: Gold/Brown -->
+                <div class="position-absolute w-100 h-100" style="background: radial-gradient(circle at center, #bfa15f 0%, #000 85%); z-index: -1;"></div>
+                
+                <div class="container h-100 d-flex align-items-center justify-content-center text-center">
+                    <div class="col-lg-9">
+                        <span class="badge bg-warning text-dark mb-3 px-4 py-2 rounded-pill shadow fw-bold">
+                            <i class="bi bi-file-earmark-pdf-fill me-2"></i> SMART ADMIN
+                        </span>
+                        <h1 class="display-2 fw-bold mb-3">Paperwork? Sorted.<br>Contracts in Seconds.</h1>
+                        <p class="lead mb-5 opacity-75 mx-auto" style="max-width: 600px;">
+                            Generate iron-clad PDF contracts and invoices instantly. Send them directly to your client's WhatsApp.
+                        </p>
+                        <div class="d-flex justify-content-center gap-3">
+                            <a href="{% url 'login' %}" class="btn btn-light btn-lg fw-bold px-5 rounded-pill shadow text-dark">Professionalize Now</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        
+        <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
+            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+        </button>
+    </div>
+</section>
+
+<!-- ... (Keep Hero Section above) ... -->
+
+<!-- 2. THE GIGS360 ECOSYSTEM (Modern Grid) -->
+<section id="solutions" class="section-grid">
+    <div class="container">
+        
+        <!-- Header -->
+        <div class="section-header-modern">
+            <span class="badge bg-white text-primary border px-3 py-2 rounded-pill fw-bold mb-3 shadow-sm">
+                <i class="bi bi-layers-fill me-1"></i> WHY CHOOSE US
+            </span>
+            <h2 class="display-5 fw-bold text-dark mb-3">
+                More Than Just Booking.<br>
+                <span class="text-primary">It's Your Entire Business OS.</span>
+            </h2>
+            <p class="text-muted lead">
+                From securing payments to delivering client galleries, Gigs360 handles the chaos so you can focus on the craft.
+            </p>
+        </div>
+
+        <!-- 6-Card Grid (Full Solution Focus) -->
+        <div class="row g-4">
+            
+            <!-- 1. Secure Payments -->
+            <div class="col-lg-4 col-md-6">
+                <div class="card-modern">
+                    <div class="icon-modern icon-green">
+                        <i class="bi bi-wallet2"></i>
+                    </div>
+                    <h4>Secure Payments</h4>
+                    <p>
+                        Never chase a client again. We enforce a 50% deposit via M-Pesa STK Push held in Escrow before the gig even starts.
+                    </p>
+                </div>
+            </div>
+
+            <!-- 2. Smart Analytics (NEW) -->
+            <div class="col-lg-4 col-md-6">
+                <div class="card-modern">
+                    <div class="icon-modern icon-purple">
+                        <i class="bi bi-graph-up-arrow"></i>
+                    </div>
+                    <h4>Business Analytics</h4>
+                    <p>
+                        Stop guessing. View your monthly earnings, top-performing packages, and growth trends directly on your Smart Dashboard.
+                    </p>
+                </div>
+            </div>
+
+            <!-- 3. Asset Tracking -->
+            <div class="col-lg-4 col-md-6">
+                <div class="card-modern">
+                    <div class="icon-modern icon-blue">
+                        <i class="bi bi-qr-code-scan"></i>
+                    </div>
+                    <h4>Gear Locker</h4>
+                    <p>
+                        Protect your investment. Scan QR codes to check-in/out cameras and lights. Know exactly who has your Sony A7S.
+                    </p>
+                </div>
+            </div>
+
+            <!-- 4. Client Galleries (NEW) -->
+            <div class="col-lg-4 col-md-6">
+                <div class="card-modern">
+                    <div class="icon-modern icon-gold">
+                        <i class="bi bi-images"></i>
+                    </div>
+                    <h4>Professional Albums</h4>
+                    <p>
+                        Deliver photos professionally. Create stunning, shareable digital albums for your clients without paying for extra software.
+                    </p>
+                </div>
+            </div>
+
+            <!-- 5. Instant Contracts -->
+            <div class="col-lg-4 col-md-6">
+                <div class="card-modern">
+                    <div class="icon-modern icon-red">
+                        <i class="bi bi-file-earmark-pdf-fill"></i>
+                    </div>
+                    <h4>Smart Contracts</h4>
+                    <p>
+                        Look professional in seconds. Generate iron-clad PDF quotes, invoices, and contracts and send them via WhatsApp.
+                    </p>
+                </div>
+            </div>
+
+            <!-- 6. Marketplace -->
+            <div class="col-lg-4 col-md-6">
+                <div class="card-modern">
+                    <div class="icon-modern icon-cyan">
+                        <i class="bi bi-people-fill"></i>
+                    </div>
+                    <h4>Get Hired</h4>
+                    <p>
+                        Join the "GigHub" marketplace. Verified profiles get exposure to top Event Planners and Agencies looking for talent.
+                    </p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- 3. PRICING SECTION -->
+<section id="pricing" class="section-pricing">
+    <div class="container">
+        
+        <!-- Header -->
+        <div class="text-center mb-5">
+            <span class="badge bg-light text-primary border border-primary px-3 py-2 rounded-pill fw-bold mb-3">
+                PRICING PLANS
+            </span>
+            <h2 class="display-5 fw-bold mb-3 text-dark">Invest in Your Growth</h2>
+            <p class="text-muted lead mx-auto" style="max-width: 600px;">
+                Transparent pricing. No hidden fees. Upgrade as you scale.
+            </p>
+        </div>
+
+        <div class="row g-4 align-items-center justify-content-center">
+            
+            <!-- TIER 1: STARTER (Free) -->
+            <div class="col-lg-4 col-md-6">
+                <div class="card-pricing text-center">
+                    <h5 class="pricing-title text-muted">Starter</h5>
+                    <div class="pricing-price">Free</div>
+                    
+                    <ul class="pricing-features">
+                        <li><i class="bi bi-check-circle-fill"></i> Manage up to 3 Gigs/mo</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Basic PDF Invoicing</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Manual Inventory List</li>
+                        <li class="text-muted"><i class="bi bi-x-circle-fill"></i> No M-Pesa Integration</li>
+                        <li class="text-muted"><i class="bi bi-x-circle-fill"></i> No QR Tracking</li>
+                    </ul>
+
+                    <a href="{% url 'login' %}" class="btn btn-outline-dark btn-pricing">Start for Free</a>
+                </div>
+            </div>
+
+            <!-- TIER 2: PRO VENDOR (The Hook) -->
+            <div class="col-lg-4 col-md-6">
+                <div class="card-pricing card-popular text-center">
+                    <div class="badge-popular">MOST POPULAR</div>
+                    <h5 class="pricing-title text-primary">Pro Vendor</h5>
+                    <div class="pricing-price">
+                        2,500 <span class="pricing-period">/mo</span>
+                    </div>
+                    
+                    <ul class="pricing-features">
+                        <li><i class="bi bi-check-circle-fill"></i> <strong>Unlimited Gigs</strong></li>
+                        <li><i class="bi bi-check-circle-fill"></i> <strong>M-Pesa STK Push</strong></li>
+                        <li><i class="bi bi-check-circle-fill"></i> QR Code Asset Tracking</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Contracts & Legal Forms</li>
+                        <li><i class="bi bi-check-circle-fill"></i> WhatsApp Integration</li>
+                    </ul>
+
+                    <a href="{% url 'login' %}" class="btn btn-primary btn-pricing shadow">Subscribe Now</a>
+                </div>
+            </div>
+
+            <!-- TIER 3: AGENCY (High Ticket) -->
+            <div class="col-lg-4 col-md-6">
+                <div class="card-pricing text-center">
+                    <h5 class="pricing-title text-gold">Agency</h5>
+                    <div class="pricing-price">
+                        5,000 <span class="pricing-period">/mo</span>
+                    </div>
+                    
+                    <ul class="pricing-features">
+                        <li><i class="bi bi-check-circle-fill"></i> Everything in Pro</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Multi-User Access (5 Staff)</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Bulk SMS Marketing</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Priority Support</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Custom Branding</li>
+                    </ul>
+
+                    <a href="{% url 'login' %}" class="btn btn-outline-dark btn-pricing">Contact Sales</a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- ... (Pricing Section Above) ... -->
+
+<!-- 4. TRUSTED PARTNERS (Infinite Ticker) -->
+<section class="section-partners">
+    <div class="container">
+        <p class="partners-header">
+            Powering The Best Events In Kenya
+        </p>
+        
+        <div class="partners-slider">
+            <div class="partners-track">
+                
+                <!-- ORIGINAL SET -->
+                <div class="partner-item brand-canon">
+                    <i class="bi bi-camera-fill"></i> CANON
+                </div>
+                <div class="partner-item brand-bose">
+                    <i class="bi bi-soundwave"></i> BOSE
+                </div>
+                <div class="partner-item brand-mpesa">
+                    <i class="bi bi-bank2"></i> M-PESA
+                </div>
+                <div class="partner-item brand-sony">
+                    <i class="bi bi-film"></i> SONY
+                </div>
+                <div class="partner-item brand-eabl">
+                    <i class="bi bi-building"></i> E-ABL
+                </div>
+                <div class="partner-item">
+                    <i class="bi bi-ticket-perforated-fill"></i> TICKETASA
+                </div>
+                <div class="partner-item">
+                    <i class="bi bi-music-note-beamed"></i> HOMEBOYZ
+                </div>
+
+                <!-- DUPLICATE SET (For Infinite Scroll Illusion) -->
+                <div class="partner-item brand-canon">
+                    <i class="bi bi-camera-fill"></i> CANON
+                </div>
+                <div class="partner-item brand-bose">
+                    <i class="bi bi-soundwave"></i> BOSE
+                </div>
+                <div class="partner-item brand-mpesa">
+                    <i class="bi bi-bank2"></i> M-PESA
+                </div>
+                <div class="partner-item brand-sony">
+                    <i class="bi bi-film"></i> SONY
+                </div>
+                <div class="partner-item brand-eabl">
+                    <i class="bi bi-building"></i> E-ABL
+                </div>
+                <div class="partner-item">
+                    <i class="bi bi-ticket-perforated-fill"></i> TICKETASA
+                </div>
+                <div class="partner-item">
+                    <i class="bi bi-music-note-beamed"></i> HOMEBOYZ
+                </div>
+
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 5. TESTIMONIALS (Grid Carousel) -->
+<section id="community" class="section-testimonials">
+    
+    <!-- Background Strip -->
+    <div class="testimonial-skew"></div>
+
+    <div class="container position-relative z-1">
+        
+        <!-- Header -->
+        <div class="text-center mb-5">
+            <span class="badge bg-light text-primary border border-primary px-3 py-2 rounded-pill fw-bold mb-3 shadow-sm">
+                <i class="bi bi-heart-fill me-1 text-danger"></i> COMMUNITY LOVE
+            </span>
+            <h2 class="display-5 fw-bold text-dark">Trusted by the Best</h2>
+            <p class="text-muted lead">See what 500+ Kenyan creatives are saying.</p>
+        </div>
+
+        <!-- Carousel: Very Slow (20s) -->
+        <div id="testimonialCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="20000" data-bs-pause="hover">
+            
+            <div class="carousel-inner pb-5"> <!-- Padding bottom for indicators -->
+                
+                <!-- SLIDE 1 (First 3 Reviews) -->
+                <div class="carousel-item active">
+                    <div class="row g-4">
+                        
+                        <!-- Review 1 -->
+                        <div class="col-lg-4 col-md-6">
+                            <div class="card-testimonial h-100">
+                                <i class="bi bi-quote icon-quote"></i>
+                                <div class="avatar-box">
+                                    <img src="https://i.pravatar.cc/300?img=11" alt="Brian" class="avatar-img">
+                                </div>
+                                <div class="star-rating">
+                                    <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+                                </div>
+                                <p class="testimonial-text">
+                                    "Before Gigs360, I was chasing payments for weeks. Now, clients pay the deposit instantly via M-Pesa. It has completely professionalized my photography business."
+                                </p>
+                                <div class="text-center">
+                                    <h6 class="client-name">Brian Mutua</h6>
+                                    <span class="client-role">Wedding Photographer</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Review 2 -->
+                        <div class="col-lg-4 col-md-6">
+                            <div class="card-testimonial h-100">
+                                <i class="bi bi-quote icon-quote"></i>
+                                <div class="avatar-box">
+                                    <img src="https://i.pravatar.cc/300?img=5" alt="Sarah" class="avatar-img">
+                                </div>
+                                <div class="star-rating">
+                                    <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+                                </div>
+                                <p class="testimonial-text">
+                                    "The gear tracking feature is a lifesaver. We run a busy rental house in Westlands, and knowing exactly who has the 85mm lens has saved us thousands."
+                                </p>
+                                <div class="text-center">
+                                    <h6 class="client-name">Sarah Kamau</h6>
+                                    <span class="client-role">Owner, LensHire KE</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Review 3 -->
+                        <div class="col-lg-4 col-md-6">
+                            <div class="card-testimonial h-100">
+                                <i class="bi bi-quote icon-quote"></i>
+                                <div class="avatar-box">
+                                    <img src="https://i.pravatar.cc/300?img=3" alt="David" class="avatar-img">
+                                </div>
+                                <div class="star-rating">
+                                    <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-half"></i>
+                                </div>
+                                <p class="testimonial-text">
+                                    "Generating contracts used to take me hours. Now I do it in the cab on my way to the meeting. My corporate clients take me much more seriously now."
+                                </p>
+                                <div class="text-center">
+                                    <h6 class="client-name">David Ochieng</h6>
+                                    <span class="client-role">Corporate MC & Host</span>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- SLIDE 2 (Next 3 Reviews - Duplicated for demo effect) -->
+                <div class="carousel-item">
+                    <div class="row g-4">
+                        
+                        <!-- Review 4 -->
+                        <div class="col-lg-4 col-md-6">
+                            <div class="card-testimonial h-100">
+                                <i class="bi bi-quote icon-quote"></i>
+                                <div class="avatar-box">
+                                    <img src="https://i.pravatar.cc/300?img=9" alt="Grace" class="avatar-img">
+                                </div>
+                                <div class="star-rating">
+                                    <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+                                </div>
+                                <p class="testimonial-text">
+                                    "The automated receipts are fantastic. I don't have to manually write invoices anymore, and my tax filing is so much easier."
+                                </p>
+                                <div class="text-center">
+                                    <h6 class="client-name">Grace Wanjiku</h6>
+                                    <span class="client-role">Event Planner</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Review 5 -->
+                        <div class="col-lg-4 col-md-6">
+                            <div class="card-testimonial h-100">
+                                <i class="bi bi-quote icon-quote"></i>
+                                <div class="avatar-box">
+                                    <img src="https://i.pravatar.cc/300?img=12" alt="Kevin" class="avatar-img">
+                                </div>
+                                <div class="star-rating">
+                                    <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+                                </div>
+                                <p class="testimonial-text">
+                                    "Gigs360 helps me manage my DJ bookings perfectly. I never double-book dates anymore, and the deposit system is flawless."
+                                </p>
+                                <div class="text-center">
+                                    <h6 class="client-name">Kevin 'DJ Kev'</h6>
+                                    <span class="client-role">Professional DJ</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Review 6 -->
+                        <div class="col-lg-4 col-md-6">
+                            <div class="card-testimonial h-100">
+                                <i class="bi bi-quote icon-quote"></i>
+                                <div class="avatar-box">
+                                    <img src="https://i.pravatar.cc/300?img=1" alt="Alice" class="avatar-img">
+                                </div>
+                                <div class="star-rating">
+                                    <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+                                </div>
+                                <p class="testimonial-text">
+                                    "Security for my decor items was a nightmare. The QR tracking has held my staff accountable. Loss has dropped to zero."
+                                </p>
+                                <div class="text-center">
+                                    <h6 class="client-name">Alice Nderitu</h6>
+                                    <span class="client-role">Decor Vendor</span>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Indicators -->
+            <div class="carousel-indicators carousel-indicators-testimonials">
+                <button type="button" data-bs-target="#testimonialCarousel" data-bs-slide-to="0" class="active"></button>
+                <button type="button" data-bs-target="#testimonialCarousel" data-bs-slide-to="1"></button>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- ... (Testimonials Above) ... -->
+
+<!-- 6. FINAL CTA (Conversion Focus) -->
+<section class="section-cta">
+    
+    <!-- Glowing Background Effect -->
+    <div class="cta-decoration"></div>
+
+    <div class="container cta-content text-center">
+        <div class="row justify-content-center">
+            <div class="col-lg-9">
+                
+                <!-- Headline -->
+                <h2 class="display-3 cta-title">
+                    Ready to Build Your Empire?
+                </h2>
+                
+                <!-- Value Prop Subhead -->
+                <p class="cta-lead">
+                    Join the operating system powering Kenya's top creatives. 
+                    Secure payments, professional contracts, and peace of mind—starting today.
+                </p>
+                
+                <!-- Action Buttons -->
+                <div class="d-flex flex-column flex-sm-row justify-content-center gap-3">
+                    <a href="{% url 'login' %}" class="btn btn-cta-lg btn-white-gold">
+                        <i class="bi bi-rocket-takeoff-fill me-2"></i> Start Free Trial
+                    </a>
+                    <a href="#pricing" class="btn btn-cta-lg btn-outline-gold">
+                        View Pricing
+                    </a>
+                </div>
+
+                <!-- Friction Reducers (Trust Signals) -->
+                <div class="trust-badges">
+                    <span><i class="bi bi-check-circle-fill"></i> No credit card required</span>
+                    <span><i class="bi bi-check-circle-fill"></i> Cancel anytime</span>
+                    <span><i class="bi bi-check-circle-fill"></i> Free support</span>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- FOOTER -->
+    <footer class="bg-dark text-white pt-5 pb-3 mt-auto border-top border-secondary">
+        <div class="container">
+            <div class="row g-4 justify-content-between">
+                
+                <!-- Col 1: Brand & Trust -->
+                <div class="col-lg-4 col-md-6">
+                    <a class="navbar-brand d-flex align-items-center gap-2 mb-3" href="{% url 'home' %}">
+                        <i class="bi bi-lightning-charge-fill text-warning"></i> 
+                        <span class="text-white fw-bold fs-4">Gigs360</span>
+                    </a>
+                    <p class="text-white-50 small mb-4" style="max-width: 300px;">
+                        The Operating System for the African creative economy. We secure payments, track assets, and professionalize your hustle.
+                    </p>
+                    <div class="d-flex align-items-center gap-2 text-white-50 small mb-2">
+                        <i class="bi bi-geo-alt-fill text-warning"></i>
+                        <span>The Mirage Tower, Westlands, Nairobi</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 text-white-50 small">
+                        <i class="bi bi-envelope-fill text-warning"></i>
+                        <span>support@gigs360.co.ke</span>
+                    </div>
+                </div>
+
+                <!-- Col 2: Product -->
+                <div class="col-lg-2 col-md-3 col-6">
+                    <h6 class="fw-bold text-white mb-3">Product</h6>
+                    <ul class="list-unstyled small text-white-50 d-flex flex-column gap-2">
+                        <li><a href="#" class="text-decoration-none text-white-50 hover-white">Ganji Hub (Escrow)</a></li>
+                        <li><a href="#" class="text-decoration-none text-white-50 hover-white">Gear Locker</a></li>
+                        <li><a href="#" class="text-decoration-none text-white-50 hover-white">Smart Contracts</a></li>
+                        <li><a href="#" class="text-decoration-none text-white-50 hover-white">Pricing</a></li>
+                        <li><a href="#" class="text-decoration-none text-white-50 hover-white">GigHub Marketplace</a></li>
+                    </ul>
+                </div>
+
+                <!-- Col 3: Company & Support -->
+                <div class="col-lg-2 col-md-3 col-6">
+                    <h6 class="fw-bold text-white mb-3">Company</h6>
+                    <ul class="list-unstyled small text-white-50 d-flex flex-column gap-2">
+                        <li><a href="#" class="text-decoration-none text-white-50 hover-white">About Us</a></li>
+                        <li><a href="#" class="text-decoration-none text-white-50 hover-white">Careers</a></li>
+                        <li><a href="#" class="text-decoration-none text-white-50 hover-white">Blog / Stories</a></li>
+                        <li><a href="#" class="text-decoration-none text-white-50 hover-white">Help Center</a></li>
+                        <li><a href="#" class="text-decoration-none text-white-50 hover-white">Partner with Us</a></li>
+                    </ul>
+                </div>
+
+                <!-- Col 4: Newsletter -->
+                <div class="col-lg-3 col-md-12">
+                    <h6 class="fw-bold text-white mb-3">Stay in the Loop</h6>
+                    <p class="small text-white-50 mb-3">Get tips on pricing, contracts, and gigs delivered to your inbox.</p>
+                    <form action="#" class="mb-3">
+                        <div class="input-group">
+                            <input type="email" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="Enter email" aria-label="Email">
+                            <button class="btn btn-sm btn-warning fw-bold" type="button">Subscribe</button>
+                        </div>
+                    </form>
+                    <!-- Socials -->
+                    <div class="social-icons d-flex gap-3">
+                        <a href="#" class="text-white-50 hover-warning"><i class="bi bi-instagram fs-5"></i></a>
+                        <a href="#" class="text-white-50 hover-warning"><i class="bi bi-twitter-x fs-5"></i></a>
+                        <a href="#" class="text-white-50 hover-warning"><i class="bi bi-linkedin fs-5"></i></a>
+                        <a href="#" class="text-white-50 hover-warning"><i class="bi bi-tiktok fs-5"></i></a>
+                    </div>
+                </div>
+
+            </div>
+
+            <hr class="border-secondary my-4 opacity-50">
+
+            <!-- Bottom Bar: Legal & Copyright -->
+            <div class="row align-items-center">
+                <div class="col-md-6 text-center text-md-start">
+                    <p class="small text-white-50 mb-0">
+                        &copy; {% now "Y" %} Gigs360 Technologies Ltd. All rights reserved.
+                    </p>
+                </div>
+                <div class="col-md-6 text-center text-md-end">
+                    <ul class="list-inline small mb-0">
+                        <li class="list-inline-item"><a href="#" class="text-white-50 text-decoration-none hover-white">Privacy Policy</a></li>
+                        <li class="list-inline-item mx-2 text-white-50">&bull;</li>
+                        <li class="list-inline-item"><a href="#" class="text-white-50 text-decoration-none hover-white">Terms of Service</a></li>
+                        <li class="list-inline-item mx-2 text-white-50">&bull;</li>
+                        <li class="list-inline-item"><a href="#" class="text-white-50 text-decoration-none hover-white">Dispute Resolution</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </footer>
+{% endblock %}

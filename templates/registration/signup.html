@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block title %}Join Gigs360 | Create Account{% endblock %}
+
+{% block extra_css %}
+<!-- SweetAlert2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<section class="section-auth d-flex align-items-center" style="min-height: 85vh; background: #f8f9fa;">
+    <div class="container">
+        <!-- ... (Keep your existing Card/Form code here) ... -->
+        
+        <!-- PLACEHOLDER: Ensure your form is here as per previous code -->
+        <!-- I am only showing the script addition below -->
+        
+        <div class="row justify-content-center">
+            <div class="col-lg-5 col-md-8">
+                <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                    <div class="card-header bg-dark text-white text-center py-4">
+                        <h4 class="fw-bold mb-1 text-warning">
+                            <i class="bi bi-rocket-takeoff-fill me-2"></i> Join Gigs360
+                        </h4>
+                    </div>
+                    <div class="card-body p-4 p-md-5 bg-white">
+                        <form method="post">
+                            {% csrf_token %}
+                            
+                            <!-- Your Form Fields Here (Keep existing code) -->
+                            <div class="mb-4">
+                                {{ form.account_type }}
+                            </div>
+                            
+                            <!-- ... Rest of fields ... -->
+                            
+                            {% for field in form %}
+                                {% if field.name != 'account_type' %}
+                                    <div class="form-floating mb-3">
+                                        {{ field }}
+                                        <label>{{ field.label }}</label>
+                                        {% if field.errors %}
+                                            <div class="text-danger small">{{ field.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+
+                            <!-- Password Requirements Box (Keep existing) -->
+
+                            <button type="submit" class="btn btn-warning w-100 py-3 fw-bold rounded-3 shadow-sm text-dark mt-3">
+                                Create Account
+                            </button>
+                        </form>
+                    </div>
+                    <div class="card-footer bg-light text-center py-3 border-0">
+                        <p class="small mb-0 text-muted">
+                            Already have an account? <a href="{% url 'login' %}" class="fw-bold text-primary text-decoration-none">Login</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- SweetAlert2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    // Check if the backend sent the success signal
+    {% if success_popup %}
+        Swal.fire({
+            title: 'Account Created!',
+            text: 'We have sent a verification link to your email. Please check your inbox (and spam folder) to activate your account.',
+            icon: 'success',
+            confirmButtonText: 'Open Gmail',
+            confirmButtonColor: '#0d6efd',
+            showCancelButton: true,
+            cancelButtonText: 'Close'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.open('https://mail.google.com', '_blank');
+            }
+        });
+    {% endif %}
+</script>
+{% endblock %}
