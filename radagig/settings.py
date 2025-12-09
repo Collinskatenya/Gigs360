@@ -1,6 +1,5 @@
-
-from pathlib import Path
 import os
+from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -11,7 +10,7 @@ SECRET_KEY = 'django-insecure-xdo#q5cz=5y&a5f*0zb*t-hao*_ss6ktf+fgq4b0_dhg!7t#@z
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 INSTALLED_APPS = [
@@ -26,11 +25,11 @@ INSTALLED_APPS = [
     'django_daraja', # For M-Pesa
     
     # My Apps
-    'community',
     'core',
+    'inventory',
     'events',
     'finance',
-    'inventory',
+    'community',
 ]
 
 MIDDLEWARE = [
@@ -41,6 +40,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # 'core.middleware.UpdateLastActivityMiddleware', # Enable only if file exists
 ]
 
 ROOT_URLCONF = 'radagig.urls'
@@ -48,7 +48,7 @@ ROOT_URLCONF = 'radagig.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'], # Points to POS/templates/
+        'DIRS': [os.path.join(BASE_DIR, 'templates')], # Points to the global templates folder
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -72,85 +72,51 @@ DATABASES = {
 }
 
 # -------------------------------------------------------------------------
-# AUTHENTICATION & SECURITY
+# AUTHENTICATION
 # -------------------------------------------------------------------------
-
-# Use our Custom User Model
 AUTH_USER_MODEL = 'core.User'
 
-# Password validation
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-        'OPTIONS': {
-            'min_length': 8,
-        }
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
-    # Our Custom Complex Validator (Requires core/validators.py to exist)
-    {
-        'NAME': 'core.validators.ComplexPasswordValidator',
-    },
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# Login/Logout Redirects (Fixes the 404 error after login)
-LOGIN_REDIRECT_URL = 'home'
-LOGOUT_REDIRECT_URL = 'home'
+# Login / Logout Redirects
 LOGIN_URL = 'login'
-
-# -------------------------------------------------------------------------
-# EMAIL SETTINGS (Development Mode)
-# -------------------------------------------------------------------------
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-EMAIL_HOST = 'localhost'
-EMAIL_PORT = 1025
-EMAIL_USE_TLS = False
-DEFAULT_FROM_EMAIL = 'Gigs360 <noreply@gigs360.co.ke>'
+LOGIN_REDIRECT_URL = 'dashboard'
+LOGOUT_REDIRECT_URL = 'home'
 
 # -------------------------------------------------------------------------
 # INTERNATIONALIZATION
 # -------------------------------------------------------------------------
 LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Africa/Nairobi' 
 USE_I18N = True
 USE_TZ = True
 
 # -------------------------------------------------------------------------
 # STATIC & MEDIA FILES
 # -------------------------------------------------------------------------
-
-# Static files (CSS, JavaScript, Images)
 STATIC_URL = 'static/'
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),
-]
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-# Media Files (User Uploads - Partner Logos, Avatars)
+# Media Files (User Uploads - Profile Pics, Inventory)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# Default primary key field type
+# -------------------------------------------------------------------------
+# DEVELOPMENT SECURITY SETTINGS (Fixes 403 Forbidden Error)
+# -------------------------------------------------------------------------
+# Crucial for running on localhost without HTTPS
+CSRF_COOKIE_SECURE = False
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_HTTPONLY = False
+
+# Email (Console Backend for testing - prints emails to terminal)
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'Gigs360 <noreply@gigs360.co.ke>'
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-# ... (Add this to the very bottom of your settings.py file) ...
-
-# ==============================================
-# AUTHENTICATION REDIRECTS
-# ==============================================
-
-# Where to send a user if they try to access a protected page without logging in
-LOGIN_URL = 'login'
-
-# Where to send a user immediately after they successfully log in
-LOGIN_REDIRECT_URL = 'dashboard'
-
-# Where to send a user after they log out
-LOGOUT_REDIRECT_URL = 'home'

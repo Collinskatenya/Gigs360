@@ -1,0 +1,159 @@
+{% extends 'core/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}My Gear | Gigs360{% endblock %}
+
+{% block dashboard_content %}
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between align-items-center my-4">
+        <div>
+            <h3 class="fw-bold text-dark mb-0">Gear Locker</h3>
+            <p class="text-muted small">Manage your assets, track serials, and print QR codes.</p>
+        </div>
+        <a href="{% url 'add_item' %}" class="btn btn-primary fw-bold shadow-sm rounded-pill px-4 hover-lift">
+            <i class="bi bi-plus-lg me-2"></i> Add New Item
+        </a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'success' }} border-0 shadow-sm rounded-3 mb-4 alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i> {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light text-secondary small text-uppercase fw-bold">
+                    <tr>
+                        <th class="ps-4 py-3 border-0">Asset Details</th>
+                        <th class="border-0">Category</th>
+                        <th class="border-0">Tracking</th>
+                        <th class="border-0">Daily Rate</th>
+                        <th class="border-0">Status</th>
+                        <th class="text-end pe-4 border-0">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="d-flex align-items-center">
+                                <div class="rounded-3 bg-light d-flex align-items-center justify-content-center me-3 border position-relative overflow-hidden" style="width: 50px; height: 50px;">
+                                    {% if item.image %}
+                                        <img src="{{ item.image.url }}" alt="{{ item.name }}" style="width: 100%; height: 100%; object-fit: cover;">
+                                    {% else %}
+                                        <i class="bi bi-camera-video text-secondary fs-4"></i>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-dark">{{ item.name }}</div>
+                                    <div class="small text-muted d-md-none">{{ item.category.name|default:"General" }}</div>
+                                </div>
+                            </div>
+                        </td>
+
+                        <td>
+                            <span class="badge bg-light text-dark border rounded-pill fw-normal px-3">
+                                {{ item.category.name|default:"General" }}
+                            </span>
+                        </td>
+
+                        <td>
+                            {% if user.subscription_plan == 'Free' %}
+                                <span class="badge bg-secondary bg-opacity-25 text-secondary" data-bs-toggle="tooltip" title="Upgrade to Pro to view Serial Numbers">
+                                    <i class="bi bi-lock-fill me-1"></i> Locked
+                                </span>
+                            {% else %}
+                                <div class="d-flex flex-column">
+                                    <span class="text-dark small fw-bold">{{ item.get_tracking_type_display }}</span>
+                                    <span class="text-muted small font-monospace">{{ item.serial_number|default:"-" }}</span>
+                                </div>
+                            {% endif %}
+                        </td>
+
+                        <td class="fw-bold text-success">
+                            {% if item.daily_rate %}
+                                KES {{ item.daily_rate }}
+                            {% else %}
+                                <span class="text-muted fw-normal small">-</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if item.status == 'AVAILABLE' %}
+                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3">Available</span>
+                            {% elif item.status == 'RENTED' %}
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3">Rented</span>
+                            {% elif item.status == 'MAINTENANCE' %}
+                                <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-3">In Repair</span>
+                            {% else %}
+                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-3">{{ item.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="text-end pe-4">
+                            <div class="btn-group shadow-sm">
+                                <a href="#" class="btn btn-sm btn-light border text-secondary" data-bs-toggle="tooltip" title="Edit Item">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+
+                                {% if user.subscription_plan == 'Free' %}
+                                    <button class="btn btn-sm btn-light border text-muted" disabled style="cursor: not-allowed;" title="Upgrade to Download QR">
+                                        <i class="bi bi-qr-code"></i>
+                                    </button>
+                                {% else %}
+                                    {% if item.qr_code %}
+                                        <a href="{{ item.qr_code.url }}" download="QR_{{ item.name|slugify }}.png" class="btn btn-sm btn-light border text-dark" data-bs-toggle="tooltip" title="Download QR">
+                                            <i class="bi bi-qr-code-scan"></i>
+                                        </a>
+                                    {% else %}
+                                        <button class="btn btn-sm btn-light border text-muted" disabled title="No QR Code">
+                                            <i class="bi bi-slash-circle"></i>
+                                        </button>
+                                    {% endif %}
+                                {% endif %}
+
+                                <form action="{% url 'delete_item' item.id %}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to permanently delete {{ item.name }}?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-light border text-danger hover-danger rounded-end" data-bs-toggle="tooltip" title="Delete">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5">
+                            <div class="mb-3 opacity-25"><i class="bi bi-box-seam display-1"></i></div>
+                            <h5 class="text-muted fw-bold">Your Gear Locker is Empty</h5>
+                            <p class="text-muted small mb-4">Add your equipment to start tracking assets and earning rentals.</p>
+                            <a href="{% url 'add_item' %}" class="btn btn-outline-primary rounded-pill px-4">
+                                <i class="bi bi-plus-lg me-2"></i> Add First Item
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+</script>
+
+<style>
+    .hover-lift:hover { transform: translateY(-2px); transition: 0.2s; }
+    .hover-danger:hover { background-color: #dc3545 !important; color: white !important; border-color: #dc3545 !important; }
+</style>
+{% endblock %}

@@ -1,24 +1,29 @@
 /* -----------------------------------------------------------
-   Gigs360 Master Stylesheet (Production Build v7)
+   Gigs360 Master Stylesheet (Production Build v8)
+   Theme: Deep Blue & Gold
    ----------------------------------------------------------- */
 
 /* =========================================
    1. VARIABLES & THEME SETUP
    ========================================= */
 :root {
-    /* Brand Colors */
-    --gigs-blue: #0d6efd;
-    --gigs-gold: #ffc107;
-    --gigs-dark: #212529;
+    /* --- BRAND COLORS (Matches Poster) --- */
+    --gigs-blue: #003366;       /* Deep Royal Blue */
+    --gigs-gold: #D4AF37;       /* Rich Metallic Gold */
+    --gigs-dark: #1a1a1a;       /* Jet Black */
+    --gigs-white: #ffffff;      /* Pure White */
     
-    /* Component Colors */
-    --nav-blue-bg: #0d6efd;
-    --top-gold-bg: #ffc107;
+    /* --- COMPONENT MAPPING --- */
+    --nav-blue-bg: var(--gigs-blue);
+    --top-gold-bg: var(--gigs-gold);
+    --btn-primary-bg: var(--gigs-blue);
+    --btn-accent-bg: var(--gigs-gold);
     
-    /* Layout Defaults (Light Mode) */
-    --bg-body: #ffffff;
-    --text-body: #212529;
-    --border-color: #f0f0f0;
+    /* --- LAYOUT DEFAULTS --- */
+    --bg-body: #f8f9fa;
+    --text-body: #333333;
+    --border-color: #e0e0e0;
+    --card-shadow: 0 10px 30px rgba(0,0,0,0.05);
 }
 
 /* Dark Mode Overrides */
@@ -43,20 +48,32 @@ body {
     background-color: var(--bg-body);
     color: var(--text-body);
     line-height: 1.6;
-    transition: background-color 0.3s, color 0.3s;
+    overflow-x: hidden; /* Prevents horizontal scroll from animations */
 }
 
 h1, h2, h3, h4, h5, h6 {
-    font-weight: 700;
+    font-weight: 800;
     letter-spacing: -0.5px;
+    color: var(--gigs-blue); /* Headings are Deep Blue */
+}
+
+a {
+    text-decoration: none;
+    transition: all 0.3s ease;
+    color: var(--gigs-blue);
+}
+
+a:hover {
+    color: var(--gigs-gold);
 }
 
 /* =========================================
    3. NAVIGATION (Top Bar & Main Nav)
    ========================================= */
-/* Gold Top Bar */
+
+/* Top Bar (The thin strip at the top) */
 .top-bar {
-    background-color: var(--top-gold-bg);
+    background-color: var(--gigs-gold);
     color: #000;
     font-size: 0.85rem;
     font-weight: 600;
@@ -67,37 +84,36 @@ h1, h2, h3, h4, h5, h6 {
 
 .top-bar a {
     color: #000;
-    text-decoration: none;
-    transition: opacity 0.2s;
+    opacity: 0.9;
 }
-.top-bar a:hover { opacity: 0.7; }
+.top-bar a:hover { opacity: 0.6; }
 
 .social-icons {
     display: flex;
     align-items: center;
-    gap: 0.8rem;
+    gap: 1rem;
 }
-.social-icons i { font-size: 1rem; }
 
-/* Blue Main Navbar */
+/* Main Navbar */
 .navbar-custom {
-    background-color: var(--nav-blue-bg);
-    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.25);
-    padding: 0.8rem 0;
+    background-color: var(--gigs-blue);
+    box-shadow: 0 4px 12px rgba(0, 51, 102, 0.25);
+    padding: 1rem 0;
     z-index: 1020;
 }
 
 .navbar-brand {
-    font-weight: 800;
-    font-size: 1.5rem;
+    font-weight: 900;
+    font-size: 1.6rem;
     letter-spacing: -0.5px;
-    color: white !important;
+    color: var(--gigs-gold) !important; /* Gold Logo */
 }
 
 .nav-link {
     color: rgba(255,255,255,0.9) !important;
     font-weight: 500;
-    font-size: 0.95rem;
+    font-size: 1rem;
+    margin: 0 8px;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -112,193 +128,151 @@ h1, h2, h3, h4, h5, h6 {
 /* Dropdowns */
 .dropdown-menu {
     border: none;
-    border-radius: 8px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-    margin-top: 10px;
+    border-radius: 12px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+    margin-top: 15px;
+    border-top: 4px solid var(--gigs-gold);
 }
 .dropdown-item {
-    padding: 8px 16px;
-    font-size: 0.9rem;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    padding: 10px 20px;
+    font-weight: 500;
 }
 .dropdown-item:hover {
-    background-color: rgba(13, 110, 253, 0.08);
+    background-color: rgba(212, 175, 55, 0.1); /* Light Gold bg */
     color: var(--gigs-blue);
 }
 
 /* =========================================
    4. HERO SECTION
    ========================================= */
-.carousel-item {
-    background-color: #000; /* Fallback color */
+.hero-section {
+    position: relative;
+    background-color: var(--gigs-blue);
+    color: white;
+    padding: 140px 0 100px;
+    overflow: hidden;
+}
+
+.hero-title {
+    font-size: 3.5rem;
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 1.5rem;
+    color: white;
+}
+
+.text-highlight {
+    color: var(--gigs-gold);
+    position: relative;
+    display: inline-block;
+}
+
+.hero-lead {
+    font-size: 1.25rem;
+    color: rgba(255,255,255,0.85);
+    margin-bottom: 2.5rem;
+    max-width: 600px;
+}
+
+/* Hero Buttons */
+.btn-hero-primary {
+    background-color: var(--gigs-gold);
+    color: #000;
+    font-weight: 700;
+    padding: 15px 40px;
+    border-radius: 50px;
+    font-size: 1.1rem;
+    border: 2px solid var(--gigs-gold);
+    transition: transform 0.2s;
+}
+.btn-hero-primary:hover {
+    background-color: #bfa030;
+    border-color: #bfa030;
+    transform: translateY(-3px);
+    color: #000;
+}
+
+.btn-hero-outline {
+    background: transparent;
+    color: white;
+    font-weight: 700;
+    padding: 15px 40px;
+    border-radius: 50px;
+    font-size: 1.1rem;
+    border: 2px solid rgba(255,255,255,0.3);
+    margin-left: 15px;
+}
+.btn-hero-outline:hover {
+    background: white;
+    color: var(--gigs-blue);
+    border-color: white;
 }
 
 /* =========================================
-   5. SOLUTIONS GRID (Modern Ecosystem - Solby Style)
+   5. SOLUTIONS GRID (Modern Ecosystem)
    ========================================= */
 .section-grid {
     padding: 100px 0;
-    background-color: #f8f9fa;
-    position: relative;
+    background-color: var(--bg-body);
 }
 
 .section-header-modern {
-    max-width: 700px;
-    margin: 0 auto 4rem auto;
     text-align: center;
+    max-width: 700px;
+    margin: 0 auto 60px;
 }
 
 .card-modern {
-    background: #ffffff;
-    border: 1px solid rgba(0,0,0,0.04);
-    border-radius: 1.25rem;
-    padding: 2.5rem 2rem;
+    background: var(--gigs-white);
+    border: 1px solid rgba(0,0,0,0.05);
+    border-radius: 20px;
+    padding: 2.5rem;
     height: 100%;
     transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
-    position: relative;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.02);
+    box-shadow: var(--card-shadow);
+    border-top: 4px solid var(--gigs-gold); /* Gold Accent */
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
 }
 
 .card-modern:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+    transform: translateY(-10px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
 }
 
 .icon-modern {
-    width: 55px;
-    height: 55px;
+    width: 60px;
+    height: 60px;
     border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.5rem;
+    font-size: 1.8rem;
     margin-bottom: 1.5rem;
-    transition: transform 0.3s ease;
+    background-color: rgba(0, 51, 102, 0.08); /* Light Blue Tint */
+    color: var(--gigs-blue);
+    transition: all 0.3s;
 }
 
-.card-modern:hover .icon-modern { transform: scale(1.1) rotate(3deg); }
-
-/* Icon Variants */
-.icon-blue   { background-color: #e7f1ff; color: #0d6efd; }
-.icon-green  { background-color: #d1e7dd; color: #198754; }
-.icon-gold   { background-color: #fff3cd; color: #ffc107; }
-.icon-purple { background-color: #f3e5f5; color: #9c27b0; }
-.icon-red    { background-color: #f8d7da; color: #dc3545; }
-.icon-cyan   { background-color: #cff4fc; color: #0dcaf0; }
+.card-modern:hover .icon-modern {
+    background-color: var(--gigs-blue);
+    color: var(--gigs-gold);
+    transform: rotate(5deg);
+}
 
 .card-modern h4 {
-    font-weight: 700;
-    font-size: 1.25rem;
-    color: var(--gigs-dark);
-    margin-bottom: 0.75rem;
-}
-
-.card-modern p {
-    color: #6c757d;
-    font-size: 0.95rem;
-    line-height: 1.6;
-    margin-bottom: 0;
+    font-size: 1.4rem;
+    margin-bottom: 1rem;
+    color: var(--gigs-blue);
 }
 
 /* =========================================
-   6. PRICING SECTION
-   ========================================= */
-.section-pricing {
-    background-color: #ffffff;
-    padding: 100px 0;
-}
-
-.card-pricing {
-    background: #ffffff;
-    border: 1px solid #eef0f3;
-    border-radius: 1.5rem;
-    padding: 3rem 2rem;
-    transition: all 0.3s ease;
-    height: 100%;
-    position: relative;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.02);
-}
-
-.card-pricing:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 20px 40px rgba(0,0,0,0.08);
-}
-
-.card-popular {
-    border: 2px solid var(--gigs-blue);
-    transform: scale(1.05);
-    box-shadow: 0 20px 50px rgba(13, 110, 253, 0.15);
-    z-index: 2;
-}
-
-.card-popular:hover { transform: scale(1.05) translateY(-5px); }
-
-.badge-popular {
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background-color: var(--gigs-blue);
-    color: white;
-    padding: 8px 20px;
-    border-radius: 50px;
-    font-size: 0.85rem;
-    font-weight: 700;
-    letter-spacing: 1px;
-}
-
-.pricing-title {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: var(--gigs-dark);
-    margin-bottom: 1rem;
-    text-transform: uppercase;
-}
-
-.pricing-price {
-    font-size: 3rem;
-    font-weight: 800;
-    color: #000;
-    margin-bottom: 2rem;
-}
-
-.pricing-period {
-    font-size: 1rem;
-    color: #6c757d;
-    font-weight: 500;
-}
-
-.pricing-features {
-    list-style: none;
-    padding: 0;
-    margin-bottom: 2.5rem;
-    text-align: left;
-}
-
-.pricing-features li {
-    margin-bottom: 1rem;
-    color: #555;
-    font-size: 0.95rem;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.pricing-features li i { color: var(--gigs-blue); }
-.pricing-features li.text-muted { color: #adb5bd; }
-
-/* =========================================
-   7. TRUSTED PARTNERS (Infinite Ticker)
+   6. TRUSTED PARTNERS (Infinite Ticker)
    ========================================= */
 .section-partners {
     padding: 60px 0;
-    background-color: #ffffff;
-    border-bottom: 1px solid #f0f0f0;
+    background-color: var(--gigs-white);
+    border-bottom: 1px solid var(--border-color);
     overflow: hidden;
 }
 
@@ -307,6 +281,7 @@ h1, h2, h3, h4, h5, h6 {
     width: 100%;
     overflow: hidden;
     position: relative;
+    /* Fade edges */
     mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
     -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
 }
@@ -320,33 +295,21 @@ h1, h2, h3, h4, h5, h6 {
     padding: 10px 0;
 }
 
-.partners-track:hover { animation-play-state: paused; }
-
 .partner-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
     font-size: 1.5rem;
     font-weight: 800;
     color: #cbd5e1;
-    cursor: pointer;
-    transition: all 0.3s ease;
     filter: grayscale(100%);
     opacity: 0.6;
+    transition: all 0.3s;
 }
 
 .partner-item:hover {
     filter: grayscale(0%);
     opacity: 1;
-    transform: scale(1.05);
+    color: var(--gigs-blue);
+    transform: scale(1.1);
 }
-
-/* Brand Hover Colors */
-.brand-canon:hover { color: #cc0000; }
-.brand-bose:hover { color: #000000; }
-.brand-mpesa:hover { color: #43b02a; }
-.brand-sony:hover { color: #000000; }
-.brand-eabl:hover { color: #f5c518; }
 
 @keyframes scroll-ticker {
     0% { transform: translateX(0); }
@@ -354,219 +317,147 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* =========================================
-   8. TESTIMONIALS CAROUSEL
+   7. PRICING SECTION
    ========================================= */
-.section-testimonials {
+.section-pricing {
+    background-color: var(--gigs-white);
     padding: 100px 0;
-    background-color: #f8f9fa;
-    overflow: hidden;
-    position: relative;
 }
 
-.testimonial-skew {
-    background: linear-gradient(135deg, #f0f7ff 0%, #e6f0ff 100%);
-    transform: skewY(-3deg);
-    padding: 8rem 0;
-    margin: 2rem 0;
-    position: absolute;
-    top: 15%;
-    left: 0;
-    width: 100%;
-    z-index: 0;
-}
-
-.card-testimonial {
-    background: #ffffff;
+.card-pricing {
+    background: var(--gigs-white);
     border: 1px solid #eef0f3;
-    border-radius: 1.5rem;
-    padding: 2.5rem 2rem;
-    text-align: center;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+    border-radius: 20px;
+    padding: 3rem 2rem;
+    transition: all 0.3s ease;
     height: 100%;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
     position: relative;
-    z-index: 2;
+    box-shadow: var(--card-shadow);
 }
 
-.card-testimonial:hover {
+.card-pricing:hover {
     transform: translateY(-10px);
-    box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+    border-color: var(--gigs-gold);
 }
 
-.icon-quote {
-    font-size: 4rem;
-    color: var(--gigs-blue);
-    opacity: 0.05;
-    position: absolute;
-    top: 10px;
-    left: 20px;
-    z-index: 0;
-}
-
-/* Avatar Headshot */
-.avatar-box {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    margin: 0 auto 1.5rem auto;
-    padding: 3px;
-    background: #fff;
+/* Popular Card Highlight */
+.card-popular {
     border: 2px solid var(--gigs-blue);
-    position: relative;
-    z-index: 1;
+    transform: scale(1.05);
+    z-index: 2;
+    box-shadow: 0 20px 50px rgba(0, 51, 102, 0.1);
 }
 
-.avatar-img {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    object-fit: cover;
-}
-
-.testimonial-text {
-    font-size: 0.95rem;
-    color: #555;
-    font-style: italic;
-    margin-bottom: 1.5rem;
-    line-height: 1.7;
-    position: relative;
-    z-index: 1;
-}
-
-.client-name {
-    font-weight: 700;
-    color: var(--gigs-dark);
-    margin-bottom: 0.2rem;
-}
-
-.client-role {
-    font-size: 0.85rem;
-    color: #adb5bd;
-    text-transform: uppercase;
-    font-weight: 600;
-}
-
-.star-rating {
-    color: var(--gigs-gold);
-    font-size: 0.9rem;
-    margin-bottom: 1rem;
-}
-
-/* Carousel Indicators */
-.carousel-indicators-testimonials { bottom: -60px; }
-.carousel-indicators-testimonials button {
-    background-color: var(--gigs-blue) !important;
-    opacity: 0.2;
-    width: 12px !important;
-    height: 12px !important;
-    border-radius: 50%;
-    margin: 0 6px !important;
-    border: none !important;
-}
-.carousel-indicators-testimonials .active { opacity: 1; transform: scale(1.2); }
-
-/* =========================================
-   9. CTA SECTION
-   ========================================= */
-.section-cta {
-    position: relative;
-    padding: 100px 0;
-    overflow: hidden;
-    color: white;
-    background: linear-gradient(135deg, #0b5ed7 0%, #052c65 100%);
-}
-
-.cta-decoration {
+.badge-popular {
     position: absolute;
-    width: 600px;
-    height: 600px;
-    background: radial-gradient(circle, rgba(255, 193, 7, 0.15) 0%, transparent 70%);
-    border-radius: 50%;
-    top: -50%;
+    top: 0;
     left: 50%;
-    transform: translateX(-50%);
-    z-index: 0;
-    pointer-events: none;
-    animation: pulse-glow 6s infinite alternate;
-}
-
-.cta-content { position: relative; z-index: 2; }
-
-.cta-title {
-    font-weight: 800;
-    letter-spacing: -1px;
-    margin-bottom: 1.5rem;
-    line-height: 1.2;
-}
-
-.cta-lead {
-    font-size: 1.25rem;
-    color: rgba(255, 255, 255, 0.85);
-    margin-bottom: 2.5rem;
-    max-width: 700px;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-.trust-badges {
-    margin-top: 2rem;
-    font-size: 0.9rem;
-    color: rgba(255,255,255,0.6);
-    display: flex;
-    justify-content: center;
-    gap: 1.5rem;
-}
-.trust-badges i { color: var(--gigs-gold); margin-right: 5px; }
-
-/* Buttons & Utils */
-.btn-cta-lg {
-    padding: 1rem 3rem;
-    font-size: 1.1rem;
-    font-weight: 700;
-    border-radius: 50px;
-    transition: all 0.3s;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-}
-.btn-cta-lg:hover { transform: translateY(-5px); }
-
-.btn-white-gold { background-color: #fff; color: var(--gigs-blue); border: 2px solid #fff; }
-.btn-outline-gold { background: transparent; color: var(--gigs-gold); border: 2px solid var(--gigs-gold); }
-.btn-outline-gold:hover { background: var(--gigs-gold); color: #000; }
-
-.btn-cta-gold {
+    transform: translate(-50%, -50%);
     background-color: var(--gigs-gold);
     color: #000;
-    font-weight: 700;
+    padding: 8px 20px;
     border-radius: 50px;
-    padding: 8px 24px;
-    border: none;
-    transition: transform 0.2s;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 1px;
 }
-.btn-cta-gold:hover { background-color: #e0a800; transform: translateY(-2px); }
+
+.pricing-price {
+    font-size: 3.5rem;
+    font-weight: 800;
+    color: var(--gigs-blue);
+}
+
+.pricing-features li {
+    margin-bottom: 1rem;
+    color: #555;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.pricing-features li i { color: var(--gigs-gold); }
 
 .btn-pricing {
     width: 100%;
     padding: 12px;
     border-radius: 50px;
     font-weight: 700;
+    background-color: var(--gigs-blue);
+    color: white;
+    border: none;
+}
+.btn-pricing:hover {
+    background-color: #002244;
 }
 
-.text-gold { color: var(--gigs-gold) !important; }
-
-/* Footer */
-.hover-white:hover { color: #ffffff !important; text-decoration: underline !important; }
-.hover-warning:hover { color: var(--gigs-gold) !important; transform: translateY(-3px); transition: all 0.2s; }
-.form-control:focus { box-shadow: none; border-color: var(--gigs-gold); }
-
-@keyframes pulse-glow {
-    0% { transform: translateX(-50%) scale(1); opacity: 0.5; }
-    100% { transform: translateX(-50%) scale(1.2); opacity: 0.8; }
+/* =========================================
+   8. CTA SECTION (Bottom Call to Action)
+   ========================================= */
+.section-cta {
+    position: relative;
+    padding: 100px 0;
+    background: linear-gradient(135deg, var(--gigs-blue) 0%, #002244 100%);
+    color: white;
+    overflow: hidden;
 }
 
-/* -----------------------------------------------------------
-   13. AUTHENTICATION PAGES (Login & Signup)
-   ----------------------------------------------------------- */
+.cta-decoration {
+    position: absolute;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(212, 175, 55, 0.15) 0%, transparent 70%);
+    border-radius: 50%;
+    top: -50%;
+    left: 50%;
+    transform: translateX(-50%);
+    pointer-events: none;
+}
 
+.btn-cta-gold {
+    background-color: var(--gigs-gold);
+    color: #000;
+    font-weight: 700;
+    border-radius: 50px;
+    padding: 15px 40px;
+    font-size: 1.1rem;
+    border: none;
+    transition: transform 0.2s;
+}
+.btn-cta-gold:hover {
+    background-color: #bfa030;
+    transform: translateY(-3px);
+}
+
+/* =========================================
+   9. FOOTER
+   ========================================= */
+footer {
+    background-color: var(--gigs-dark);
+    color: white;
+    padding: 80px 0 30px;
+    border-top: 5px solid var(--gigs-gold);
+}
+
+.footer-brand {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--gigs-gold);
+    margin-bottom: 1rem;
+    display: block;
+}
+
+footer a {
+    color: rgba(255,255,255,0.7);
+    transition: color 0.2s;
+}
+footer a:hover {
+    color: var(--gigs-gold);
+    text-decoration: none;
+}
+
+/* =========================================
+   10. AUTH PAGES (Login/Signup)
+   ========================================= */
 .section-auth {
     min-height: 85vh;
     display: flex;
@@ -585,48 +476,25 @@ h1, h2, h3, h4, h5, h6 {
     max-width: 500px;
     width: 100%;
     margin: 0 auto;
+    border-top: 5px solid var(--gigs-gold); /* Gold Accent */
 }
 
 .auth-header {
     background-color: var(--gigs-blue);
     padding: 2rem;
     text-align: center;
-    color: white;
+    color: var(--gigs-gold);
 }
 
-.auth-body {
-    padding: 2.5rem;
-}
+.auth-header h3 { margin: 0; font-weight: 700; color: var(--gigs-gold); }
 
-/* Form Controls */
-.form-floating > .form-control {
-    border-radius: 10px;
-    border: 1px solid #dee2e6;
-    height: 50px;
-}
-
-.form-floating > .form-control:focus {
+.form-control:focus {
     border-color: var(--gigs-gold);
-    box-shadow: 0 0 0 0.25rem rgba(255, 193, 7, 0.15);
-}
-
-.form-floating > label {
-    color: #adb5bd;
-}
-
-.auth-footer {
-    text-align: center;
-    margin-top: 1.5rem;
-    font-size: 0.9rem;
-    color: #6c757d;
+    box-shadow: 0 0 0 0.25rem rgba(212, 175, 55, 0.25);
 }
 
 .auth-footer a {
     color: var(--gigs-blue);
-    text-decoration: none;
     font-weight: 600;
 }
-
-.auth-footer a:hover {
-    text-decoration: underline;
-}
+.auth-footer a:hover { color: var(--gigs-gold); }

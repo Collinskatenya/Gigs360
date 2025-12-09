@@ -3,18 +3,22 @@
 {% block title %}Join Gigs360 | Create Account{% endblock %}
 
 {% block extra_css %}
-<!-- SweetAlert2 CSS -->
 <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+<style>
+    .section-auth {
+        padding-top: 4rem;
+        padding-bottom: 4rem;
+    }
+    .form-floating > .form-select {
+        padding-top: 1.625rem;
+        padding-bottom: 0.625rem;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
 <section class="section-auth d-flex align-items-center" style="min-height: 85vh; background: #f8f9fa;">
     <div class="container">
-        <!-- ... (Keep your existing Card/Form code here) ... -->
-        
-        <!-- PLACEHOLDER: Ensure your form is here as per previous code -->
-        <!-- I am only showing the script addition below -->
-        
         <div class="row justify-content-center">
             <div class="col-lg-5 col-md-8">
                 <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
@@ -22,37 +26,44 @@
                         <h4 class="fw-bold mb-1 text-warning">
                             <i class="bi bi-rocket-takeoff-fill me-2"></i> Join Gigs360
                         </h4>
+                        <small class="text-white-50">Create your account to get started</small>
                     </div>
+
                     <div class="card-body p-4 p-md-5 bg-white">
                         <form method="post">
                             {% csrf_token %}
                             
-                            <!-- Your Form Fields Here (Keep existing code) -->
-                            <div class="mb-4">
-                                {{ form.account_type }}
+                            <div class="form-floating mb-3">
+                                {{ form.role }}
+                                <label for="{{ form.role.id_for_label }}">I want to join as a...</label>
+                                {% if form.role.errors %}
+                                    <div class="text-danger small mt-1">{{ form.role.errors.0 }}</div>
+                                {% endif %}
                             </div>
-                            
-                            <!-- ... Rest of fields ... -->
-                            
+
                             {% for field in form %}
-                                {% if field.name != 'account_type' %}
+                                {% if field.name != 'role' %}
                                     <div class="form-floating mb-3">
                                         {{ field }}
-                                        <label>{{ field.label }}</label>
+                                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                        
+                                        {% if field.help_text %}
+                                            <div class="form-text small text-muted">{{ field.help_text }}</div>
+                                        {% endif %}
+                                        
                                         {% if field.errors %}
-                                            <div class="text-danger small">{{ field.errors.0 }}</div>
+                                            <div class="text-danger small mt-1">{{ field.errors.0 }}</div>
                                         {% endif %}
                                     </div>
                                 {% endif %}
                             {% endfor %}
 
-                            <!-- Password Requirements Box (Keep existing) -->
-
-                            <button type="submit" class="btn btn-warning w-100 py-3 fw-bold rounded-3 shadow-sm text-dark mt-3">
+                            <button type="submit" class="btn btn-warning w-100 py-3 fw-bold rounded-3 shadow-sm text-dark mt-3 transition-hover">
                                 Create Account
                             </button>
                         </form>
                     </div>
+
                     <div class="card-footer bg-light text-center py-3 border-0">
                         <p class="small mb-0 text-muted">
                             Already have an account? <a href="{% url 'login' %}" class="fw-bold text-primary text-decoration-none">Login</a>
@@ -64,24 +75,19 @@
     </div>
 </section>
 
-<!-- SweetAlert2 JS -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-    // Check if the backend sent the success signal
+    // Check if the backend sent the success signal via context
     {% if success_popup %}
         Swal.fire({
             title: 'Account Created!',
-            text: 'We have sent a verification link to your email. Please check your inbox (and spam folder) to activate your account.',
+            text: 'Welcome to Gigs360! Your account is active. Redirecting you to the dashboard...',
             icon: 'success',
-            confirmButtonText: 'Open Gmail',
-            confirmButtonColor: '#0d6efd',
-            showCancelButton: true,
-            cancelButtonText: 'Close'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                window.open('https://mail.google.com', '_blank');
-            }
+            timer: 3000,
+            showConfirmButton: false
+        }).then(() => {
+            window.location.href = "{% url 'dashboard' %}";
         });
     {% endif %}
 </script>

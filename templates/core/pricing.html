@@ -1,0 +1,41 @@
+{% extends 'core/dashboard_base.html' %}
+
+{% block dashboard_content %}
+<div class="container py-5 text-center">
+    <h2 class="fw-bold mb-3">Choose Your Plan</h2>
+    <p class="text-muted mb-5">Unlock the full potential of Gigs360. Upgrade anytime.</p>
+
+    <div class="row justify-content-center g-4">
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm border-0 rounded-4">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold text-muted">Free Starter</h5>
+                    <h1 class="display-5 fw-bold my-3">KES 0</h1>
+                    <ul class="list-unstyled text-start small mb-4">
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i> 5 Inventory Items</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i> Basic Profile</li>
+                        <li class="mb-2"><i class="bi bi-x-circle-fill text-muted me-2"></i> No Event Traceability</li>
+                    </ul>
+                    <button class="btn btn-outline-secondary w-100 rounded-pill" disabled>Current Plan</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card h-100 shadow rounded-4 border-primary border-2">
+                <div class="card-header bg-primary text-white text-uppercase small fw-bold py-2">Most Popular</div>
+                <div class="card-body p-4">
+                    <h5 class="fw-bold text-primary">Pro Business</h5>
+                    <h1 class="display-5 fw-bold my-3">KES 1,500<span class="fs-6 text-muted">/mo</span></h1>
+                    <ul class="list-unstyled text-start small mb-4">
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-primary me-2"></i> 50 Inventory Items</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-primary me-2"></i> Verified Badge</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-primary me-2"></i> Unlimited Events</li>
+                    </ul>
+                    <button class="btn btn-primary w-100 fw-bold rounded-pill shadow-sm">Upgrade to Pro</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
