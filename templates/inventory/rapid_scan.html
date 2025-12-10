@@ -1,0 +1,125 @@
+{% extends 'core/dashboard_base.html' %}
+
+{% block dashboard_content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6 text-center">
+            
+            <div class="mb-4">
+                <h2 class="fw-bold" style="color: #003366;">Rapid Scanner</h2>
+                <p class="text-muted small">Select a mode and point your camera at the gear QR codes.</p>
+            </div>
+            
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body p-2">
+                    <div class="btn-group w-100" role="group" aria-label="Scan Mode">
+                        <input type="radio" class="btn-check" name="scanMode" id="modeOut" value="checkout" checked>
+                        <label class="btn btn-outline-warning fw-bold" for="modeOut">
+                            <i class="bi bi-box-arrow-right"></i> CHECK OUT
+                        </label>
+
+                        <input type="radio" class="btn-check" name="scanMode" id="modeIn" value="checkin">
+                        <label class="btn btn-outline-success fw-bold" for="modeIn">
+                            <i class="bi bi-box-arrow-in-left"></i> CHECK IN
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow border-0 overflow-hidden mb-3">
+                <div class="card-body p-0 bg-dark position-relative">
+                    <div id="reader" style="width: 100%; min-height: 350px;"></div>
+                    <div class="position-absolute bottom-0 w-100 text-white p-2 bg-dark bg-opacity-50 small">
+                        Camera Active
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-start">
+                <h6 class="text-uppercase text-muted fw-bold small mb-2">Session History</h6>
+                <ul id="scan-log" class="list-group list-group-flush shadow-sm rounded border-0">
+                    <li class="list-group-item text-center text-muted small fst-italic">Waiting for scan...</li>
+                </ul>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
+<script>
+    let isScanning = false;
+
+    // --- SUCCESS HANDLER ---
+    function onScanSuccess(decodedText, decodedResult) {
+        if (isScanning) return; 
+        isScanning = true;
+
+        // 1. Get Selected Mode
+        let mode = document.querySelector('input[name="scanMode"]:checked').value;
+
+        // 2. Send Data to Backend
+        fetch('/inventory/api/scan/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ qr_data: decodedText, mode: mode })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Network response was not ok");
+            }
+            return response.json();
+        })
+        .then(data => {
+            // 3. Update UI
+            updateLog(data, mode);
+            
+            // 4. Cooldown (Wait 2s before next scan)
+            setTimeout(() => { isScanning = false; }, 2000);
+        })
+        .catch(err => {
+            console.error("Scan Error:", err);
+            isScanning = false;
+        });
+    }
+
+    // --- HELPER: Update Log UI ---
+    function updateLog(data, mode) {
+        let logContainer = document.getElementById('scan-log');
+        let li = document.createElement("li");
+        
+        // Dynamic Styling
+        let statusColor = data.status === 'success' ? 'text-success' : 'text-danger';
+        let icon = data.status === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill';
+        
+        li.className = "list-group-item d-flex justify-content-between align-items-center animate__animated animate__fadeInDown";
+        li.innerHTML = `
+            <div>
+                <i class="bi ${icon} ${statusColor} me-2"></i>
+                <span class="fw-bold text-dark">${data.item || 'Unknown Item'}</span><br>
+                <small class="${statusColor}">${data.message}</small>
+            </div>
+            <span class="badge bg-light text-dark border">${new Date().toLocaleTimeString()}</span>
+        `;
+
+        // Insert at the top of the list
+        logContainer.insertBefore(li, logContainer.firstChild);
+        
+        // Keep list clean (max 5 items)
+        if (logContainer.children.length > 5) {
+            logContainer.removeChild(logContainer.lastChild);
+        }
+    }
+
+    // --- INITIALIZE CAMERA ---
+    let html5QrcodeScanner = new Html5QrcodeScanner(
+        "reader", 
+        { fps: 10, qrbox: 250 }
+    );
+    html5QrcodeScanner.render(onScanSuccess);
+</script>
+{% endblock %}

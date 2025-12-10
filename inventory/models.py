@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
 import uuid
 import qrcode
 from io import BytesIO
@@ -29,7 +30,7 @@ class InventoryItem(models.Model):
     
     STATUS_CHOICES = [
         ('AVAILABLE', 'Available'),
-        ('RENTED', 'Rented Out'),
+        ('RENTED', 'On Job / Rented'),
         ('MAINTENANCE', 'In Repair'),
         ('LOST', 'Lost/Stolen'),
         ('SOLD', 'Sold/Consumed'),
@@ -51,7 +52,7 @@ class InventoryItem(models.Model):
     
     tracking_type = models.CharField(max_length=20, choices=TRACKING_TYPES, default='UNIQUE')
     
-    # 3. TRACEABILITY (New Fields you requested)
+    # 3. TRACEABILITY (Specific Details)
     serial_number = models.CharField(max_length=100, blank=True, null=True, help_text="Manufacturer S/N")
     asset_tag = models.CharField(max_length=50, blank=True, null=True, help_text="Internal ID (e.g. CAM-01)")
     color = models.CharField(max_length=50, blank=True, null=True, help_text="e.g. Matte Black")
@@ -62,7 +63,7 @@ class InventoryItem(models.Model):
     quantity = models.PositiveIntegerField(default=1, help_text="For Serialized, this is always 1.")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='AVAILABLE')
 
-    # 5. FINANCIALS (Made Optional for Freelancers/Agencies)
+    # 5. FINANCIALS
     daily_rate = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, help_text="Rental Price per Day")
     replacement_value = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     
@@ -73,29 +74,54 @@ class InventoryItem(models.Model):
     image = models.ImageField(upload_to='inventory_photos/', blank=True, null=True)
     qr_code = models.ImageField(upload_to='qr_codes/', blank=True, null=True)
     
+    # 8. AUDIT TRAIL (For Event Tracking)
+    last_scanned_at = models.DateTimeField(null=True, blank=True)
+    last_scanned_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='scanned_items'
+    )
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
-        # Auto-Generate QR Code on Save
+        # Auto-Generate QR Code if it doesn't exist
         if not self.qr_code:
-            # QR Data contains ID, Serial, and Owner for secure tracking
-            qr_data = f"GIGS360|ID:{self.id}|SN:{self.serial_number}|OWNER:{self.owner.username}"
+            # QR Content: Direct link to the scan page for this item
+            # Example: https://gigs360.co.ke/scan/<UUID>/
+            qr_content = f"https://gigs360.co.ke/scan/{self.id}/"
+            
             try:
-                qr_img = qrcode.make(qr_data)
-                canvas = Image.new('RGB', (350, 350), 'white')
-                canvas.paste(qr_img)
-                
+                # Generate QR Object
+                qr = qrcode.QRCode(
+                    version=1,
+                    error_correction=qrcode.constants.ERROR_CORRECT_H, # High error correction
+                    box_size=10,
+                    border=4,
+                )
+                qr.add_data(qr_content)
+                qr.make(fit=True)
+
+                # Create Image from QR
+                img = qr.make_image(fill_color="black", back_color="white").convert('RGB')
+
+                # Save to BytesIO Buffer
                 buffer = BytesIO()
-                canvas.save(buffer, 'PNG')
+                img.save(buffer, format="PNG")
                 
-                # Create filename
-                clean_name = self.name.replace(' ', '_')[:10]
-                fname = f'qr_{clean_name}_{self.id}.png'
+                # Create a clean, unique filename
+                safe_name = "".join([c for c in self.name if c.isalnum()])[:15]
+                filename = f"qr_{safe_name}_{str(self.id)[:8]}.png"
                 
-                self.qr_code.save(fname, File(buffer), save=False)
+                # Save to the ImageField
+                self.qr_code.save(filename, File(buffer), save=False)
+            
             except Exception as e:
-                print(f"Error generating QR code: {e}")
+                print(f"Error generating QR code for {self.name}: {e}")
+                # We continue saving the item even if QR fails, to prevent data loss
                 
         super().save(*args, **kwargs)
 

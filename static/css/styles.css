@@ -96,8 +96,8 @@ a:hover {
 
 /* Main Navbar */
 .navbar-custom {
-    background-color: var(--gigs-blue);
-    box-shadow: 0 4px 12px rgba(0, 51, 102, 0.25);
+    background-color: var(--gigs-white); /* FIXED: White background for visibility */
+    box-shadow: 0 4px 12px rgba(0, 51, 102, 0.1);
     padding: 1rem 0;
     z-index: 1020;
 }
@@ -106,11 +106,11 @@ a:hover {
     font-weight: 900;
     font-size: 1.6rem;
     letter-spacing: -0.5px;
-    color: var(--gigs-gold) !important; /* Gold Logo */
+    color: var(--gigs-blue) !important; /* FIXED: Blue Logo on White */
 }
 
 .nav-link {
-    color: rgba(255,255,255,0.9) !important;
+    color: var(--gigs-blue) !important; /* FIXED: Blue links on White */
     font-weight: 500;
     font-size: 1rem;
     margin: 0 8px;
@@ -120,35 +120,17 @@ a:hover {
 }
 
 .nav-link:hover, .nav-link.active {
-    color: #fff !important;
-    background: rgba(255,255,255,0.15);
-    border-radius: 6px;
-}
-
-/* Dropdowns */
-.dropdown-menu {
-    border: none;
-    border-radius: 12px;
-    box-shadow: 0 15px 35px rgba(0,0,0,0.15);
-    margin-top: 15px;
-    border-top: 4px solid var(--gigs-gold);
-}
-.dropdown-item {
-    padding: 10px 20px;
-    font-weight: 500;
-}
-.dropdown-item:hover {
-    background-color: rgba(212, 175, 55, 0.1); /* Light Gold bg */
-    color: var(--gigs-blue);
+    color: var(--gigs-gold) !important;
+    background: transparent; /* Clean hover */
 }
 
 /* =========================================
-   4. HERO SECTION
+   4. HERO SECTION (FIXED: BRIGHT BACKGROUND)
    ========================================= */
 .hero-section {
     position: relative;
-    background-color: var(--gigs-blue);
-    color: white;
+    background-color: var(--gigs-white); /* FIXED: White Background */
+    color: var(--gigs-blue);             /* FIXED: Blue Text */
     padding: 140px 0 100px;
     overflow: hidden;
 }
@@ -158,7 +140,7 @@ a:hover {
     font-weight: 800;
     line-height: 1.1;
     margin-bottom: 1.5rem;
-    color: white;
+    color: var(--gigs-blue); /* Ensure Title is Blue */
 }
 
 .text-highlight {
@@ -169,7 +151,7 @@ a:hover {
 
 .hero-lead {
     font-size: 1.25rem;
-    color: rgba(255,255,255,0.85);
+    color: #555; /* FIXED: Dark Grey for readability */
     margin-bottom: 2.5rem;
     max-width: 600px;
 }
@@ -194,18 +176,17 @@ a:hover {
 
 .btn-hero-outline {
     background: transparent;
-    color: white;
+    color: var(--gigs-blue); /* FIXED: Blue Text */
     font-weight: 700;
     padding: 15px 40px;
     border-radius: 50px;
     font-size: 1.1rem;
-    border: 2px solid rgba(255,255,255,0.3);
+    border: 2px solid var(--gigs-blue); /* FIXED: Blue Border */
     margin-left: 15px;
 }
 .btn-hero-outline:hover {
-    background: white;
-    color: var(--gigs-blue);
-    border-color: white;
+    background: var(--gigs-blue);
+    color: var(--gigs-white);
 }
 
 /* =========================================
@@ -391,13 +372,14 @@ a:hover {
 }
 
 /* =========================================
-   8. CTA SECTION (Bottom Call to Action)
+   8. CTA SECTION (FIXED: High Contrast)
    ========================================= */
 .section-cta {
     position: relative;
     padding: 100px 0;
+    /* Deep Blue Gradient Background */
     background: linear-gradient(135deg, var(--gigs-blue) 0%, #002244 100%);
-    color: white;
+    color: #ffffff; /* Default text color White */
     overflow: hidden;
 }
 
@@ -411,6 +393,19 @@ a:hover {
     left: 50%;
     transform: translateX(-50%);
     pointer-events: none;
+}
+
+/* FIXED: Force white text for readability on dark background */
+.section-cta h2, .section-cta h3, .section-cta .cta-title {
+    color: #ffffff !important;
+    font-weight: 800;
+    margin-bottom: 1.5rem;
+}
+
+.section-cta p, .section-cta .cta-lead {
+    color: rgba(255,255,255,0.9) !important;
+    font-size: 1.25rem;
+    margin-bottom: 2.5rem;
 }
 
 .btn-cta-gold {

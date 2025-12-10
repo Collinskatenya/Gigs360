@@ -1,29 +1,63 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.utils import timezone
 from .forms import EventForm
+from .models import Event, EventItem
+from inventory.models import InventoryItem
+
+@login_required
+def event_dashboard(request):
+    """
+    Displays the Event Operations Dashboard.
+    Shows 'Upcoming' vs 'Past' tabs.
+    """
+    now = timezone.now()
+    
+    # 1. Upcoming Events (Future)
+    upcoming = Event.objects.filter(
+        user=request.user, 
+        end_time__gte=now
+    ).order_by('start_time')
+    
+    # 2. Past Events (History)
+    past = Event.objects.filter(
+        user=request.user, 
+        end_time__lt=now
+    ).order_by('-end_time')
+    
+    return render(request, 'events/dashboard.html', {
+        'upcoming': upcoming,
+        'past': past
+    })
 
 @login_required
 def create_event(request):
-    # 1. REMOVED ROLE CHECK: Now allowed for ALL logged-in users (Vendor, Agency, Freelancer)
-    
+    """
+    Handles Event creation and generates the Gear Manifest.
+    """
     if request.method == 'POST':
-        # 2. CRITICAL FIX: Pass 'user=request.user' so the form knows whose inventory to show
+        # 1. Pass 'user' so the form can verify ownership of selected items
         form = EventForm(request.POST, user=request.user)
         
         if form.is_valid():
+            # 2. Create the Event (Don't save to DB yet)
             event = form.save(commit=False)
-            event.planner = request.user # The logged-in user is the planner
+            event.user = request.user  # Assign logged-in user
             event.save()
             
-            # Save the Many-to-Many data (The selected gear checklist)
-            form.save_m2m() 
+            # 3. Generate the Audit Manifest
+            selected_gear = form.cleaned_data.get('items')
+            
+            if selected_gear:
+                for item in selected_gear:
+                    EventItem.objects.create(event=event, item=item)
             
             messages.success(request, f"Event '{event.title}' created successfully!")
-            return redirect('dashboard')
+            return redirect('event_dashboard') # Redirect to the dashboard we just defined above
+            
     else:
-        # 3. CRITICAL FIX: Pass 'user' for GET requests too
+        # 4. Pass 'user' for GET requests so dropdown filters correctly
         form = EventForm(user=request.user)
 
-    # 4. Verify your template name is 'create_event.html'
     return render(request, 'events/create_event.html', {'form': form})

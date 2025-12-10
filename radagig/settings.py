@@ -12,7 +12,9 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
-# Application definition
+# -------------------------------------------------------------------------
+# APPLICATION DEFINITION
+# -------------------------------------------------------------------------
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -22,7 +24,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     
     # Third Party Apps
-    'django_daraja', # For M-Pesa
+    'django_daraja',  # For M-Pesa
     
     # My Apps
     'core',
@@ -40,7 +42,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    # 'core.middleware.UpdateLastActivityMiddleware', # Enable only if file exists
 ]
 
 ROOT_URLCONF = 'radagig.urls'
@@ -48,7 +49,8 @@ ROOT_URLCONF = 'radagig.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates')], # Points to the global templates folder
+        # Refined: Uses Pathlib for consistency
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -63,7 +65,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'radagig.wsgi.application'
 
-# Database
+# -------------------------------------------------------------------------
+# DATABASE
+# -------------------------------------------------------------------------
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -92,7 +96,7 @@ LOGOUT_REDIRECT_URL = 'home'
 # INTERNATIONALIZATION
 # -------------------------------------------------------------------------
 LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'Africa/Nairobi' 
+TIME_ZONE = 'Africa/Nairobi'
 USE_I18N = True
 USE_TZ = True
 
@@ -100,12 +104,13 @@ USE_TZ = True
 # STATIC & MEDIA FILES
 # -------------------------------------------------------------------------
 STATIC_URL = 'static/'
-STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+# Refined: Uses Pathlib for consistency
+STATICFILES_DIRS = [BASE_DIR / 'static']
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# Media Files (User Uploads - Profile Pics, Inventory)
+# Media Files (User Uploads)
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # -------------------------------------------------------------------------
 # DEVELOPMENT SECURITY SETTINGS (Fixes 403 Forbidden Error)
