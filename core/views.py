@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import login, get_user_model
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Sum  # <--- VERIFIED: Import is present
+from django.db.models import Sum
 
 # Email dependencies
 from django.contrib.sites.shortcuts import get_current_site
@@ -13,8 +13,6 @@ from django.core.mail import EmailMessage
 
 from .forms import SignUpForm, UserSettingsForm
 from .tokens import account_activation_token
-
-# Import models from other apps
 from inventory.models import InventoryItem
 
 User = get_user_model()
@@ -24,14 +22,12 @@ def home(request):
     return render(request, 'core/index.html')
 
 def signup(request):
-    """
-    Handles User Registration.
-    """
+    """Handles User Registration."""
     if request.method == 'POST':
         form = SignUpForm(request.POST)
         if form.is_valid():
             user = form.save(commit=False)
-            user.is_active = True 
+            user.is_active = True
             user.save()
 
             # 1. Send Verification Email
@@ -48,14 +44,12 @@ def signup(request):
                 email = EmailMessage(mail_subject, message, to=[to_email])
                 email.send()
             except Exception as e:
-                print(f"Email sending failed (Non-critical): {e}")
+                print(f"Email sending failed: {e}")
 
-            # 2. Log in & Redirect
             login(request, user)
             return redirect('dashboard')
     else:
         form = SignUpForm()
-    
     return render(request, 'registration/signup.html', {'form': form})
 
 def activate(request, uidb64, token):
@@ -65,32 +59,24 @@ def activate(request, uidb64, token):
 def dashboard(request):
     """
     The Main Cockpit.
+    Updated to read directly from Custom User Model.
     """
     user = request.user
     
-    # 1. CHECK SUBSCRIPTION
-    if not user.is_superuser and not user.is_subscription_active():
-        messages.error(request, "Your subscription has expired. Please renew.")
-        return redirect('pricing') 
-
-    # 2. CHECK IF ROLE IS SELECTED
-    if not user.is_superuser and not (user.is_vendor or user.is_planner or user.is_client):
-        messages.info(request, "Welcome! Please complete your profile.")
-        return redirect('settings')
-
-    # 3. PROFILE COMPLETION CHECK (VERIFIED: Logic is present)
+    # 1. PROFILE COMPLETION CHECK
     profile_incomplete = False
     if not user.phone_number or not user.business_name:
         profile_incomplete = True
 
-    # 4. LIMIT CALCULATIONS
-    plan_limit = 5 
+    # 2. PLAN LIMITS (Check against User subscription_plan)
+    # Note: Database choices are usually capitalized in logic but stored as strings
+    plan_limit = 5
     if user.subscription_plan == 'Pro':
         plan_limit = 50
     elif user.subscription_plan == 'Enterprise':
-        plan_limit = 1000000 
+        plan_limit = 1000000 # Unlimited
 
-    # Global Inventory Stats
+    # 3. INVENTORY STATS
     inventory_count = InventoryItem.objects.filter(owner=user).count()
     usage_percent = 0
     if plan_limit > 0:
@@ -99,50 +85,57 @@ def dashboard(request):
     # Base Context
     context = {
         'user': user,
-        'role_label': 'User',
-        'is_online': user.is_online(),
+        'role_label': 'Client',
+        'is_online': True, 
         'plan_limit': plan_limit if plan_limit < 1000000 else 'Unlimited',
         'inventory_count': inventory_count,
         'usage_percent': min(usage_percent, 100),
-        'profile_incomplete': profile_incomplete, # Needed for the yellow alert
+        'profile_incomplete': profile_incomplete,
     }
 
     # ==========================================
-    # ROLE-BASED STATS
+    # ROLE-BASED LOGIC (Fixed)
     # ==========================================
     
-    # VENDOR
-    if user.is_vendor:
-        context['role_label'] = 'Vendor'
+    # A. STAFF MEMBERS (Admins, UX Experts, etc)
+    if user.is_staff:
+        context['role_label'] = user.get_staff_role_display() or "Staff"
+        
+        # Staff see Platform-wide stats
+        context.update({
+            'stat_1_label': 'Platform Users', 
+            'stat_1_value': User.objects.count(), 
+            'stat_1_icon': 'bi-people',
+            'stat_2_label': 'Total Inventory', 
+            'stat_2_value': InventoryItem.objects.count(), 
+            'stat_2_icon': 'bi-box-seam',
+            'stat_3_label': 'Pending Issues', 
+            'stat_3_value': '0', 
+            'stat_3_icon': 'bi-exclamation-triangle',
+        })
+
+    # B. CLIENTS (Free / Pro / Enterprise)
+    else:
+        context['role_label'] = 'Freelancer' # Default fallback
+        if user.is_vendor: context['role_label'] = 'Vendor'
+        if user.is_planner: context['role_label'] = 'Agency'
+        
         my_items = InventoryItem.objects.filter(owner=user)
         rented_items = my_items.filter(status='RENTED').count()
-        issues_items = my_items.filter(status__in=['LOST', 'MAINTENANCE']).count()
         
-        # Calculate Revenue (VERIFIED: Works because Sum is imported)
+        # Calculate Potential Revenue
         current_revenue = my_items.filter(status='RENTED').aggregate(Sum('daily_rate'))['daily_rate__sum'] or 0
         
         context.update({
-            'stat_1_label': 'Active Rentals', 'stat_1_value': f"{rented_items}", 'stat_1_icon': 'bi-camera-video',
-            'stat_2_label': 'Current Revenue', 'stat_2_value': f"KES {current_revenue:,.0f}", 'stat_2_icon': 'bi-cash-stack',
-            'stat_3_label': 'Issues', 'stat_3_value': f"{issues_items}", 'stat_3_icon': 'bi-exclamation-triangle',
-        })
-
-    # AGENCY
-    elif user.is_planner:
-        context['role_label'] = 'Agency'
-        context.update({
-            'stat_1_label': 'Active Events', 'stat_1_value': '0', 'stat_1_icon': 'bi-calendar-check',
-            'stat_2_label': 'Talent Hired', 'stat_2_value': '0', 'stat_2_icon': 'bi-people',
-            'stat_3_label': 'Budget Spent', 'stat_3_value': 'KES 0.00', 'stat_3_icon': 'bi-pie-chart',
-        })
-
-    # FREELANCER
-    else:
-        context['role_label'] = 'Freelancer'
-        context.update({
-            'stat_1_label': 'My Gigs', 'stat_1_value': '0', 'stat_1_icon': 'bi-briefcase',
-            'stat_2_label': 'Earnings', 'stat_2_value': 'KES 0.00', 'stat_2_icon': 'bi-cash',
-            'stat_3_label': 'Profile Views', 'stat_3_value': '0', 'stat_3_icon': 'bi-eye',
+            'stat_1_label': 'Active Rentals', 
+            'stat_1_value': str(rented_items), 
+            'stat_1_icon': 'bi-camera-video',
+            'stat_2_label': 'Est. Revenue', 
+            'stat_2_value': f"KES {current_revenue:,.0f}", 
+            'stat_2_icon': 'bi-cash-stack',
+            'stat_3_label': 'Inventory Count', 
+            'stat_3_value': str(inventory_count), 
+            'stat_3_icon': 'bi-box',
         })
 
     return render(request, 'core/dashboard_home.html', context)
@@ -151,11 +144,14 @@ def dashboard(request):
 def settings_view(request):
     """
     Settings Page.
+    UPDATED: Saves directly to the User model.
     """
     user = request.user
     
     if request.method == 'POST':
+        # FIX: Pass the USER instance directly
         form = UserSettingsForm(request.POST, request.FILES, instance=user)
+        
         if form.is_valid():
             form.save()
             messages.success(request, "Profile updated successfully!")
@@ -163,6 +159,7 @@ def settings_view(request):
         else:
             messages.error(request, "Please correct the errors below.")
     else:
+        # Load form with User data
         form = UserSettingsForm(instance=user)
     
     context = {

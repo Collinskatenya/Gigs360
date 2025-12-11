@@ -14,7 +14,7 @@
                 Plan New Event
             {% endif %}
         </h3>
-        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+        <a href="{% url 'event_dashboard' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
             <i class="bi bi-arrow-left me-2"></i> Back
         </a>
     </div>
@@ -73,6 +73,31 @@
                                 <div class="form-text small">This staff member is responsible for the gear checkout.</div>
                             </div>
                         </div>
+
+                        <h6 class="text-primary mt-4 mb-3 border-bottom pb-2 fw-bold">Budget & Expenses</h6>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label small text-muted fw-bold">Transport Cost</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light text-muted">KES</span>
+                                    {{ form.transport_cost }}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small text-muted fw-bold">Labor / Crew</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light text-muted">KES</span>
+                                    {{ form.labor_cost }}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small text-muted fw-bold">Miscellaneous</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light text-muted">KES</span>
+                                    {{ form.miscellaneous_cost }}
+                                </div>
+                            </div>
+                        </div>
                         
                         {% if form.instance.pk %}
                         <div class="alert alert-light border mt-4 d-flex align-items-center">
@@ -93,11 +118,9 @@
                         <i class="bi bi-box-seam me-2"></i> Select Equipment
                     </div>
                     <div class="card-body p-0">
-                        
                         <div class="p-2 border-bottom">
                             <input type="text" id="inventorySearch" class="form-control form-control-sm border-0 bg-light" placeholder="Search inventory...">
                         </div>
-
                         <div class="list-group list-group-flush" id="inventoryList" style="max-height: 500px; overflow-y: auto;">
                             {% if form.items.field.queryset.exists %}
                                 {% for checkbox in form.items %}
@@ -112,8 +135,8 @@
                             {% else %}
                                 <div class="text-center p-5 text-muted">
                                     <i class="bi bi-exclamation-circle display-4 mb-3 d-block opacity-25"></i>
-                                    <p class="small">No available items found in inventory.</p>
-                                    <a href="#" class="btn btn-sm btn-outline-primary rounded-pill">Add Gear First</a>
+                                    <p class="small">No available items found.</p>
+                                    <a href="{% url 'add_item' %}" class="btn btn-sm btn-outline-primary rounded-pill">Add Gear First</a>
                                 </div>
                             {% endif %}
                         </div>

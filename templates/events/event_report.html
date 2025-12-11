@@ -1,0 +1,131 @@
+{% extends 'core/dashboard_base.html' %}
+
+{% block dashboard_content %}
+<div class="container py-5">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4 d-print-none">
+        <div>
+            <a href="{% url 'event_dashboard' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+        <div>
+            <a href="{% url 'update_event' event.id %}" class="btn btn-outline-warning btn-sm me-2">
+                <i class="bi bi-pencil"></i> Edit Data
+            </a>
+            <button onclick="window.print()" class="btn btn-primary btn-sm fw-bold">
+                <i class="bi bi-printer"></i> Print / Save PDF
+            </button>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-lg p-5" id="print-area">
+        
+        <div class="border-bottom pb-4 mb-4">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h2 class="fw-bold" style="color: #003366;">Event Audit Report</h2>
+                    <p class="text-muted mb-0">Job Ref: #{{ event.id|stringformat:"04d" }}</p>
+                    <span class="badge bg-success mt-2">COMPLETED</span>
+                </div>
+                <div class="text-end">
+                    <h4 class="fw-bold mb-1">{{ event.title }}</h4>
+                    <p class="mb-0 text-muted">{{ event.start_time|date:"D, d M Y" }}</p>
+                    <small class="text-muted">{{ event.location }}</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-5">
+            <div class="col-6">
+                <h6 class="text-uppercase text-muted small fw-bold mb-2">Client Details</h6>
+                <p class="fw-bold mb-0 fs-5">{{ event.client_name }}</p>
+                <p class="text-muted">{{ event.client_contact }}</p>
+            </div>
+            <div class="col-6 text-end">
+                <h6 class="text-uppercase text-muted small fw-bold mb-2">Staff Lead</h6>
+                <p class="fw-bold mb-0">{{ event.staff_in_charge|default:"-" }}</p>
+                <p class="text-muted small">Verified by: {{ event.updated_by.username }}</p>
+            </div>
+        </div>
+
+        <div class="bg-light p-4 rounded mb-5 border">
+            <h5 class="fw-bold mb-3 text-dark border-bottom pb-2">💰 Expense Analysis</h5>
+            <div class="row text-center">
+                <div class="col-md-3 border-end">
+                    <small class="text-muted d-block fw-bold">Transport</small>
+                    <span class="fs-5">KES {{ event.transport_cost }}</span>
+                </div>
+                <div class="col-md-3 border-end">
+                    <small class="text-muted d-block fw-bold">Labor / Crew</small>
+                    <span class="fs-5">KES {{ event.labor_cost }}</span>
+                </div>
+                <div class="col-md-3 border-end">
+                    <small class="text-muted d-block fw-bold">Miscellaneous</small>
+                    <span class="fs-5">KES {{ event.miscellaneous_cost }}</span>
+                </div>
+                <div class="col-md-3">
+                    <small class="text-danger fw-bold d-block">TOTAL SPEND</small>
+                    <span class="fw-bold text-danger fs-4">KES {{ event.total_expenses }}</span>
+                </div>
+            </div>
+        </div>
+
+        <h5 class="fw-bold mb-3" style="color: #003366;">🎒 Gear Usage Manifest</h5>
+        <div class="table-responsive">
+            <table class="table table-sm table-striped border-bottom mb-4">
+                <thead class="table-dark">
+                    <tr>
+                        <th style="width: 40%;">Item Name</th>
+                        <th>Status Out</th>
+                        <th>Status In</th>
+                        <th class="text-end">Daily Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in manifest_items %}
+                    <tr>
+                        <td class="fw-medium">{{ record.item.name }}</td>
+                        <td><span class="badge bg-light text-dark border">GOOD</span></td>
+                        <td>
+                            {% if record.condition_return == 'DAMAGED' %}
+                                <span class="badge bg-danger">DAMAGED</span>
+                            {% elif record.condition_return == 'LOST' %}
+                                <span class="badge bg-dark">LOST</span>
+                            {% else %}
+                                <span class="badge bg-success">GOOD</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end text-muted">{{ record.item.daily_rate|default:"0.00" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted py-3">No inventory items were tracked for this event.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="row mt-2">
+            <div class="col-md-6 text-muted small pt-2">
+                * Internal Value represents the opportunity cost of gear used.<br>
+                * Duration calculated as <strong>{{ duration }} Day(s)</strong>.
+            </div>
+            <div class="col-md-6">
+                <div class="bg-white border p-3 rounded shadow-sm">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted fw-bold">Est. Internal Gear Value:</span>
+                        <span class="fw-bold fs-4 text-success">KES {{ total_gear_value }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-5 pt-4 border-top text-center text-muted small">
+            <p>Generated by Gigs360 System on {% now "jS F Y H:i" %}</p>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

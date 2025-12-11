@@ -31,17 +31,29 @@
                     
                     <div class="mb-3">
                         <span class="text-muted small d-block mb-2">Current Role:</span>
+                        
                         {% if user.is_superuser %}
-                            <span class="badge bg-danger fs-6 px-3 py-2">Admin</span>
-                        {% endif %}
-                        {% if user.is_vendor %}
-                            <span class="badge bg-primary fs-6 px-3 py-2">Vendor</span>
-                        {% endif %}
-                        {% if user.is_planner %}
-                            <span class="badge bg-success fs-6 px-3 py-2">Agency</span>
-                        {% endif %}
-                        {% if user.is_client %}
-                            <span class="badge bg-info text-dark fs-6 px-3 py-2">Freelancer</span>
+                            <span class="badge bg-danger fs-6 px-3 py-2">System Owner</span>
+                        
+                        {% elif user.is_staff %}
+                            <span class="badge bg-dark fs-6 px-3 py-2">
+                                <i class="bi bi-shield-lock-fill me-1"></i> 
+                                {{ user.get_staff_role_display|default:"Staff Member" }}
+                            </span>
+                            <div class="small text-muted mt-2">ID: {{ user.employee_id|default:"-" }}</div>
+                        
+                        {% else %}
+                            {% if user.is_vendor %}
+                                <span class="badge bg-primary fs-6 px-3 py-2">Vendor</span>
+                            {% elif user.is_planner %}
+                                <span class="badge bg-success fs-6 px-3 py-2">Agency</span>
+                            {% else %}
+                                <span class="badge bg-info text-dark fs-6 px-3 py-2">Freelancer</span>
+                            {% endif %}
+                            
+                            <div class="mt-2">
+                                <span class="badge border text-dark fw-normal">{{ user.get_subscription_plan_display }} Plan</span>
+                            </div>
                         {% endif %}
                     </div>
                 </div>
@@ -94,6 +106,7 @@
 
                         <hr class="my-4 opacity-10">
 
+                        {% if not user.is_staff %}
                         <h6 class="heading-small text-muted mb-3 text-uppercase small fw-bold">Business Info</h6>
                         <div class="row gx-3 mb-3">
                             <div class="col-md-6">
@@ -127,6 +140,7 @@
                                 {{ form.mpesa_number }}
                             </div>
                         </div>
+                        {% endif %}
 
                         <div class="d-grid gap-2 mt-4">
                             <button class="btn btn-primary btn-lg fw-bold" type="submit">Save Changes</button>

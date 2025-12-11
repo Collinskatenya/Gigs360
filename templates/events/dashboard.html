@@ -72,7 +72,7 @@
                                         <i class="bi bi-google"></i> Calendar
                                     </a>
                                     
-                                    <a href="#" class="btn btn-sm text-white flex-grow-1" style="background-color: #003366;">
+                                    <a href="{% url 'rapid_scan' %}" class="btn btn-sm text-white flex-grow-1" style="background-color: #003366;">
                                         <i class="bi bi-qr-code-scan"></i> Scan Out
                                     </a>
                                 </div>
@@ -94,7 +94,7 @@
             <div class="card border-0 shadow-sm">
                 <div class="list-group list-group-flush">
                     {% for event in past %}
-                    <a href="{% url 'update_event' event.id %}" class="list-group-item list-group-item-action py-3">
+                    <a href="{% url 'event_report' event.id %}" class="list-group-item list-group-item-action py-3">
                         <div class="d-flex w-100 justify-content-between align-items-center">
                             <div>
                                 <h6 class="mb-1 fw-bold" style="color: #003366;">{{ event.title }}</h6>

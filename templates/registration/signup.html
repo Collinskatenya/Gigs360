@@ -2,20 +2,6 @@
 
 {% block title %}Join Gigs360 | Create Account{% endblock %}
 
-{% block extra_css %}
-<link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
-<style>
-    .section-auth {
-        padding-top: 4rem;
-        padding-bottom: 4rem;
-    }
-    .form-floating > .form-select {
-        padding-top: 1.625rem;
-        padding-bottom: 0.625rem;
-    }
-</style>
-{% endblock %}
-
 {% block content %}
 <section class="section-auth d-flex align-items-center" style="min-height: 85vh; background: #f8f9fa;">
     <div class="container">
@@ -33,6 +19,14 @@
                         <form method="post">
                             {% csrf_token %}
                             
+                            {% if form.non_field_errors %}
+                                <div class="alert alert-danger small p-2 mb-3">
+                                    {% for error in form.non_field_errors %}
+                                        <i class="bi bi-exclamation-circle me-1"></i> {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+
                             <div class="form-floating mb-3">
                                 {{ form.role }}
                                 <label for="{{ form.role.id_for_label }}">I want to join as a...</label>
@@ -46,11 +40,6 @@
                                     <div class="form-floating mb-3">
                                         {{ field }}
                                         <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                                        
-                                        {% if field.help_text %}
-                                            <div class="form-text small text-muted">{{ field.help_text }}</div>
-                                        {% endif %}
-                                        
                                         {% if field.errors %}
                                             <div class="text-danger small mt-1">{{ field.errors.0 }}</div>
                                         {% endif %}
@@ -74,21 +63,4 @@
         </div>
     </div>
 </section>
-
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-<script>
-    // Check if the backend sent the success signal via context
-    {% if success_popup %}
-        Swal.fire({
-            title: 'Account Created!',
-            text: 'Welcome to Gigs360! Your account is active. Redirecting you to the dashboard...',
-            icon: 'success',
-            timer: 3000,
-            showConfirmButton: false
-        }).then(() => {
-            window.location.href = "{% url 'dashboard' %}";
-        });
-    {% endif %}
-</script>
 {% endblock %}

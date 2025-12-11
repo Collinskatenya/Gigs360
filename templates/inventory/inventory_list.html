@@ -50,7 +50,7 @@
                                     {% endif %}
                                 </div>
                                 <div>
-                                    <div class="fw-bold text-dark">{{ item.name }}</div>
+                                    <a href="{% url 'item_detail' item.id %}" class="fw-bold text-dark text-decoration-none">{{ item.name }}</a>
                                     <div class="small text-muted d-md-none">{{ item.category.name|default:"General" }}</div>
                                 </div>
                             </div>
@@ -97,7 +97,7 @@
 
                         <td class="text-end pe-4">
                             <div class="btn-group shadow-sm">
-                                <a href="#" class="btn btn-sm btn-light border text-secondary" data-bs-toggle="tooltip" title="Edit Item">
+                                <a href="{% url 'edit_item' item.id %}" class="btn btn-sm btn-light border text-secondary" data-bs-toggle="tooltip" title="Edit Item">
                                     <i class="bi bi-pencil"></i>
                                 </a>
 

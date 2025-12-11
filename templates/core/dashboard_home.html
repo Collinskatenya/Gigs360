@@ -20,9 +20,18 @@
                 <div>
                     <h2 class="fw-bold mb-1">Welcome back, {{ user.first_name|default:user.username }}! 👋</h2>
                     <p class="mb-0 opacity-75">
-                        <span class="badge bg-white text-primary fw-bold me-2">{{ user.subscription_plan }} Plan</span>
-                        {% if user.subscription_plan == 'Free' %}
-                            <a href="{% url 'pricing' %}" class="text-white text-decoration-underline small">Upgrade to Pro &rarr;</a>
+                        {% if user.is_staff %}
+                            <span class="badge bg-white text-dark fw-bold me-2">
+                                <i class="bi bi-shield-lock-fill"></i> {{ user.profile.get_staff_role_display }}
+                            </span>
+                        {% else %}
+                            <span class="badge bg-white text-primary fw-bold me-2">
+                                {{ user.profile.get_plan_tier_display }} Plan
+                            </span>
+                            
+                            {% if user.profile.plan_tier == 'FREE' %}
+                                <a href="{% url 'pricing' %}" class="text-white text-decoration-underline small">Upgrade to Pro &rarr;</a>
+                            {% endif %}
                         {% endif %}
                     </p>
                 </div>
@@ -35,7 +44,6 @@
 </div>
 
 <div class="row g-4 mb-4">
-    
     <div class="col-md-4">
         <div class="card h-100 p-3 border-0 shadow-sm">
             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -46,7 +54,7 @@
             </div>
             <h3 class="fw-bold mb-2">{{ stat_1_value }}</h3>
             
-            {% if role_label == 'Vendor' or role_label == 'Freelancer' %}
+            {% if not user.is_staff and usage_percent %}
                 <div class="progress" style="height: 6px;">
                     <div class="progress-bar {% if usage_percent > 90 %}bg-danger{% else %}bg-primary{% endif %}" 
                          role="progressbar" 
@@ -87,7 +95,6 @@
 <h5 class="fw-bold mb-3 text-secondary">Quick Actions</h5>
 <div class="row g-3">
     
-    {% if role_label == 'Vendor' or role_label == 'Freelancer' %}
     <div class="col-md-6">
         <a href="{% url 'add_item' %}" class="card card-link h-100 border-0 shadow-sm p-3 text-decoration-none hover-lift">
             <div class="d-flex align-items-center">
@@ -102,24 +109,21 @@
             </div>
         </a>
     </div>
-    {% endif %}
 
-    {% if role_label == 'Agency' %}
     <div class="col-md-6">
-        <a href="#" class="card card-link h-100 border-0 shadow-sm p-3 text-decoration-none hover-lift">
+        <a href="{% url 'create_event' %}" class="card card-link h-100 border-0 shadow-sm p-3 text-decoration-none hover-lift">
             <div class="d-flex align-items-center">
-                <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-3 me-3">
+                <div class="bg-warning bg-opacity-10 text-warning rounded-circle p-3 me-3">
                     <i class="bi bi-calendar-plus fs-4"></i>
                 </div>
                 <div>
-                    <h6 class="fw-bold text-dark mb-1">Create New Event</h6>
-                    <p class="text-muted small mb-0">Start planning a gig.</p>
+                    <h6 class="fw-bold text-dark mb-1">Plan New Gig</h6>
+                    <p class="text-muted small mb-0">Create an event and book gear.</p>
                 </div>
                 <i class="bi bi-chevron-right ms-auto text-muted"></i>
             </div>
         </a>
     </div>
-    {% endif %}
 
     <div class="col-md-6">
         <a href="{% url 'settings' %}" class="card card-link h-100 border-0 shadow-sm p-3 text-decoration-none hover-lift">

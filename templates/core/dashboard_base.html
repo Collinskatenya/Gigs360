@@ -33,7 +33,7 @@
                 <i class="bi bi-calendar-event"></i> Event Ops
             </a>
 
-            <a href="{% url 'rapid_scanner' %}" class="list-group-item list-group-item-action {% if 'scanner' in request.path %}active{% endif %}">
+            <a href="{% url 'rapid_scan' %}" class="list-group-item list-group-item-action {% if 'scanner' in request.path %}active{% endif %}">
                 <i class="bi bi-qr-code-scan"></i> Rapid Scanner
             </a>
 
@@ -46,9 +46,12 @@
             <a href="{% url 'settings' %}" class="list-group-item list-group-item-action">
                 <i class="bi bi-gear"></i> Settings
             </a>
+            
+            {% if not user.profile.is_staff_member and user.profile.plan_tier != 'ENTERPRISE' %}
             <a href="{% url 'pricing' %}" class="list-group-item list-group-item-action">
                 <i class="bi bi-credit-card"></i> Upgrade Plan
             </a>
+            {% endif %}
         </div>
 
         <div class="sidebar-footer">
@@ -64,12 +67,28 @@
                     
                     <div style="flex: 1; min-width: 0;">
                         <div class="text-truncate fw-bold" style="font-size: 0.9rem;">{{ user.username }}</div>
-                        <div class="text-truncate text-white-50" style="font-size: 0.75rem;">{{ user.subscription_plan }} Plan</div>
+                        
+                        <div class="text-truncate" style="font-size: 0.75rem;">
+                            {% if user.is_staff %}
+                                <span class="text-warning fw-bold">
+                                    <i class="bi bi-shield-fill"></i> 
+                                    {{ user.profile.get_staff_role_display|default:"Staff" }}
+                                </span>
+                            {% else %}
+                                <span class="text-white-50">
+                                    {{ user.profile.get_plan_tier_display }} Plan
+                                </span>
+                            {% endif %}
+                        </div>
                     </div>
                     <i class="bi bi-three-dots-vertical"></i>
                 </button>
+                
                 <ul class="dropdown-menu dropdown-menu-dark shadow">
-                    <li><a class="dropdown-item" href="{% url 'settings' %}">Profile</a></li>
+                    <li><a class="dropdown-item" href="{% url 'settings' %}">Profile Settings</a></li>
+                    {% if user.is_superuser %}
+                    <li><a class="dropdown-item" href="/admin/" target="_blank">Admin Panel</a></li>
+                    {% endif %}
                     <li><hr class="dropdown-divider"></li>
                     <li>
                         <form action="{% url 'logout' %}" method="post">
@@ -89,9 +108,11 @@
             </button>
             
             <div class="d-flex align-items-center gap-3">
-                <span class="badge bg-light text-dark border d-none d-md-inline-block">
-                    {% if user.is_vendor %}Vendor{% elif user.is_planner %}Agency{% else %}Freelancer{% endif %}
-                </span>
+                {% if user.profile.is_verified %}
+                    <span class="badge bg-success bg-opacity-10 text-success border border-success d-none d-md-inline-block">
+                        <i class="bi bi-patch-check-fill"></i> Verified Pro
+                    </span>
+                {% endif %}
             </div>
 
             <div class="dropdown ms-auto">

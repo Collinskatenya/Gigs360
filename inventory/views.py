@@ -10,7 +10,7 @@ from .models import InventoryItem
 from .forms import InventoryItemForm
 
 # -------------------------------------------------------------------------
-# 1. STANDARD INVENTORY MANAGEMENT
+# 1. GEAR LOCKER MANAGEMENT (List, Add, Edit, Delete)
 # -------------------------------------------------------------------------
 
 @login_required
@@ -37,14 +37,34 @@ def add_item(request):
     else:
         form = InventoryItemForm()
     
-    return render(request, 'inventory/add_item.html', {'form': form})
+    return render(request, 'inventory/add_item.html', {'form': form, 'title': 'Add New Item'})
 
 @login_required
-def item_detail(request, item_id):
+def edit_item(request, pk):
     """
-    Detailed View: Shows Color, Weight, and QR Code for a specific item.
+    FIX: Allows editing details like Status, Serial, or Photo.
+    Connects to the 'Edit' button in the list view.
     """
-    item = get_object_or_404(InventoryItem, id=item_id, owner=request.user)
+    item = get_object_or_404(InventoryItem, pk=pk, owner=request.user)
+    
+    if request.method == 'POST':
+        form = InventoryItemForm(request.POST, request.FILES, instance=item)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"{item.name} updated successfully!")
+            return redirect('inventory_list')
+    else:
+        form = InventoryItemForm(instance=item)
+    
+    # Reuses the add_item template but changes the title context
+    return render(request, 'inventory/add_item.html', {'form': form, 'title': f'Edit {item.name}'})
+
+@login_required
+def item_detail(request, pk):
+    """
+    FIX: Shows the full profile (Specs, QR, History) that doesn't fit in the list table.
+    """
+    item = get_object_or_404(InventoryItem, pk=pk, owner=request.user)
     return render(request, 'inventory/item_detail.html', {'item': item})
 
 @login_required
@@ -53,26 +73,25 @@ def delete_item(request, pk):
     Deletes an item permanently.
     """
     item = get_object_or_404(InventoryItem, pk=pk, owner=request.user)
-    if request.method == 'POST':
-        item.delete()
-        messages.success(request, 'Item deleted successfully.')
-        return redirect('inventory_list')
     
-    # If GET request (clicking the link directly), confirm or just delete depending on UX preference.
-    # For now, we'll just delete to match your sidebar delete button logic
+    # Optional Safety: Prevent deleting rented items
+    # if item.status == 'RENTED':
+    #     messages.error(request, "Cannot delete item while it is currently rented/on job.")
+    #     return redirect('inventory_list')
+
     item.delete()
-    messages.success(request, 'Item deleted successfully.')
+    messages.success(request, f"{item.name} deleted.")
     return redirect('inventory_list')
 
 
 # -------------------------------------------------------------------------
-# 2. SCANNER LOGIC (The New Features)
+# 2. RAPID SCANNER (API & View)
 # -------------------------------------------------------------------------
 
 @login_required
 def rapid_scan_page(request):
     """
-    Renders the Camera Interface.
+    Renders the Camera Interface for mobile scanning.
     """
     return render(request, 'inventory/rapid_scan.html')
 
@@ -80,7 +99,8 @@ def rapid_scan_page(request):
 @login_required
 def scan_api(request):
     """
-    The hidden API that processes the QR code scan.
+    The hidden API that processes the QR code scan from the JS frontend.
+    Handles 'Check-Out' and 'Check-In' logic based on the 'mode' parameter.
     """
     if request.method == 'POST':
         try:
@@ -88,20 +108,19 @@ def scan_api(request):
             raw_data = data.get('qr_data', '')
             mode = data.get('mode') # 'checkout' or 'checkin'
             
-            # Extract UUID from URL if necessary
-            # (e.g., if QR contains "gigs360.com/scan/abc-123", we just want "abc-123")
+            # 1. Parse UUID from URL (e.g. gigs360.com/scan/<UUID>)
             if '/' in raw_data:
                 item_uuid = raw_data.rstrip('/').split('/')[-1]
             else:
                 item_uuid = raw_data
 
-            # Find Item
+            # 2. Find Item
             item = get_object_or_404(InventoryItem, id=item_uuid, owner=request.user)
             
             message = ""
             status_code = "success"
 
-            # Check-Out Logic
+            # 3. Check-Out Logic
             if mode == 'checkout':
                 if item.status == 'RENTED':
                     message = f"⚠️ {item.name} is ALREADY checked out."
@@ -111,7 +130,7 @@ def scan_api(request):
                     item.save()
                     message = f"📤 Checked OUT: {item.name}"
 
-            # Check-In Logic
+            # 4. Check-In Logic
             elif mode == 'checkin':
                 if item.status == 'AVAILABLE':
                     message = f"⚠️ {item.name} is ALREADY in stock."
@@ -121,7 +140,7 @@ def scan_api(request):
                     item.save()
                     message = f"📥 Checked IN: {item.name}"
 
-            # Audit Trail Update
+            # 5. Audit Trail Update (Record who scanned it and when)
             item.last_scanned_at = timezone.now()
             item.last_scanned_by = request.user
             item.save()
@@ -129,6 +148,6 @@ def scan_api(request):
             return JsonResponse({'status': status_code, 'message': message, 'item': item.name})
 
         except Exception as e:
-            return JsonResponse({'status': 'error', 'message': str(e)})
+            return JsonResponse({'status': 'error', 'message': f"Scan Error: {str(e)}"})
 
-    return JsonResponse({'status': 'error', 'message': 'Invalid Method'})
+    return JsonResponse({'status': 'error', 'message': 'Invalid Request Method'})
