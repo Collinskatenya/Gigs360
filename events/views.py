@@ -4,9 +4,9 @@ from django.contrib import messages
 from django.utils import timezone
 from django.http import JsonResponse, HttpResponse
 from django.utils.dateparse import parse_datetime
+import json # <--- Added for Smart Autocomplete
 
 # Import forms and models
-# UPDATED: Imported DocumentForm and LineItemFormSet for the Create Quote page
 from .forms import EventForm, DocumentForm, LineItemFormSet
 from .models import Event, EventItem, Document
 from inventory.models import InventoryItem 
@@ -216,8 +216,14 @@ def event_report(request, pk):
 def create_document(request, event_id):
     """
     Frontend view: Generates Quotes/Invoices for a specific Event.
+    Includes Smart Logic to pre-fill data from the Event Manifest and Inventory.
     """
     event = get_object_or_404(Event, pk=event_id, user=request.user)
+
+    # 1. Fetch Inventory for "Quick-Add" Autocomplete (Serialize for JS)
+    # This allows Vendors/Agencies to quickly pick services they added to their locker
+    inventory_qs = InventoryItem.objects.filter(owner=request.user).values('name', 'daily_rate', 'description')
+    inventory_json = json.dumps(list(inventory_qs), default=str)
 
     if request.method == 'POST':
         form = DocumentForm(request.POST)
@@ -254,14 +260,45 @@ def create_document(request, event_id):
             'issue_date': timezone.now().date(),
             'due_date': timezone.now().date() + timezone.timedelta(days=7),
         }
+        
+        # SMART UX: Check if user clicked "Import from Manifest"
+        formset_initial = []
+        if request.GET.get('populate') == 'true':
+            manifest_items = event.manifest.all()
+            for record in manifest_items:
+                # Vendors/Agencies: This works for "Services" too if they are in the locker
+                formset_initial.append({
+                    'description': record.item.name,
+                    'details': record.item.description[:100] if record.item.description else "", 
+                    'quantity': 1,
+                    'unit_price': record.item.daily_rate or 0,
+                })
+                
         form = DocumentForm(initial=initial_data)
-        formset = LineItemFormSet()
+        
+        # Initialize Formset with data (if any)
+        formset = LineItemFormSet(initial=formset_initial)
+        # If we pre-filled data, don't show extra empty rows
+        formset.extra = 0 if formset_initial else 1
 
     return render(request, 'events/create_document.html', {
         'form': form,
         'formset': formset,
-        'event': event
+        'event': event,
+        'inventory_json': inventory_json, # Pass inventory data to JS for autocomplete
     })
+
+@login_required
+def document_list(request):
+    """
+    The 'Filing Cabinet': Lists all Quotes, Invoices, and Receipts.
+    """
+    documents = Document.objects.filter(user=request.user).order_by('-created_at')
+    
+    context = {
+        'documents': documents
+    }
+    return render(request, 'events/document_list.html', context)
 
 @login_required
 def generate_document_pdf(request, pk):
@@ -283,7 +320,13 @@ def generate_document_pdf(request, pk):
     if pdf:
         filename = f"{doc.doc_number}_{doc.client_name}.pdf"
         response = HttpResponse(pdf, content_type='application/pdf')
-        response['Content-Disposition'] = f'inline; filename="{filename}"'
+        
+        # SMART TOGGLE: Check if user wants to Download or Preview
+        if request.GET.get('download'):
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        else:
+            response['Content-Disposition'] = f'inline; filename="{filename}"'
+            
         return response
         
     return HttpResponse("Error generating PDF", status=500)

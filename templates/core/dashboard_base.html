@@ -29,7 +29,7 @@
                 <i class="bi bi-box-seam"></i> Gear Locker
             </a>
             
-            <a href="{% url 'event_dashboard' %}" class="list-group-item list-group-item-action {% if 'events' in request.path %}active{% endif %}">
+            <a href="{% url 'event_dashboard' %}" class="list-group-item list-group-item-action {% if 'events' in request.path and 'documents' not in request.path %}active{% endif %}">
                 <i class="bi bi-calendar-event"></i> Event Ops
             </a>
 
@@ -37,7 +37,7 @@
                 <i class="bi bi-qr-code-scan"></i> Rapid Scanner
             </a>
 
-            <a href="#" class="list-group-item list-group-item-action" onclick="alert('Invoicing Engine Coming Next!')">
+            <a href="{% url 'document_list' %}" class="list-group-item list-group-item-action {% if 'documents' in request.path %}active{% endif %}">
                 <i class="bi bi-receipt"></i> Invoices
             </a>
 

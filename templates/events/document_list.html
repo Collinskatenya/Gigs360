@@ -1,0 +1,88 @@
+{% extends 'core/dashboard_base.html' %}
+
+{% block title %}My Documents | Gigs360{% endblock %}
+
+{% block dashboard_content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold" style="color: #003366;">Invoices & Quotes</h3>
+            <p class="text-muted small">Manage your paperwork and get paid.</p>
+        </div>
+        <a href="{% url 'event_dashboard' %}" class="btn btn-outline-primary rounded-pill">
+            <i class="bi bi-plus-lg"></i> New Quote via Event
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light small text-uppercase text-muted fw-bold">
+                    <tr>
+                        <th class="ps-4">Document</th>
+                        <th>Client</th>
+                        <th>Event</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th class="text-end pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for doc in documents %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="fw-bold text-dark">{{ doc.doc_number }}</div>
+                            <div class="small text-muted">{{ doc.get_doc_type_display }} • {{ doc.issue_date|date:"M d" }}</div>
+                        </td>
+                        <td>
+                            <div class="fw-bold text-dark">{{ doc.client_name }}</div>
+                            <div class="small text-muted">{{ doc.client_phone }}</div>
+                        </td>
+                        <td>
+                            {% if doc.event %}
+                                <a href="{% url 'update_event' doc.event.id %}" class="text-decoration-none">{{ doc.event.title }}</a>
+                            {% else %}
+                                <span class="text-muted fst-italic">General</span>
+                            {% endif %}
+                        </td>
+                        <td class="fw-bold" style="color: #003366;">
+                            {{ doc.currency }} {{ doc.total_amount|floatformat:2 }}
+                        </td>
+                        <td>
+                            {% if doc.status == 'PAID' %}
+                                <span class="badge bg-success-subtle text-success border border-success px-3 rounded-pill">Paid</span>
+                            {% elif doc.status == 'DRAFT' %}
+                                <span class="badge bg-secondary-subtle text-secondary border border-secondary px-3 rounded-pill">Draft</span>
+                            {% elif doc.status == 'SENT' %}
+                                <span class="badge bg-primary-subtle text-primary border border-primary px-3 rounded-pill">Sent</span>
+                            {% else %}
+                                <span class="badge bg-danger-subtle text-danger border border-danger px-3 rounded-pill">{{ doc.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-4">
+                            <div class="btn-group shadow-sm">
+                                <a href="{% url 'generate_pdf' doc.id %}" target="_blank" class="btn btn-sm btn-light border" title="Preview PDF">
+                                    <i class="bi bi-eye text-primary"></i>
+                                </a>
+                                
+                                <a href="{% url 'generate_pdf' doc.id %}?download=true" class="btn btn-sm btn-light border" title="Download PDF">
+                                    <i class="bi bi-download text-dark"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5">
+                            <div class="text-muted mb-2"><i class="bi bi-file-earmark-text display-4"></i></div>
+                            <h5>No Documents Yet</h5>
+                            <p class="small text-muted">Create a Quote from the Event Operations page to get started.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
