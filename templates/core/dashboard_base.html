@@ -25,7 +25,7 @@
             
             <div class="menu-label">My Business</div>
             
-            <a href="{% url 'inventory_list' %}" class="list-group-item list-group-item-action {% if 'inventory' in request.path and 'scanner' not in request.path %}active{% endif %}">
+            <a href="{% url 'inventory:inventory_list' %}" class="list-group-item list-group-item-action {% if 'inventory' in request.path and 'scanner' not in request.path %}active{% endif %}">
                 <i class="bi bi-box-seam"></i> Gear Locker
             </a>
             
@@ -33,7 +33,7 @@
                 <i class="bi bi-calendar-event"></i> Event Ops
             </a>
 
-            <a href="{% url 'rapid_scan' %}" class="list-group-item list-group-item-action {% if 'scanner' in request.path %}active{% endif %}">
+            <a href="{% url 'inventory:rapid_scan' %}" class="list-group-item list-group-item-action {% if 'scanner' in request.path %}active{% endif %}">
                 <i class="bi bi-qr-code-scan"></i> Rapid Scanner
             </a>
 
@@ -76,7 +76,8 @@
                                 </span>
                             {% else %}
                                 <span class="text-white-50">
-                                    {{ user.profile.get_plan_tier_display }} Plan
+                                    <i class="bi bi-star-fill text-warning" style="font-size: 0.6rem;"></i> 
+                                    {% firstof user.subscription_plan user.profile.get_plan_tier_display "Free Plan" %}
                                 </span>
                             {% endif %}
                         </div>

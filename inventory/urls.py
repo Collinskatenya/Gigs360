@@ -1,6 +1,9 @@
 from django.urls import path
 from . import views
 
+# CRITICAL: This namespace is required for {% url 'inventory:inventory_list' %} to work
+app_name = 'inventory'
+
 urlpatterns = [
     # --- Standard Inventory Actions ---
     # List all items (The Gear Locker)
@@ -10,19 +13,18 @@ urlpatterns = [
     path('add/', views.add_item, name='add_item'),
     
     # View Single Item Details
-    # FIX: Changed 'item_id' to 'pk' to match standard Django Views and your delete/edit paths
+    # FIX: Changed <int:pk> to <uuid:pk> to match your database schema (UUIDs)
     path('item/<uuid:pk>/', views.item_detail, name='item_detail'),
     
-    # FIX: Added MISSING Edit Path (Required for the Edit button to work)
+    # Edit Item
     path('edit/<uuid:pk>/', views.edit_item, name='edit_item'),
     
     # Delete item
     path('delete/<uuid:pk>/', views.delete_item, name='delete_item'),
 
     # --- QR Scanner Features ---
-    # The Camera Interface Page
-    # Name changed to 'rapid_scan' to match common template tags, but 'rapid_scanner' works if your template matches.
-    path('scanner/', views.rapid_scan_page, name='rapid_scan'),
+    # Matches 'rapid_scan' view name
+    path('rapid-scan/', views.rapid_scan, name='rapid_scan'),
     
     # The Hidden API that processes the scan (AJAX)
     path('api/scan/', views.scan_api, name='scan_api'),

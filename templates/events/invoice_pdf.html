@@ -1,0 +1,253 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title>{{ doc.get_doc_type_display }} #{{ doc.doc_number }}</title>
+    <style type="text/css">
+        @page {
+            size: A4;
+            margin: 2cm;
+            margin-bottom: 2.5cm;
+            @frame footer_frame {           /* Static Footer Frame */
+                -pdf-frame-content: footerContent;
+                bottom: 0cm;
+                margin-left: 1cm;
+                margin-right: 1cm;
+                height: 1cm;
+            }
+        }
+        body {
+            font-family: Helvetica, sans-serif;
+            font-size: 11px;
+            color: #333;
+            line-height: 1.4;
+        }
+        
+        /* --- BRANDING (KK Photography Style) --- */
+        .primary-color { color: #003366; } /* Navy Blue */
+        .accent-color { color: #D4AF37; }  /* Gold */
+        .bg-primary { background-color: #003366; color: #fff; }
+        
+        /* --- HEADER SECTION --- */
+        .header-table { width: 100%; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; margin-bottom: 20px; }
+        .company-name { font-size: 24px; font-weight: bold; color: #003366; text-transform: uppercase; }
+        .company-sub { font-size: 10px; color: #666; letter-spacing: 1px; }
+        
+        .doc-title { font-size: 28px; font-weight: bold; color: #D4AF37; text-align: right; text-transform: uppercase; }
+        .doc-number { font-size: 12px; color: #333; text-align: right; font-weight: bold; }
+        
+        /* --- INFO COLUMNS --- */
+        .info-table { width: 100%; margin-bottom: 30px; }
+        .info-box { padding: 5px; }
+        .info-label { font-weight: bold; color: #D4AF37; font-size: 9px; text-transform: uppercase; margin-bottom: 2px; }
+        .info-value { font-size: 11px; font-weight: normal; color: #000; }
+        
+        /* --- ITEMS TABLE --- */
+        .items-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .items-table th { 
+            background-color: #003366; 
+            color: #fff; 
+            padding: 8px; 
+            text-align: left; 
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 9px;
+            border-bottom: 2px solid #D4AF37;
+        }
+        .items-table td { 
+            padding: 10px 8px; 
+            border-bottom: 1px solid #eee; 
+            vertical-align: top;
+        }
+        
+        .item-desc { font-weight: bold; color: #003366; font-size: 11px; }
+        .item-details { font-size: 9px; color: #555; margin-top: 3px; }
+        
+        /* --- TOTALS SECTION --- */
+        .totals-table { width: 45%; margin-left: auto; margin-right: 0; border-top: 2px solid #D4AF37; margin-top: 10px; }
+        .total-row td { padding: 6px; text-align: right; font-size: 11px; }
+        .grand-total-row td { padding: 10px 6px; background-color: #f4f4f4; font-weight: bold; color: #003366; font-size: 14px; }
+        
+        /* --- TERMS BOX --- */
+        .terms-box { 
+            background-color: #fcfcfc; 
+            border-left: 4px solid #003366; 
+            padding: 15px; 
+            margin-top: 40px; 
+            page-break-inside: avoid;
+        }
+        .terms-title { font-weight: bold; color: #003366; font-size: 10px; text-transform: uppercase; margin-bottom: 5px; }
+        .terms-text { font-size: 9px; color: #444; line-height: 1.5; }
+        
+        /* --- FOOTER --- */
+        #footerContent { 
+            text-align: center; 
+            font-size: 8px; 
+            color: #999; 
+            border-top: 1px solid #eee; 
+            padding-top: 5px; 
+        }
+        
+        /* --- STATUS STAMPS --- */
+        .stamp-paid {
+            color: #198754; 
+            border: 2px solid #198754; 
+            padding: 5px 10px; 
+            font-weight: bold; 
+            text-transform: uppercase;
+            transform: rotate(-10deg);
+            display: inline-block;
+        }
+        .stamp-draft {
+            color: #ccc; 
+            border: 2px solid #ccc; 
+            padding: 5px 10px; 
+            font-weight: bold; 
+            text-transform: uppercase;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+
+    <table class="header-table">
+        <tr>
+            <td valign="top" width="60%">
+                <div class="company-name">{{ company_name|default:"Gigs360 CREATIVES" }}</div>
+                <div class="company-sub">Professional Event Services & Rentals</div>
+                <div class="company-sub">{{ company_email }}</div>
+            </td>
+            <td valign="top" width="40%" align="right">
+                <div class="doc-title">{{ doc.get_doc_type_display }}</div>
+                <div class="doc-number">#{{ doc.doc_number }}</div>
+                <div style="color: #666; font-size: 10px; margin-top: 5px;">
+                    Date Issued: {{ doc.issue_date|date:"d M Y" }}
+                </div>
+                
+                <div style="margin-top: 10px;">
+                    {% if doc.status == 'PAID' %}
+                        <span class="stamp-paid">PAID IN FULL</span>
+                    {% elif doc.status == 'DRAFT' %}
+                        <span class="stamp-draft">DRAFT COPY</span>
+                    {% elif doc.status == 'OVERDUE' %}
+                        <span style="color: #dc3545; font-weight: bold;">OVERDUE</span>
+                    {% endif %}
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <table class="info-table">
+        <tr>
+            <td width="50%" valign="top">
+                <div class="info-box">
+                    <div class="info-label">Billed To</div>
+                    <div class="info-value" style="font-size: 13px; font-weight: bold;">{{ doc.client_name }}</div>
+                    <div class="info-value">{{ doc.client_phone }}</div>
+                    <div class="info-value">{{ doc.client_email }}</div>
+                </div>
+            </td>
+            <td width="50%" valign="top" align="right">
+                {% if doc.event %}
+                <div class="info-box">
+                    <div class="info-label">Project Details</div>
+                    <div class="info-value" style="font-weight: bold;">{{ doc.event.title }}</div>
+                    <div class="info-value">{{ doc.event.start_time|date:"D, d M Y @ H:i" }}</div>
+                    <div class="info-value">{{ doc.event.location }}</div>
+                </div>
+                {% endif %}
+            </td>
+        </tr>
+    </table>
+
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th width="50%">Description / Package</th>
+                <th width="10%" align="center">Qty</th>
+                <th width="20%" align="right">Unit Price</th>
+                <th width="20%" align="right">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>
+                    <div class="item-desc">{{ item.description }}</div>
+                    {% if item.details %}
+                        <div class="item-details">{{ item.details|linebreaksbr }}</div>
+                    {% endif %}
+                </td>
+                <td align="center" style="padding-top: 12px;">{{ item.quantity }}</td>
+                <td align="right" style="padding-top: 12px;">{{ item.unit_price|floatformat:2 }}</td>
+                <td align="right" style="padding-top: 12px; font-weight: bold;">{{ item.total_price|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" align="center" style="padding: 20px; color: #999;">No items added to this document yet.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <table class="totals-table">
+        <tr class="total-row">
+            <td>Subtotal</td>
+            <td>{{ doc.currency }} {{ doc.subtotal|floatformat:2 }}</td>
+        </tr>
+        
+        {% if doc.tax_amount > 0 %}
+        <tr class="total-row">
+            <td>Tax (VAT)</td>
+            <td>{{ doc.currency }} {{ doc.tax_amount|floatformat:2 }}</td>
+        </tr>
+        {% endif %}
+        
+        {% if doc.discount > 0 %}
+        <tr class="total-row">
+            <td style="color: #dc3545;">Discount Applied</td>
+            <td style="color: #dc3545;">- {{ doc.currency }} {{ doc.discount|floatformat:2 }}</td>
+        </tr>
+        {% endif %}
+        
+        <tr class="grand-total-row">
+            <td>GRAND TOTAL</td>
+            <td>{{ doc.currency }} {{ doc.total_amount|floatformat:2 }}</td>
+        </tr>
+        
+        {% if doc.amount_paid > 0 %}
+        <tr class="total-row" style="color: #198754; font-weight: bold;">
+            <td>Amount Paid</td>
+            <td>- {{ doc.currency }} {{ doc.amount_paid|floatformat:2 }}</td>
+        </tr>
+        <tr class="total-row" style="border-top: 1px solid #000;">
+            <td>Balance Due</td>
+            <td>{{ doc.currency }} {{ doc.balance_due|floatformat:2 }}</td>
+        </tr>
+        {% endif %}
+    </table>
+
+    {% if doc.terms or doc.notes %}
+    <div class="terms-box">
+        <div class="terms-title">Payment Terms & Conditions</div>
+        <div class="terms-text">
+            {{ doc.terms|linebreaksbr }}
+        </div>
+        
+        {% if doc.notes %}
+        <div style="margin-top: 10px; border-top: 1px solid #ddd; padding-top: 5px;">
+            <div class="terms-title">Additional Notes / Bank Details</div>
+            <div class="terms-text">
+                {{ doc.notes|linebreaksbr }}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div id="footerContent">
+        This document was automatically generated by Gigs360. 
+        Thank you for your business. | <b>Capture Memories Forever</b>
+    </div>
+
+</body>
+</html>

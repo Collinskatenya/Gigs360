@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -24,14 +23,14 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     
     # Third Party Apps
-    'django_daraja',  # For M-Pesa
+    'django_daraja',  # For M-Pesa Integration
     
     # My Apps
-    'core',
-    'inventory',
-    'events',
-    'finance',
-    'community',
+    'core',           # Handles Custom User & Auth
+    'inventory',      # Handles Gear & QR Codes
+    'events',         # Handles Gigs & PDF Invoicing
+    'finance',        # Handles Transactions (Future)
+    'community',      # Handles GigHub (Future)
 ]
 
 MIDDLEWARE = [
@@ -49,8 +48,7 @@ ROOT_URLCONF = 'radagig.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        # Refined: Uses Pathlib for consistency
-        'DIRS': [BASE_DIR / 'templates'],
+        'DIRS': [BASE_DIR / 'templates'],  # Looks for templates in root folder
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -78,6 +76,7 @@ DATABASES = {
 # -------------------------------------------------------------------------
 # AUTHENTICATION
 # -------------------------------------------------------------------------
+# Critical: Tells Django to use your custom user model in the 'core' app
 AUTH_USER_MODEL = 'core.User'
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -101,21 +100,20 @@ USE_I18N = True
 USE_TZ = True
 
 # -------------------------------------------------------------------------
-# STATIC & MEDIA FILES
+# STATIC & MEDIA FILES (Critical for PDF Engine & QR Codes)
 # -------------------------------------------------------------------------
 STATIC_URL = 'static/'
-# Refined: Uses Pathlib for consistency
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# Media Files (User Uploads)
+# Media Files (User Uploads: Logos, Profile Pics, Generated PDFs)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # -------------------------------------------------------------------------
-# DEVELOPMENT SECURITY SETTINGS (Fixes 403 Forbidden Error)
+# DEVELOPMENT SECURITY SETTINGS
 # -------------------------------------------------------------------------
-# Crucial for running on localhost without HTTPS
+# Fixes 403 Forbidden Error during development
 CSRF_COOKIE_SECURE = False
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_HTTPONLY = False

@@ -45,18 +45,38 @@
                                 <i class="bi bi-geo-alt-fill text-danger"></i> {{ event.location }}
                             </p>
 
-                            <div class="bg-light p-2 rounded mb-3">
-                                <small class="text-uppercase fw-bold text-muted" style="font-size: 0.7rem;">Packing List:</small>
-                                <div class="d-flex flex-wrap gap-1 mt-1">
-                                    {% for record in event.manifest.all|slice:":3" %}
-                                        <span class="badge bg-white text-dark border">{{ record.item.name }}</span>
-                                    {% endfor %}
-                                    {% if event.manifest.count > 3 %}
-                                        <span class="badge bg-secondary">+{{ event.manifest.count|add:"-3" }} more</span>
-                                    {% endif %}
-                                    {% if event.manifest.count == 0 %}
-                                        <small class="text-muted fst-italic">No gear selected</small>
-                                    {% endif %}
+                            <div class="mb-3">
+                                <button class="btn btn-light btn-sm w-100 d-flex justify-content-between align-items-center border shadow-sm" 
+                                        type="button" 
+                                        data-bs-toggle="collapse" 
+                                        data-bs-target="#manifest-{{ event.id }}" 
+                                        aria-expanded="false">
+                                    <span class="small fw-bold text-muted">
+                                        <i class="bi bi-box-seam me-1"></i> Packing List
+                                    </span>
+                                    <span class="badge bg-primary rounded-pill" style="font-size: 0.7rem;">
+                                        Show List <i class="bi bi-chevron-down ms-1"></i>
+                                    </span>
+                                </button>
+                                
+                                <div class="collapse" id="manifest-{{ event.id }}">
+                                    <div class="card card-body bg-light border-top-0 rounded-bottom-3 p-2 shadow-inner mt-1" 
+                                         style="max-height: 180px; overflow-y: auto;">
+                                        
+                                        {% if event.manifest.count > 0 %}
+                                            <div class="d-flex flex-wrap gap-1">
+                                                {% for record in event.manifest.all %}
+                                                    <span class="badge bg-white text-dark border fw-normal">
+                                                        <i class="bi bi-check2-circle text-success small"></i> {{ record.item.name }}
+                                                    </span>
+                                                {% endfor %}
+                                            </div>
+                                        {% else %}
+                                            <div class="text-center text-muted small py-2 fst-italic opacity-75">
+                                                No gear selected yet.
+                                            </div>
+                                        {% endif %}
+                                    </div>
                                 </div>
                             </div>
 
@@ -67,12 +87,18 @@
                                     <i class="bi bi-pencil-square"></i> Manage / Edit Details
                                 </a>
 
+                                <a href="{% url 'create_document' event.id %}" class="btn btn-sm text-dark fw-bold border" style="background-color: #FFD700;">
+                                    <i class="bi bi-file-text"></i> Create Quote / Invoice
+                                </a>
+
                                 <div class="d-flex gap-2">
+                                    {% if event.get_google_calendar_url %}
                                     <a href="{{ event.get_google_calendar_url }}" target="_blank" class="btn btn-sm btn-outline-primary flex-grow-1" style="border-color: #003366; color: #003366;">
                                         <i class="bi bi-google"></i> Calendar
                                     </a>
+                                    {% endif %}
                                     
-                                    <a href="{% url 'rapid_scan' %}" class="btn btn-sm text-white flex-grow-1" style="background-color: #003366;">
+                                    <a href="{% url 'inventory:rapid_scan' %}" class="btn btn-sm text-white flex-grow-1" style="background-color: #003366;">
                                         <i class="bi bi-qr-code-scan"></i> Scan Out
                                     </a>
                                 </div>

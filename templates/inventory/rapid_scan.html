@@ -1,4 +1,5 @@
 {% extends 'core/dashboard_base.html' %}
+{% load static %}
 
 {% block dashboard_content %}
 <div class="container py-4">
@@ -29,8 +30,9 @@
             <div class="card shadow border-0 overflow-hidden mb-3">
                 <div class="card-body p-0 bg-dark position-relative">
                     <div id="reader" style="width: 100%; min-height: 350px;"></div>
+                    
                     <div class="position-absolute bottom-0 w-100 text-white p-2 bg-dark bg-opacity-50 small">
-                        Camera Active
+                        Camera Active • Align QR Code
                     </div>
                 </div>
             </div>
@@ -51,16 +53,17 @@
 <script>
     let isScanning = false;
 
-    // --- SUCCESS HANDLER ---
+    // --- 1. SUCCESS HANDLER (Triggered when QR is found) ---
     function onScanSuccess(decodedText, decodedResult) {
-        if (isScanning) return; 
+        if (isScanning) return; // Prevent double-scanning
         isScanning = true;
 
-        // 1. Get Selected Mode
+        // Get Selected Mode (Check In vs Check Out)
         let mode = document.querySelector('input[name="scanMode"]:checked').value;
 
-        // 2. Send Data to Backend
-        fetch('/inventory/api/scan/', {
+        // Send Data to Backend API
+        // FIX: Used Django URL tag for robustness
+        fetch("{% url 'inventory:scan_api' %}", {
             method: 'POST',
             headers: {
                 'X-CSRFToken': '{{ csrf_token }}',
@@ -75,51 +78,65 @@
             return response.json();
         })
         .then(data => {
-            // 3. Update UI
-            updateLog(data, mode);
+            // Update UI with result
+            updateLog(data);
             
-            // 4. Cooldown (Wait 2s before next scan)
-            setTimeout(() => { isScanning = false; }, 2000);
+            // Cooldown: Wait 2.5s before allowing next scan
+            setTimeout(() => { isScanning = false; }, 2500);
         })
         .catch(err => {
             console.error("Scan Error:", err);
-            isScanning = false;
+            // Allow retry after 1s on error
+            setTimeout(() => { isScanning = false; }, 1000);
         });
     }
 
-    // --- HELPER: Update Log UI ---
-    function updateLog(data, mode) {
+    // --- 2. HELPER: Update Log UI ---
+    function updateLog(data) {
         let logContainer = document.getElementById('scan-log');
         let li = document.createElement("li");
         
-        // Dynamic Styling
+        // Dynamic Styling based on server response
         let statusColor = data.status === 'success' ? 'text-success' : 'text-danger';
+        if (data.status === 'warning') statusColor = 'text-warning'; // Handle "Already Checked Out" warnings
+
         let icon = data.status === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill';
         
-        li.className = "list-group-item d-flex justify-content-between align-items-center animate__animated animate__fadeInDown";
+        li.className = "list-group-item d-flex justify-content-between align-items-center animate__animated animate__fadeInDown bg-white";
         li.innerHTML = `
             <div>
                 <i class="bi ${icon} ${statusColor} me-2"></i>
                 <span class="fw-bold text-dark">${data.item || 'Unknown Item'}</span><br>
-                <small class="${statusColor}">${data.message}</small>
+                <small class="${statusColor} fw-bold">${data.message}</small>
             </div>
-            <span class="badge bg-light text-dark border">${new Date().toLocaleTimeString()}</span>
+            <span class="badge bg-light text-secondary border">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
         `;
 
-        // Insert at the top of the list
+        // Insert at the top
         logContainer.insertBefore(li, logContainer.firstChild);
         
-        // Keep list clean (max 5 items)
-        if (logContainer.children.length > 5) {
-            logContainer.removeChild(logContainer.lastChild);
+        // Remove "Waiting..." placeholder if it exists
+        if (logContainer.children.length > 1 && logContainer.lastElementChild.innerText.includes('Waiting')) {
+            logContainer.removeChild(logContainer.lastElementChild);
         }
     }
 
-    // --- INITIALIZE CAMERA ---
+    // --- 3. INITIALIZE CAMERA ---
     let html5QrcodeScanner = new Html5QrcodeScanner(
         "reader", 
-        { fps: 10, qrbox: 250 }
+        { fps: 10, qrbox: 250, aspectRatio: 1.0 }
     );
     html5QrcodeScanner.render(onScanSuccess);
 </script>
+
+<style>
+    /* Optional: Smooth fade-in animation for new log items */
+    .animate__fadeInDown {
+        animation: fadeInDown 0.5s;
+    }
+    @keyframes fadeInDown {
+        from { opacity: 0; transform: translate3d(0, -20px, 0); }
+        to { opacity: 1; transform: translate3d(0, 0, 0); }
+    }
+</style>
 {% endblock %}

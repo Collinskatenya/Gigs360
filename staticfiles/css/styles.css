@@ -1,0 +1,495 @@
+/* -----------------------------------------------------------
+   Gigs360 Master Stylesheet (Production Build v8)
+   Theme: Deep Blue & Gold
+   ----------------------------------------------------------- */
+
+/* =========================================
+   1. VARIABLES & THEME SETUP
+   ========================================= */
+:root {
+    /* --- BRAND COLORS (Matches Poster) --- */
+    --gigs-blue: #003366;       /* Deep Royal Blue */
+    --gigs-gold: #D4AF37;       /* Rich Metallic Gold */
+    --gigs-dark: #1a1a1a;       /* Jet Black */
+    --gigs-white: #ffffff;      /* Pure White */
+    
+    /* --- COMPONENT MAPPING --- */
+    --nav-blue-bg: var(--gigs-blue);
+    --top-gold-bg: var(--gigs-gold);
+    --btn-primary-bg: var(--gigs-blue);
+    --btn-accent-bg: var(--gigs-gold);
+    
+    /* --- LAYOUT DEFAULTS --- */
+    --bg-body: #f8f9fa;
+    --text-body: #333333;
+    --border-color: #e0e0e0;
+    --card-shadow: 0 10px 30px rgba(0,0,0,0.05);
+}
+
+/* Dark Mode Overrides */
+[data-theme="dark"] body {
+    background-color: #121212;
+    color: #e0e0e0;
+}
+[data-theme="dark"] .card, 
+[data-theme="dark"] .card-modern,
+[data-theme="dark"] .card-pricing,
+[data-theme="dark"] .card-testimonial {
+    background-color: #1e1e1e;
+    border-color: #333;
+    color: #e0e0e0;
+}
+
+/* =========================================
+   2. GLOBAL LAYOUT & TYPOGRAPHY
+   ========================================= */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-body);
+    color: var(--text-body);
+    line-height: 1.6;
+    overflow-x: hidden; /* Prevents horizontal scroll from animations */
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: var(--gigs-blue); /* Headings are Deep Blue */
+}
+
+a {
+    text-decoration: none;
+    transition: all 0.3s ease;
+    color: var(--gigs-blue);
+}
+
+a:hover {
+    color: var(--gigs-gold);
+}
+
+/* =========================================
+   3. NAVIGATION (Top Bar & Main Nav)
+   ========================================= */
+
+/* Top Bar (The thin strip at the top) */
+.top-bar {
+    background-color: var(--gigs-gold);
+    color: #000;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 8px 0;
+    position: relative;
+    z-index: 1030;
+}
+
+.top-bar a {
+    color: #000;
+    opacity: 0.9;
+}
+.top-bar a:hover { opacity: 0.6; }
+
+.social-icons {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+/* Main Navbar */
+.navbar-custom {
+    background-color: var(--gigs-white); /* FIXED: White background for visibility */
+    box-shadow: 0 4px 12px rgba(0, 51, 102, 0.1);
+    padding: 1rem 0;
+    z-index: 1020;
+}
+
+.navbar-brand {
+    font-weight: 900;
+    font-size: 1.6rem;
+    letter-spacing: -0.5px;
+    color: var(--gigs-blue) !important; /* FIXED: Blue Logo on White */
+}
+
+.nav-link {
+    color: var(--gigs-blue) !important; /* FIXED: Blue links on White */
+    font-weight: 500;
+    font-size: 1rem;
+    margin: 0 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.nav-link:hover, .nav-link.active {
+    color: var(--gigs-gold) !important;
+    background: transparent; /* Clean hover */
+}
+
+/* =========================================
+   4. HERO SECTION (FIXED: BRIGHT BACKGROUND)
+   ========================================= */
+.hero-section {
+    position: relative;
+    background-color: var(--gigs-white); /* FIXED: White Background */
+    color: var(--gigs-blue);             /* FIXED: Blue Text */
+    padding: 140px 0 100px;
+    overflow: hidden;
+}
+
+.hero-title {
+    font-size: 3.5rem;
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 1.5rem;
+    color: var(--gigs-blue); /* Ensure Title is Blue */
+}
+
+.text-highlight {
+    color: var(--gigs-gold);
+    position: relative;
+    display: inline-block;
+}
+
+.hero-lead {
+    font-size: 1.25rem;
+    color: #555; /* FIXED: Dark Grey for readability */
+    margin-bottom: 2.5rem;
+    max-width: 600px;
+}
+
+/* Hero Buttons */
+.btn-hero-primary {
+    background-color: var(--gigs-gold);
+    color: #000;
+    font-weight: 700;
+    padding: 15px 40px;
+    border-radius: 50px;
+    font-size: 1.1rem;
+    border: 2px solid var(--gigs-gold);
+    transition: transform 0.2s;
+}
+.btn-hero-primary:hover {
+    background-color: #bfa030;
+    border-color: #bfa030;
+    transform: translateY(-3px);
+    color: #000;
+}
+
+.btn-hero-outline {
+    background: transparent;
+    color: var(--gigs-blue); /* FIXED: Blue Text */
+    font-weight: 700;
+    padding: 15px 40px;
+    border-radius: 50px;
+    font-size: 1.1rem;
+    border: 2px solid var(--gigs-blue); /* FIXED: Blue Border */
+    margin-left: 15px;
+}
+.btn-hero-outline:hover {
+    background: var(--gigs-blue);
+    color: var(--gigs-white);
+}
+
+/* =========================================
+   5. SOLUTIONS GRID (Modern Ecosystem)
+   ========================================= */
+.section-grid {
+    padding: 100px 0;
+    background-color: var(--bg-body);
+}
+
+.section-header-modern {
+    text-align: center;
+    max-width: 700px;
+    margin: 0 auto 60px;
+}
+
+.card-modern {
+    background: var(--gigs-white);
+    border: 1px solid rgba(0,0,0,0.05);
+    border-radius: 20px;
+    padding: 2.5rem;
+    height: 100%;
+    transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+    box-shadow: var(--card-shadow);
+    border-top: 4px solid var(--gigs-gold); /* Gold Accent */
+    display: flex;
+    flex-direction: column;
+}
+
+.card-modern:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+}
+
+.icon-modern {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    margin-bottom: 1.5rem;
+    background-color: rgba(0, 51, 102, 0.08); /* Light Blue Tint */
+    color: var(--gigs-blue);
+    transition: all 0.3s;
+}
+
+.card-modern:hover .icon-modern {
+    background-color: var(--gigs-blue);
+    color: var(--gigs-gold);
+    transform: rotate(5deg);
+}
+
+.card-modern h4 {
+    font-size: 1.4rem;
+    margin-bottom: 1rem;
+    color: var(--gigs-blue);
+}
+
+/* =========================================
+   6. TRUSTED PARTNERS (Infinite Ticker)
+   ========================================= */
+.section-partners {
+    padding: 60px 0;
+    background-color: var(--gigs-white);
+    border-bottom: 1px solid var(--border-color);
+    overflow: hidden;
+}
+
+.partners-slider {
+    display: flex;
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+    /* Fade edges */
+    mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+}
+
+.partners-track {
+    display: flex;
+    align-items: center;
+    gap: 6rem;
+    width: max-content;
+    animation: scroll-ticker 40s linear infinite;
+    padding: 10px 0;
+}
+
+.partner-item {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #cbd5e1;
+    filter: grayscale(100%);
+    opacity: 0.6;
+    transition: all 0.3s;
+}
+
+.partner-item:hover {
+    filter: grayscale(0%);
+    opacity: 1;
+    color: var(--gigs-blue);
+    transform: scale(1.1);
+}
+
+@keyframes scroll-ticker {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+
+/* =========================================
+   7. PRICING SECTION
+   ========================================= */
+.section-pricing {
+    background-color: var(--gigs-white);
+    padding: 100px 0;
+}
+
+.card-pricing {
+    background: var(--gigs-white);
+    border: 1px solid #eef0f3;
+    border-radius: 20px;
+    padding: 3rem 2rem;
+    transition: all 0.3s ease;
+    height: 100%;
+    position: relative;
+    box-shadow: var(--card-shadow);
+}
+
+.card-pricing:hover {
+    transform: translateY(-10px);
+    border-color: var(--gigs-gold);
+}
+
+/* Popular Card Highlight */
+.card-popular {
+    border: 2px solid var(--gigs-blue);
+    transform: scale(1.05);
+    z-index: 2;
+    box-shadow: 0 20px 50px rgba(0, 51, 102, 0.1);
+}
+
+.badge-popular {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: var(--gigs-gold);
+    color: #000;
+    padding: 8px 20px;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.pricing-price {
+    font-size: 3.5rem;
+    font-weight: 800;
+    color: var(--gigs-blue);
+}
+
+.pricing-features li {
+    margin-bottom: 1rem;
+    color: #555;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.pricing-features li i { color: var(--gigs-gold); }
+
+.btn-pricing {
+    width: 100%;
+    padding: 12px;
+    border-radius: 50px;
+    font-weight: 700;
+    background-color: var(--gigs-blue);
+    color: white;
+    border: none;
+}
+.btn-pricing:hover {
+    background-color: #002244;
+}
+
+/* =========================================
+   8. CTA SECTION (FIXED: High Contrast)
+   ========================================= */
+.section-cta {
+    position: relative;
+    padding: 100px 0;
+    /* Deep Blue Gradient Background */
+    background: linear-gradient(135deg, var(--gigs-blue) 0%, #002244 100%);
+    color: #ffffff; /* Default text color White */
+    overflow: hidden;
+}
+
+.cta-decoration {
+    position: absolute;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(212, 175, 55, 0.15) 0%, transparent 70%);
+    border-radius: 50%;
+    top: -50%;
+    left: 50%;
+    transform: translateX(-50%);
+    pointer-events: none;
+}
+
+/* FIXED: Force white text for readability on dark background */
+.section-cta h2, .section-cta h3, .section-cta .cta-title {
+    color: #ffffff !important;
+    font-weight: 800;
+    margin-bottom: 1.5rem;
+}
+
+.section-cta p, .section-cta .cta-lead {
+    color: rgba(255,255,255,0.9) !important;
+    font-size: 1.25rem;
+    margin-bottom: 2.5rem;
+}
+
+.btn-cta-gold {
+    background-color: var(--gigs-gold);
+    color: #000;
+    font-weight: 700;
+    border-radius: 50px;
+    padding: 15px 40px;
+    font-size: 1.1rem;
+    border: none;
+    transition: transform 0.2s;
+}
+.btn-cta-gold:hover {
+    background-color: #bfa030;
+    transform: translateY(-3px);
+}
+
+/* =========================================
+   9. FOOTER
+   ========================================= */
+footer {
+    background-color: var(--gigs-dark);
+    color: white;
+    padding: 80px 0 30px;
+    border-top: 5px solid var(--gigs-gold);
+}
+
+.footer-brand {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--gigs-gold);
+    margin-bottom: 1rem;
+    display: block;
+}
+
+footer a {
+    color: rgba(255,255,255,0.7);
+    transition: color 0.2s;
+}
+footer a:hover {
+    color: var(--gigs-gold);
+    text-decoration: none;
+}
+
+/* =========================================
+   10. AUTH PAGES (Login/Signup)
+   ========================================= */
+.section-auth {
+    min-height: 85vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 40px 0;
+}
+
+.card-auth {
+    background: #ffffff;
+    border: none;
+    border-radius: 20px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.08);
+    overflow: hidden;
+    max-width: 500px;
+    width: 100%;
+    margin: 0 auto;
+    border-top: 5px solid var(--gigs-gold); /* Gold Accent */
+}
+
+.auth-header {
+    background-color: var(--gigs-blue);
+    padding: 2rem;
+    text-align: center;
+    color: var(--gigs-gold);
+}
+
+.auth-header h3 { margin: 0; font-weight: 700; color: var(--gigs-gold); }
+
+.form-control:focus {
+    border-color: var(--gigs-gold);
+    box-shadow: 0 0 0 0.25rem rgba(212, 175, 55, 0.25);
+}
+
+.auth-footer a {
+    color: var(--gigs-blue);
+    font-weight: 600;
+}
+.auth-footer a:hover { color: var(--gigs-gold); }

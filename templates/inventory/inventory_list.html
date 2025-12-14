@@ -10,7 +10,7 @@
             <h3 class="fw-bold text-dark mb-0">Gear Locker</h3>
             <p class="text-muted small">Manage your assets, track serials, and print QR codes.</p>
         </div>
-        <a href="{% url 'add_item' %}" class="btn btn-primary fw-bold shadow-sm rounded-pill px-4 hover-lift">
+        <a href="{% url 'inventory:add_item' %}" class="btn btn-primary fw-bold shadow-sm rounded-pill px-4 hover-lift">
             <i class="bi bi-plus-lg me-2"></i> Add New Item
         </a>
     </div>
@@ -50,7 +50,7 @@
                                     {% endif %}
                                 </div>
                                 <div>
-                                    <a href="{% url 'item_detail' item.id %}" class="fw-bold text-dark text-decoration-none">{{ item.name }}</a>
+                                    <a href="{% url 'inventory:item_detail' item.id %}" class="fw-bold text-dark text-decoration-none">{{ item.name }}</a>
                                     <div class="small text-muted d-md-none">{{ item.category.name|default:"General" }}</div>
                                 </div>
                             </div>
@@ -97,7 +97,11 @@
 
                         <td class="text-end pe-4">
                             <div class="btn-group shadow-sm">
-                                <a href="{% url 'edit_item' item.id %}" class="btn btn-sm btn-light border text-secondary" data-bs-toggle="tooltip" title="Edit Item">
+                                <a href="{% url 'inventory:item_detail' item.id %}" class="btn btn-sm btn-light border text-primary" data-bs-toggle="tooltip" title="View Details">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+
+                                <a href="{% url 'inventory:edit_item' item.id %}" class="btn btn-sm btn-light border text-secondary" data-bs-toggle="tooltip" title="Edit Item">
                                     <i class="bi bi-pencil"></i>
                                 </a>
 
@@ -117,7 +121,7 @@
                                     {% endif %}
                                 {% endif %}
 
-                                <form action="{% url 'delete_item' item.id %}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to permanently delete {{ item.name }}?');">
+                                <form action="{% url 'inventory:delete_item' item.id %}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to permanently delete {{ item.name }}?');">
                                     {% csrf_token %}
                                     <button type="submit" class="btn btn-sm btn-light border text-danger hover-danger rounded-end" data-bs-toggle="tooltip" title="Delete">
                                         <i class="bi bi-trash"></i>
@@ -133,7 +137,7 @@
                             <div class="mb-3 opacity-25"><i class="bi bi-box-seam display-1"></i></div>
                             <h5 class="text-muted fw-bold">Your Gear Locker is Empty</h5>
                             <p class="text-muted small mb-4">Add your equipment to start tracking assets and earning rentals.</p>
-                            <a href="{% url 'add_item' %}" class="btn btn-outline-primary rounded-pill px-4">
+                            <a href="{% url 'inventory:add_item' %}" class="btn btn-outline-primary rounded-pill px-4">
                                 <i class="bi bi-plus-lg me-2"></i> Add First Item
                             </a>
                         </td>

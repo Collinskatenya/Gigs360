@@ -1,4 +1,5 @@
 {% extends 'core/dashboard_base.html' %}
+{% load static %}
 
 {% block title %}Add Inventory | Gigs360{% endblock %}
 
@@ -9,7 +10,7 @@
             <h3 class="fw-bold text-dark mb-0">Add New Gear</h3>
             <p class="text-muted small">Expand your inventory locker.</p>
         </div>
-        <a href="{% url 'inventory_list' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+        <a href="{% url 'inventory:inventory_list' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
             <i class="bi bi-arrow-left me-2"></i> Back to List
         </a>
     </div>
@@ -123,17 +124,25 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // We select by Name because IDs can vary by Django setup
         const trackingSelect = document.querySelector('select[name="tracking_type"]');
         const serialSection = document.getElementById('serialNumberSection');
-        const quantityInput = document.querySelector('input[name="quantity"]');
-
+        
         function toggleSerial() {
-            if (trackingSelect && trackingSelect.value === 'BULK') {
+            if (!trackingSelect || !serialSection) return;
+
+            // robustness: check for 'BULK' or 'bulk' regardless of case
+            const value = trackingSelect.value.toUpperCase();
+            
+            if (value === 'BULK') {
                 // If Bulk, hide serial input
-                if(serialSection) serialSection.style.display = 'none';
+                serialSection.style.display = 'none';
+                // Optional: You might want to clear the serial input if hidden
+                const serialInput = serialSection.querySelector('input');
+                if(serialInput) serialInput.value = '';
             } else {
                 // If Unique, show serial input
-                if(serialSection) serialSection.style.display = 'block';
+                serialSection.style.display = 'block';
             }
         }
 
@@ -147,5 +156,6 @@
 
 <style>
     .hover-lift:hover { transform: translateY(-2px); transition: transform 0.2s; }
+    textarea { width: 100%; border: 1px solid #dee2e6; border-radius: 0.375rem; padding: 0.5rem; }
 </style>
 {% endblock %}

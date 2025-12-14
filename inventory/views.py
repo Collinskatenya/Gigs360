@@ -6,6 +6,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 import json
 
+# VERIFIED: Using correct model name 'InventoryItem'
 from .models import InventoryItem
 from .forms import InventoryItemForm
 
@@ -18,6 +19,7 @@ def inventory_list(request):
     """
     The Gear Locker: Shows all items owned by the user.
     """
+    # VERIFIED: Filtering by 'owner' correctly
     items = InventoryItem.objects.filter(owner=request.user).order_by('-created_at')
     return render(request, 'inventory/inventory_list.html', {'items': items})
 
@@ -33,7 +35,8 @@ def add_item(request):
             item.owner = request.user
             item.save()
             messages.success(request, f"{item.name} added to Gear Locker!")
-            return redirect('inventory_list')
+            # VERIFIED: Added namespace 'inventory:' to prevent NoReverseMatch
+            return redirect('inventory:inventory_list') 
     else:
         form = InventoryItemForm()
     
@@ -42,8 +45,7 @@ def add_item(request):
 @login_required
 def edit_item(request, pk):
     """
-    FIX: Allows editing details like Status, Serial, or Photo.
-    Connects to the 'Edit' button in the list view.
+    Allows editing details like Status, Serial, or Photo.
     """
     item = get_object_or_404(InventoryItem, pk=pk, owner=request.user)
     
@@ -52,17 +54,16 @@ def edit_item(request, pk):
         if form.is_valid():
             form.save()
             messages.success(request, f"{item.name} updated successfully!")
-            return redirect('inventory_list')
+            return redirect('inventory:inventory_list')
     else:
         form = InventoryItemForm(instance=item)
     
-    # Reuses the add_item template but changes the title context
     return render(request, 'inventory/add_item.html', {'form': form, 'title': f'Edit {item.name}'})
 
 @login_required
 def item_detail(request, pk):
     """
-    FIX: Shows the full profile (Specs, QR, History) that doesn't fit in the list table.
+    Shows the full profile (Specs, QR, History).
     """
     item = get_object_or_404(InventoryItem, pk=pk, owner=request.user)
     return render(request, 'inventory/item_detail.html', {'item': item})
@@ -73,15 +74,9 @@ def delete_item(request, pk):
     Deletes an item permanently.
     """
     item = get_object_or_404(InventoryItem, pk=pk, owner=request.user)
-    
-    # Optional Safety: Prevent deleting rented items
-    # if item.status == 'RENTED':
-    #     messages.error(request, "Cannot delete item while it is currently rented/on job.")
-    #     return redirect('inventory_list')
-
     item.delete()
     messages.success(request, f"{item.name} deleted.")
-    return redirect('inventory_list')
+    return redirect('inventory:inventory_list')
 
 
 # -------------------------------------------------------------------------
@@ -89,7 +84,7 @@ def delete_item(request, pk):
 # -------------------------------------------------------------------------
 
 @login_required
-def rapid_scan_page(request):
+def rapid_scan(request): # RENAMED from 'rapid_scan_page' to match urls.py
     """
     Renders the Camera Interface for mobile scanning.
     """
@@ -100,7 +95,6 @@ def rapid_scan_page(request):
 def scan_api(request):
     """
     The hidden API that processes the QR code scan from the JS frontend.
-    Handles 'Check-Out' and 'Check-In' logic based on the 'mode' parameter.
     """
     if request.method == 'POST':
         try:
@@ -108,14 +102,14 @@ def scan_api(request):
             raw_data = data.get('qr_data', '')
             mode = data.get('mode') # 'checkout' or 'checkin'
             
-            # 1. Parse UUID from URL (e.g. gigs360.com/scan/<UUID>)
+            # 1. Parse ID from URL (e.g. gigs360.com/scan/<ID>)
             if '/' in raw_data:
-                item_uuid = raw_data.rstrip('/').split('/')[-1]
+                item_id = raw_data.rstrip('/').split('/')[-1]
             else:
-                item_uuid = raw_data
+                item_id = raw_data
 
-            # 2. Find Item
-            item = get_object_or_404(InventoryItem, id=item_uuid, owner=request.user)
+            # 2. Find Item (Using 'id' which maps to the Primary Key)
+            item = get_object_or_404(InventoryItem, id=item_id, owner=request.user)
             
             message = ""
             status_code = "success"
@@ -140,7 +134,7 @@ def scan_api(request):
                     item.save()
                     message = f"📥 Checked IN: {item.name}"
 
-            # 5. Audit Trail Update (Record who scanned it and when)
+            # 5. Audit Trail Update
             item.last_scanned_at = timezone.now()
             item.last_scanned_by = request.user
             item.save()

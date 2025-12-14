@@ -68,9 +68,8 @@
                                 {{ form.client_contact }}
                             </div>
                             <div class="col-12">
-                                <label class="form-label small text-muted fw-bold">Staff In-Charge (For Traceability)</label>
+                                <label class="form-label small text-muted fw-bold">Staff In-Charge</label>
                                 {{ form.staff_in_charge }}
-                                <div class="form-text small">This staff member is responsible for the gear checkout.</div>
                             </div>
                         </div>
 
@@ -114,33 +113,38 @@
 
             <div class="col-lg-4">
                 <div class="card border-0 shadow-sm rounded-4 h-100">
-                    <div class="card-header bg-white py-3 fw-bold border-bottom text-danger">
-                        <i class="bi bi-box-seam me-2"></i> Select Equipment
+                    <div class="card-header bg-white py-3 fw-bold border-bottom text-danger d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-box-seam me-2"></i> Select Equipment</span>
+                        <span id="availability-badge" class="badge bg-secondary">Checking...</span>
                     </div>
-                    <div class="card-body p-0">
+                    
+                    <div class="card-body p-0 d-flex flex-column" style="height: 600px;">
                         <div class="p-2 border-bottom">
                             <input type="text" id="inventorySearch" class="form-control form-control-sm border-0 bg-light" placeholder="Search inventory...">
                         </div>
-                        <div class="list-group list-group-flush" id="inventoryList" style="max-height: 500px; overflow-y: auto;">
+                        
+                        <div class="list-group list-group-flush flex-grow-1 overflow-auto" id="inventoryList">
                             {% if form.items.field.queryset.exists %}
                                 {% for checkbox in form.items %}
-                                <label class="list-group-item d-flex gap-3 align-items-center list-group-item-action item-row" style="cursor: pointer;">
+                                <label class="list-group-item d-flex gap-3 align-items-center list-group-item-action item-row" data-item-id="{{ checkbox.data.value }}">
                                     {{ checkbox.tag }} 
                                     <span class="d-flex align-items-center gap-2 w-100 item-label">
                                         <div class="bg-light rounded p-1 text-secondary"><i class="bi bi-camera-video"></i></div>
                                         <span class="fw-medium text-dark">{{ checkbox.choice_label }}</span>
                                     </span>
+                                    <span class="status-indicator"></span>
                                 </label>
                                 {% endfor %}
                             {% else %}
                                 <div class="text-center p-5 text-muted">
                                     <i class="bi bi-exclamation-circle display-4 mb-3 d-block opacity-25"></i>
-                                    <p class="small">No available items found.</p>
+                                    <p class="small">No items found.</p>
                                     <a href="{% url 'add_item' %}" class="btn btn-sm btn-outline-primary rounded-pill">Add Gear First</a>
                                 </div>
                             {% endif %}
                         </div>
                     </div>
+                    
                     <div class="card-footer bg-light p-3">
                          <button type="submit" class="btn btn-success w-100 fw-bold py-2 rounded-pill shadow-sm">
                             <i class="bi bi-check-lg me-2"></i> 
@@ -155,18 +159,85 @@
 </div>
 
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    const startInput = document.querySelector('input[name="start_time"]');
+    const endInput = document.querySelector('input[name="end_time"]');
+    const statusBadge = document.getElementById('availability-badge');
+    const itemRows = document.querySelectorAll('.item-row');
+
+    // 1. Search Functionality
     document.getElementById('inventorySearch').addEventListener('keyup', function() {
         let searchText = this.value.toLowerCase();
-        let items = document.querySelectorAll('.item-row');
-        
-        items.forEach(function(item) {
-            let label = item.querySelector('.item-label').innerText.toLowerCase();
+        itemRows.forEach(function(row) {
+            let label = row.querySelector('.item-label').innerText.toLowerCase();
             if (label.includes(searchText)) {
-                item.style.display = '';
+                row.classList.remove('d-none'); // Show
             } else {
-                item.style.display = 'none';
+                row.classList.add('d-none');    // Hide
             }
         });
     });
+
+    // 2. Check Availability Function
+    function checkAvailability() {
+        const start = startInput.value;
+        const end = endInput.value;
+
+        if (!start || !end) {
+            statusBadge.className = 'badge bg-secondary';
+            statusBadge.innerText = 'Select Dates';
+            return;
+        }
+
+        statusBadge.className = 'badge bg-warning text-dark';
+        statusBadge.innerText = 'Checking...';
+
+        // Call the API we created in Step 1
+        fetch(`/events/api/check-availability/?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.items) {
+                    // Get IDs of available items
+                    const availableIds = new Set(data.items.map(i => i.id.toString()));
+
+                    // Update UI
+                    itemRows.forEach(row => {
+                        const checkbox = row.querySelector('input[type="checkbox"]');
+                        const itemId = checkbox.value;
+                        const indicator = row.querySelector('.status-indicator');
+
+                        if (availableIds.has(itemId)) {
+                            // Available
+                            row.classList.remove('list-group-item-danger', 'opacity-50');
+                            checkbox.disabled = false;
+                            indicator.innerHTML = '<i class="bi bi-check-circle-fill text-success"></i>';
+                        } else {
+                            // Conflict! (Already booked)
+                            // But allow keeping it checked if we are editing and it was ALREADY checked
+                            if (!checkbox.checked) {
+                                row.classList.add('list-group-item-danger', 'opacity-50');
+                                checkbox.disabled = true;
+                                indicator.innerHTML = '<span class="badge bg-danger">Booked</span>';
+                            }
+                        }
+                    });
+                    
+                    statusBadge.className = 'badge bg-success';
+                    statusBadge.innerText = 'Updated';
+                }
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                statusBadge.className = 'badge bg-danger';
+                statusBadge.innerText = 'Error';
+            });
+    }
+
+    // Trigger on date change
+    if (startInput && endInput) {
+        startInput.addEventListener('change', checkAvailability);
+        endInput.addEventListener('change', checkAvailability);
+    }
+});
 </script>
 {% endblock %}
