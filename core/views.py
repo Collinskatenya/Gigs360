@@ -1,8 +1,9 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, get_user_model
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Sum
+from django.http import JsonResponse
 
 # Email Dependencies
 from django.contrib.sites.shortcuts import get_current_site
@@ -13,9 +14,14 @@ from django.core.mail import EmailMessage
 
 from .forms import SignUpForm, UserSettingsForm
 from .tokens import account_activation_token
+from .models import Notification  # <--- Added for Notification Logic
 from inventory.models import InventoryItem
 
 User = get_user_model()
+
+# ==========================================
+# 1. PUBLIC PAGES & AUTH
+# ==========================================
 
 def home(request):
     """Renders the Landing Page."""
@@ -27,7 +33,7 @@ def signup(request):
         form = SignUpForm(request.POST)
         if form.is_valid():
             user = form.save(commit=False)
-            user.is_active = True 
+            user.is_active = True # Auto-activate for smoother onboarding
             user.save()
 
             # 1. Send Verification Email (Non-blocking)
@@ -44,6 +50,7 @@ def signup(request):
                 email = EmailMessage(mail_subject, message, to=[to_email])
                 email.send()
             except Exception as e:
+                # Log error but don't crash signup
                 print(f"Email sending failed (Non-critical): {e}")
 
             # 2. Log in & Redirect
@@ -57,15 +64,19 @@ def signup(request):
 
 def activate(request, uidb64, token):
     """Endpoint for email activation links."""
-    # Logic for activation can be expanded here
+    # Note: Full token validation logic would go here.
+    # Currently acting as a pass-through for UX flow.
     messages.success(request, "Account verified successfully.")
     return redirect('dashboard')
+
+# ==========================================
+# 2. DASHBOARD & SETTINGS
+# ==========================================
 
 @login_required
 def dashboard(request):
     """
-    The Main Cockpit.
-    Adapts based on User Role (Staff vs Client).
+    The Main Cockpit. Adapts based on User Role.
     """
     user = request.user
     
@@ -79,7 +90,7 @@ def dashboard(request):
     if user.subscription_plan == 'Pro':
         plan_limit = 50
     elif user.subscription_plan == 'Enterprise':
-        plan_limit = 1000000  # Unlimited
+        plan_limit = 1000000
 
     # 3. Inventory Stats
     inventory_count = InventoryItem.objects.filter(owner=user).count()
@@ -98,12 +109,9 @@ def dashboard(request):
         'profile_incomplete': profile_incomplete,
     }
 
-    # ==========================================
-    # ROLE-BASED STATS
-    # ==========================================
-    
+    # Role-Based Stats
     if user.is_staff:
-        # A. STAFF VIEW
+        # STAFF VIEW
         context['role_label'] = user.get_staff_role_display() or "Staff"
         context.update({
             'stat_1_label': 'Platform Users', 
@@ -117,13 +125,14 @@ def dashboard(request):
             'stat_3_icon': 'bi-heart-pulse',
         })
     else:
-        # B. CLIENT VIEW (Freelancer / Vendor / Agency)
+        # CLIENT VIEW
         context['role_label'] = 'Freelancer'
         if user.is_vendor: context['role_label'] = 'Vendor'
         if user.is_planner: context['role_label'] = 'Agency'
         
         my_items = InventoryItem.objects.filter(owner=user)
         rented_items = my_items.filter(status='RENTED').count()
+        # Revenue calc: Sum of daily rates for rented items (Approximation)
         current_revenue = my_items.filter(status='RENTED').aggregate(Sum('daily_rate'))['daily_rate__sum'] or 0
         
         context.update({
@@ -142,10 +151,7 @@ def dashboard(request):
 
 @login_required
 def settings_view(request):
-    """
-    Settings Page.
-    Updates the User model directly.
-    """
+    """Profile Settings Page."""
     user = request.user
     
     if request.method == 'POST':
@@ -170,3 +176,25 @@ def settings_view(request):
 def pricing_view(request):
     """Renders the Subscription Plans page."""
     return render(request, 'core/pricing.html')
+
+# ==========================================
+# 3. NOTIFICATION LOGIC (AJAX)
+# ==========================================
+
+@login_required
+def mark_notification_read(request, pk):
+    """
+    AJAX endpoint: Marks a single notification as read.
+    """
+    notification = get_object_or_404(Notification, pk=pk, user=request.user)
+    notification.is_read = True
+    notification.save()
+    return JsonResponse({'status': 'success'})
+
+@login_required
+def mark_all_notifications_read(request):
+    """
+    Clears all unread notifications for the user.
+    """
+    Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+    return redirect(request.META.get('HTTP_REFERER', 'dashboard'))

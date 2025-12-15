@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.utils import timezone
 from django.http import JsonResponse, HttpResponse
 from django.utils.dateparse import parse_datetime
-import json # <--- Added for Smart Autocomplete
+import json 
 
 # Import forms and models
 from .forms import EventForm, DocumentForm, LineItemFormSet
@@ -82,7 +82,7 @@ def check_gear_availability(request):
 @login_required
 def create_event(request):
     """
-    Creates an event with conflict checks.
+    Creates an event. Handles 'No Gear Selected' gracefully.
     """
     if request.method == 'POST':
         form = EventForm(request.POST, user=request.user)
@@ -92,34 +92,37 @@ def create_event(request):
             end_date = form.cleaned_data['end_time']
             selected_items = form.cleaned_data.get('items', []) 
             
-            overlapping_events = Event.objects.filter(
-                user=request.user,
-                start_time__lte=end_date,
-                end_time__gte=start_date
-            )
-            
-            conflict_items = EventItem.objects.filter(
-                event__in=overlapping_events,
-                item__in=selected_items
-            ).select_related('item')
-            
-            if conflict_items.exists():
-                names = ", ".join([r.item.name for r in conflict_items])
-                messages.error(request, f"❌ Booking Failed: The following items are already booked: {names}")
-                return render(request, 'events/create_event.html', {'form': form})
+            # --- SMART CHECK: ONLY RUN IF ITEMS ARE SELECTED ---
+            if selected_items:
+                overlapping_events = Event.objects.filter(
+                    user=request.user,
+                    start_time__lte=end_date,
+                    end_time__gte=start_date
+                )
+                
+                conflict_items = EventItem.objects.filter(
+                    event__in=overlapping_events,
+                    item__in=selected_items
+                ).select_related('item')
+                
+                if conflict_items.exists():
+                    names = ", ".join([r.item.name for r in conflict_items])
+                    messages.error(request, f"❌ Booking Failed: The following items are already booked: {names}")
+                    return render(request, 'events/create_event.html', {'form': form})
 
             event = form.save(commit=False)
             event.user = request.user
             event.updated_by = request.user
             event.save()
             
-            for item in selected_items:
-                EventItem.objects.create(
-                    event=event, 
-                    item=item,
-                    handled_by=request.user, 
-                    condition_return='GOOD' 
-                )
+            if selected_items:
+                for item in selected_items:
+                    EventItem.objects.create(
+                        event=event, 
+                        item=item,
+                        handled_by=request.user, 
+                        condition_return='GOOD' 
+                    )
             
             messages.success(request, f"Event '{event.title}' created successfully!")
             return redirect(DASHBOARD_URL_NAME)
@@ -132,9 +135,14 @@ def create_event(request):
 @login_required
 def update_event(request, pk):
     """
-    Updates an event with conflict checks.
+    Handles Event updates with Safe Redirection if event is missing.
     """
-    event = get_object_or_404(Event, pk=pk, user=request.user)
+    try:
+        # SAFE LOOKUP: Prevents 404 Crash if notification clicks to deleted event
+        event = Event.objects.get(pk=pk, user=request.user)
+    except Event.DoesNotExist:
+        messages.warning(request, "⚠️ That event could not be found (it may have been deleted).")
+        return redirect(DASHBOARD_URL_NAME)
 
     if request.method == 'POST':
         form = EventForm(request.POST, instance=event, user=request.user)
@@ -144,34 +152,33 @@ def update_event(request, pk):
             new_end = form.cleaned_data['end_time']
             new_items = form.cleaned_data.get('items', []) 
 
-            overlapping_events = Event.objects.filter(
-                user=request.user,
-                start_time__lte=new_end,
-                end_time__gte=new_start
-            ).exclude(id=event.id)
-            
-            conflict_items = EventItem.objects.filter(
-                event__in=overlapping_events,
-                item__in=new_items
-            )
-            
-            if conflict_items.exists():
-                names = ", ".join([r.item.name for r in conflict_items])
-                messages.error(request, f"❌ Update Failed: Conflict with items: {names}")
-                return render(request, 'events/create_event.html', {'form': form, 'title': 'Edit Event'})
+            if new_items:
+                overlapping_events = Event.objects.filter(
+                    user=request.user,
+                    start_time__lte=new_end,
+                    end_time__gte=new_start
+                ).exclude(id=event.id)
+                
+                conflict_items = EventItem.objects.filter(
+                    event__in=overlapping_events,
+                    item__in=new_items
+                )
+                
+                if conflict_items.exists():
+                    names = ", ".join([r.item.name for r in conflict_items])
+                    messages.error(request, f"❌ Update Failed: Conflict with items: {names}")
+                    return render(request, 'events/create_event.html', {'form': form, 'title': 'Edit Event'})
 
             event_obj = form.save()
             
             current_manifest_ids = set(EventItem.objects.filter(event=event).values_list('item_id', flat=True))
             new_item_ids = set(item.id for item in new_items)
             
-            # Add new items
             items_to_add = new_item_ids - current_manifest_ids
             for item_id in items_to_add:
                 item_obj = next(i for i in new_items if i.id == item_id)
                 EventItem.objects.create(event=event, item=item_obj, handled_by=request.user)
 
-            # Remove unchecked items
             items_to_remove = current_manifest_ids - new_item_ids
             if items_to_remove:
                 EventItem.objects.filter(event=event, item_id__in=items_to_remove).delete()
@@ -189,9 +196,14 @@ def update_event(request, pk):
 @login_required
 def event_report(request, pk):
     """
-    Read-Only Audit Report.
+    Read-Only Audit Report with Safe Redirection.
     """
-    event = get_object_or_404(Event, pk=pk, user=request.user)
+    try:
+        event = Event.objects.get(pk=pk, user=request.user)
+    except Event.DoesNotExist:
+        messages.warning(request, "⚠️ Report unavailable. The event was not found.")
+        return redirect(DASHBOARD_URL_NAME)
+
     manifest_items = event.manifest.select_related('item').all()
     
     total_gear_value = sum(record.item.daily_rate or 0 for record in manifest_items)
@@ -216,12 +228,13 @@ def event_report(request, pk):
 def create_document(request, event_id):
     """
     Frontend view: Generates Quotes/Invoices for a specific Event.
-    Includes Smart Logic to pre-fill data from the Event Manifest and Inventory.
     """
-    event = get_object_or_404(Event, pk=event_id, user=request.user)
+    try:
+        event = Event.objects.get(pk=event_id, user=request.user)
+    except Event.DoesNotExist:
+        messages.warning(request, "⚠️ Cannot create document. Event not found.")
+        return redirect(DASHBOARD_URL_NAME)
 
-    # 1. Fetch Inventory for "Quick-Add" Autocomplete (Serialize for JS)
-    # This allows Vendors/Agencies to quickly pick services they added to their locker
     inventory_qs = InventoryItem.objects.filter(owner=request.user).values('name', 'daily_rate', 'description')
     inventory_json = json.dumps(list(inventory_qs), default=str)
 
@@ -230,30 +243,25 @@ def create_document(request, event_id):
         formset = LineItemFormSet(request.POST)
 
         if form.is_valid() and formset.is_valid():
-            # 1. Save Document
             doc = form.save(commit=False)
             doc.event = event
             doc.user = request.user
             doc.save()
 
-            # 2. Save Line Items
             items = formset.save(commit=False)
             for item in items:
                 item.document = doc
                 item.save()
-            formset.save() # Handle deletions
+            formset.save()
 
-            # 3. Recalculate Totals
             total = sum(item.quantity * item.unit_price for item in doc.items.all())
             doc.subtotal = total
             doc.total_amount = total
             doc.save()
 
             messages.success(request, f"{doc.get_doc_type_display()} created successfully!")
-            # Redirect to PDF for instant download/preview
             return redirect('generate_pdf', pk=doc.pk)
     else:
-        # Pre-fill data from Event
         initial_data = {
             'client_name': event.client_name,
             'client_phone': event.client_contact,
@@ -261,12 +269,10 @@ def create_document(request, event_id):
             'due_date': timezone.now().date() + timezone.timedelta(days=7),
         }
         
-        # SMART UX: Check if user clicked "Import from Manifest"
         formset_initial = []
         if request.GET.get('populate') == 'true':
             manifest_items = event.manifest.all()
             for record in manifest_items:
-                # Vendors/Agencies: This works for "Services" too if they are in the locker
                 formset_initial.append({
                     'description': record.item.name,
                     'details': record.item.description[:100] if record.item.description else "", 
@@ -275,37 +281,36 @@ def create_document(request, event_id):
                 })
                 
         form = DocumentForm(initial=initial_data)
-        
-        # Initialize Formset with data (if any)
         formset = LineItemFormSet(initial=formset_initial)
-        # If we pre-filled data, don't show extra empty rows
         formset.extra = 0 if formset_initial else 1
 
     return render(request, 'events/create_document.html', {
         'form': form,
         'formset': formset,
         'event': event,
-        'inventory_json': inventory_json, # Pass inventory data to JS for autocomplete
+        'inventory_json': inventory_json,
     })
 
 @login_required
 def document_list(request):
     """
-    The 'Filing Cabinet': Lists all Quotes, Invoices, and Receipts.
+    The 'Filing Cabinet'.
     """
     documents = Document.objects.filter(user=request.user).order_by('-created_at')
-    
-    context = {
-        'documents': documents
-    }
+    context = {'documents': documents}
     return render(request, 'events/document_list.html', context)
 
 @login_required
 def generate_document_pdf(request, pk):
     """
-    Generates a professional PDF (KK Photography Style).
+    Generates a professional PDF with Safe Redirection.
     """
-    doc = get_object_or_404(Document, pk=pk, user=request.user)
+    try:
+        # SAFE LOOKUP: Prevents crash if invoice notification clicked after deletion
+        doc = Document.objects.get(pk=pk, user=request.user)
+    except (Document.DoesNotExist, ValueError):
+        messages.warning(request, "⚠️ That document is unavailable or has been deleted.")
+        return redirect('document_list')
     
     context = {
         'doc': doc,
@@ -321,7 +326,6 @@ def generate_document_pdf(request, pk):
         filename = f"{doc.doc_number}_{doc.client_name}.pdf"
         response = HttpResponse(pdf, content_type='application/pdf')
         
-        # SMART TOGGLE: Check if user wants to Download or Preview
         if request.GET.get('download'):
             response['Content-Disposition'] = f'attachment; filename="{filename}"'
         else:

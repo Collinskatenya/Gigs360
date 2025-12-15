@@ -22,14 +22,14 @@
                     <p class="mb-0 opacity-75">
                         {% if user.is_staff %}
                             <span class="badge bg-white text-dark fw-bold me-2">
-                                <i class="bi bi-shield-lock-fill"></i> {{ user.profile.get_staff_role_display }}
+                                <i class="bi bi-shield-lock-fill"></i> {{ user.get_staff_role_display|default:"Staff Member" }}
                             </span>
                         {% else %}
                             <span class="badge bg-white text-primary fw-bold me-2">
-                                {{ user.profile.get_plan_tier_display }} Plan
+                                {{ user.get_subscription_plan_display }} Plan
                             </span>
                             
-                            {% if user.profile.plan_tier == 'FREE' %}
+                            {% if user.subscription_plan == 'Free' %}
                                 <a href="{% url 'pricing' %}" class="text-white text-decoration-underline small">Upgrade to Pro &rarr;</a>
                             {% endif %}
                         {% endif %}

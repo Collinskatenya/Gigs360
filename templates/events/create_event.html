@@ -1,159 +1,177 @@
 {% extends 'core/dashboard_base.html' %}
+{% load static %}
 
 {% block title %}
-    {% if form.instance.pk %}Edit Event{% else %}Create Event{% endif %} | Gigs360
+    {% if form.instance.pk %}Edit Event{% else %}Plan New Gig{% endif %} | Gigs360
 {% endblock %}
 
 {% block dashboard_content %}
-<div class="container-fluid">
+<div class="container-fluid px-4 py-4">
+    
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3 class="fw-bold text-dark">
-            {% if form.instance.pk %}
-                Edit Event: <span class="text-primary">{{ form.instance.title }}</span>
-            {% else %}
-                Plan New Event
-            {% endif %}
-        </h3>
-        <a href="{% url 'event_dashboard' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
-            <i class="bi bi-arrow-left me-2"></i> Back
+        <div>
+            <h3 class="fw-bold text-dark mb-0">
+                {% if form.instance.pk %}
+                    Edit: <span class="text-primary">{{ form.instance.title }}</span>
+                {% else %}
+                    Plan New Gig
+                {% endif %}
+            </h3>
+            <p class="text-muted small">Step 1: Logistics & Client Details. You can add gear later.</p>
+        </div>
+        <a href="{% url 'event_dashboard' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 hover-lift">
+            <i class="bi bi-x-lg me-2"></i> Cancel
         </a>
     </div>
 
     <form method="POST">
         {% csrf_token %}
-        <div class="row g-4">
-            
-            <div class="col-lg-8">
-                <div class="card border-0 shadow-sm rounded-4 h-100">
-                    <div class="card-header bg-white py-3 fw-bold border-bottom">Event Details</div>
+        
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                
+                <div class="card border-0 shadow-sm rounded-4 mb-4">
+                    <div class="card-header bg-white py-3 fw-bold border-bottom">
+                        <i class="bi bi-geo-alt-fill text-primary me-2"></i> Event Details
+                    </div>
                     <div class="card-body p-4">
-                        
                         <div class="row g-3">
-                            <div class="col-md-12">
-                                <label class="form-label small text-muted fw-bold">Event Title</label>
+                            <div class="col-md-8">
+                                <label class="form-label small fw-bold text-muted">Event Title</label>
                                 {{ form.title }}
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label small text-muted fw-bold">Type</label>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold text-muted">Event Type</label>
                                 {{ form.event_type }}
                             </div>
+
                             <div class="col-md-6">
-                                <label class="form-label small text-muted fw-bold">Location</label>
-                                {{ form.location }}
-                            </div>
-                            
-                            <div class="col-md-6">
-                                <label class="form-label small text-muted fw-bold">Start Date/Time</label>
+                                <label class="form-label small fw-bold text-muted">Start Time</label>
                                 {{ form.start_time }}
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label small text-muted fw-bold">End Date/Time</label>
+                                <label class="form-label small fw-bold text-muted">End Time</label>
                                 {{ form.end_time }}
                             </div>
-                            
+
                             <div class="col-12">
-                                <label class="form-label small text-muted fw-bold">Description / Notes</label>
-                                {{ form.description }}
+                                <label class="form-label small fw-bold text-muted">Venue / Location</label>
+                                {{ form.location }}
                             </div>
                         </div>
+                    </div>
+                </div>
 
-                        <h6 class="text-primary mt-4 mb-3 border-bottom pb-2 fw-bold">Client & Staff Info</h6>
+                <div class="card border-0 shadow-sm rounded-4 mb-4">
+                    <div class="card-body p-4">
+                        <h6 class="text-uppercase text-muted fw-bold small mb-3">Client Information</h6>
                         <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label small text-muted fw-bold">Client Name</label>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold text-muted">Client Name</label>
                                 {{ form.client_name }}
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label small text-muted fw-bold">Client Phone</label>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold text-muted">Contact (Phone/Email)</label>
                                 {{ form.client_contact }}
                             </div>
-                            <div class="col-12">
-                                <label class="form-label small text-muted fw-bold">Staff In-Charge</label>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold text-muted">Staff In-Charge</label>
                                 {{ form.staff_in_charge }}
                             </div>
                         </div>
+                    </div>
+                </div>
 
-                        <h6 class="text-primary mt-4 mb-3 border-bottom pb-2 fw-bold">Budget & Expenses</h6>
+                <div class="accordion mb-4 shadow-sm rounded-4 overflow-hidden" id="gearAccordion">
+                    <div class="accordion-item border-0">
+                        <h2 class="accordion-header" id="headingGear">
+                            <button class="accordion-button collapsed bg-light text-dark fw-bold py-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapseGear" aria-expanded="false">
+                                <div class="d-flex w-100 justify-content-between align-items-center me-3">
+                                    <span><i class="bi bi-camera-video-fill me-2 text-warning"></i> Select Equipment (Optional)</span>
+                                    <span id="availability-badge" class="badge bg-secondary rounded-pill fw-normal" style="font-size: 0.75rem;">Set Dates First</span>
+                                </div>
+                            </button>
+                        </h2>
+                        <div id="collapseGear" class="accordion-collapse collapse" data-bs-parent="#gearAccordion">
+                            <div class="accordion-body bg-white p-0">
+                                
+                                <div class="p-3 border-bottom bg-light">
+                                    <input type="text" id="inventorySearch" class="form-control" placeholder="🔍 Search cameras, lights, mics...">
+                                </div>
+
+                                <div class="inventory-grid p-3" style="max-height: 400px; overflow-y: auto;">
+                                    {% if form.items.field.queryset.exists %}
+                                        <div class="row g-2">
+                                            {% for checkbox in form.items %}
+                                            <div class="col-md-6 col-lg-4 item-row">
+                                                <label class="d-flex align-items-center gap-2 border rounded p-2 h-100 hover-bg-light cursor-pointer">
+                                                    {{ checkbox.tag }}
+                                                    <span class="small fw-bold item-label text-truncate">{{ checkbox.choice_label }}</span>
+                                                    <span class="status-indicator ms-auto"></span>
+                                                </label>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <div class="text-center py-4 text-muted">
+                                            <i class="bi bi-box-seam display-4 opacity-25"></i>
+                                            <p class="mt-2 small">Your Gear Locker is empty.</p>
+                                            <a href="{% url 'inventory:add_item' %}" class="btn btn-sm btn-primary rounded-pill">Add Gear</a>
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm rounded-4 mb-4">
+                    <div class="card-body p-4">
+                        <h6 class="text-uppercase text-muted fw-bold small mb-3">Internal Costs & Notes</h6>
                         <div class="row g-3">
+                            <div class="col-12">
+                                {{ form.description }}
+                            </div>
                             <div class="col-md-4">
-                                <label class="form-label small text-muted fw-bold">Transport Cost</label>
+                                <label class="form-label small fw-bold text-muted">Transport Cost</label>
                                 <div class="input-group">
-                                    <span class="input-group-text bg-light text-muted">KES</span>
+                                    <span class="input-group-text bg-white text-muted">KES</span>
                                     {{ form.transport_cost }}
                                 </div>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label small text-muted fw-bold">Labor / Crew</label>
+                                <label class="form-label small fw-bold text-muted">Labor Cost</label>
                                 <div class="input-group">
-                                    <span class="input-group-text bg-light text-muted">KES</span>
+                                    <span class="input-group-text bg-white text-muted">KES</span>
                                     {{ form.labor_cost }}
                                 </div>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label small text-muted fw-bold">Miscellaneous</label>
+                                <label class="form-label small fw-bold text-muted">Misc Cost</label>
                                 <div class="input-group">
-                                    <span class="input-group-text bg-light text-muted">KES</span>
+                                    <span class="input-group-text bg-white text-muted">KES</span>
                                     {{ form.miscellaneous_cost }}
                                 </div>
                             </div>
                         </div>
-                        
+
                         {% if form.instance.pk %}
-                        <div class="alert alert-light border mt-4 d-flex align-items-center">
-                            <div class="form-check form-switch">
-                                {{ form.is_completed }}
-                                <label class="form-check-label fw-bold ms-2" for="id_is_completed">Mark Event as Completed (Gear Returned)</label>
-                            </div>
+                        <div class="form-check form-switch mt-4 p-3 bg-light rounded border">
+                            {{ form.is_completed }}
+                            <label class="form-check-label fw-bold ms-2" for="id_is_completed">Mark Gig as Completed</label>
                         </div>
                         {% endif %}
-
                     </div>
                 </div>
-            </div>
 
-            <div class="col-lg-4">
-                <div class="card border-0 shadow-sm rounded-4 h-100">
-                    <div class="card-header bg-white py-3 fw-bold border-bottom text-danger d-flex justify-content-between align-items-center">
-                        <span><i class="bi bi-box-seam me-2"></i> Select Equipment</span>
-                        <span id="availability-badge" class="badge bg-secondary">Checking...</span>
-                    </div>
-                    
-                    <div class="card-body p-0 d-flex flex-column" style="height: 600px;">
-                        <div class="p-2 border-bottom">
-                            <input type="text" id="inventorySearch" class="form-control form-control-sm border-0 bg-light" placeholder="Search inventory...">
-                        </div>
-                        
-                        <div class="list-group list-group-flush flex-grow-1 overflow-auto" id="inventoryList">
-                            {% if form.items.field.queryset.exists %}
-                                {% for checkbox in form.items %}
-                                <label class="list-group-item d-flex gap-3 align-items-center list-group-item-action item-row" data-item-id="{{ checkbox.data.value }}">
-                                    {{ checkbox.tag }} 
-                                    <span class="d-flex align-items-center gap-2 w-100 item-label">
-                                        <div class="bg-light rounded p-1 text-secondary"><i class="bi bi-camera-video"></i></div>
-                                        <span class="fw-medium text-dark">{{ checkbox.choice_label }}</span>
-                                    </span>
-                                    <span class="status-indicator"></span>
-                                </label>
-                                {% endfor %}
-                            {% else %}
-                                <div class="text-center p-5 text-muted">
-                                    <i class="bi bi-exclamation-circle display-4 mb-3 d-block opacity-25"></i>
-                                    <p class="small">No items found.</p>
-                                    <a href="{% url 'add_item' %}" class="btn btn-sm btn-outline-primary rounded-pill">Add Gear First</a>
-                                </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                    
-                    <div class="card-footer bg-light p-3">
-                         <button type="submit" class="btn btn-success w-100 fw-bold py-2 rounded-pill shadow-sm">
-                            <i class="bi bi-check-lg me-2"></i> 
-                            {% if form.instance.pk %}Update Event{% else %}Create Event{% endif %}
-                         </button>
-                    </div>
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end pb-5">
+                    <button type="submit" class="btn btn-primary btn-lg fw-bold px-5 rounded-pill shadow hover-lift" style="background-color: #003366; border: none;">
+                        <i class="bi bi-check-circle-fill me-2"></i> Save Gig
+                    </button>
                 </div>
-            </div>
 
+            </div>
         </div>
     </form>
 </div>
@@ -165,79 +183,92 @@ document.addEventListener('DOMContentLoaded', function() {
     const statusBadge = document.getElementById('availability-badge');
     const itemRows = document.querySelectorAll('.item-row');
 
-    // 1. Search Functionality
+    // 1. FILTER: Search bar functionality
     document.getElementById('inventorySearch').addEventListener('keyup', function() {
         let searchText = this.value.toLowerCase();
         itemRows.forEach(function(row) {
             let label = row.querySelector('.item-label').innerText.toLowerCase();
             if (label.includes(searchText)) {
-                row.classList.remove('d-none'); // Show
+                row.style.display = ""; // Show
             } else {
-                row.classList.add('d-none');    // Hide
+                row.style.display = "none"; // Hide
             }
         });
     });
 
-    // 2. Check Availability Function
+    // 2. API: Check Availability
     function checkAvailability() {
         const start = startInput.value;
         const end = endInput.value;
 
         if (!start || !end) {
-            statusBadge.className = 'badge bg-secondary';
-            statusBadge.innerText = 'Select Dates';
+            statusBadge.className = 'badge bg-secondary rounded-pill';
+            statusBadge.innerText = 'Select Dates First';
             return;
         }
 
-        statusBadge.className = 'badge bg-warning text-dark';
-        statusBadge.innerText = 'Checking...';
+        statusBadge.className = 'badge bg-warning text-dark rounded-pill';
+        statusBadge.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Checking...';
 
-        // Call the API we created in Step 1
+        // Call the API
         fetch(`/events/api/check-availability/?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`)
             .then(response => response.json())
             .then(data => {
                 if (data.items) {
-                    // Get IDs of available items
                     const availableIds = new Set(data.items.map(i => i.id.toString()));
 
-                    // Update UI
                     itemRows.forEach(row => {
                         const checkbox = row.querySelector('input[type="checkbox"]');
                         const itemId = checkbox.value;
+                        const label = row.querySelector('label');
                         const indicator = row.querySelector('.status-indicator');
 
                         if (availableIds.has(itemId)) {
                             // Available
-                            row.classList.remove('list-group-item-danger', 'opacity-50');
+                            label.classList.remove('bg-danger-subtle', 'opacity-50', 'border-danger');
                             checkbox.disabled = false;
                             indicator.innerHTML = '<i class="bi bi-check-circle-fill text-success"></i>';
                         } else {
                             // Conflict! (Already booked)
-                            // But allow keeping it checked if we are editing and it was ALREADY checked
+                            // Allow keeping it checked if we are editing and it was ALREADY checked
                             if (!checkbox.checked) {
-                                row.classList.add('list-group-item-danger', 'opacity-50');
+                                label.classList.add('bg-danger-subtle', 'opacity-50');
                                 checkbox.disabled = true;
-                                indicator.innerHTML = '<span class="badge bg-danger">Booked</span>';
+                                indicator.innerHTML = '<small class="text-danger fw-bold">Booked</small>';
                             }
                         }
                     });
                     
-                    statusBadge.className = 'badge bg-success';
-                    statusBadge.innerText = 'Updated';
+                    statusBadge.className = 'badge bg-success rounded-pill';
+                    statusBadge.innerText = 'Availability Updated';
                 }
             })
             .catch(err => {
                 console.error('Error:', err);
-                statusBadge.className = 'badge bg-danger';
-                statusBadge.innerText = 'Error';
+                statusBadge.className = 'badge bg-danger rounded-pill';
+                statusBadge.innerText = 'Network Error';
             });
     }
 
-    // Trigger on date change
+    // Trigger check when dates change
     if (startInput && endInput) {
         startInput.addEventListener('change', checkAvailability);
         endInput.addEventListener('change', checkAvailability);
     }
 });
 </script>
+
+<style>
+    .hover-lift:hover { transform: translateY(-2px); transition: 0.2s; }
+    .cursor-pointer { cursor: pointer; }
+    .hover-bg-light:hover { background-color: #f8f9fa; border-color: #003366 !important; }
+    
+    /* Make checkboxes bigger and cleaner */
+    input[type=checkbox].form-check-input {
+        width: 1.2em;
+        height: 1.2em;
+        margin-top: 0;
+        cursor: pointer;
+    }
+</style>
 {% endblock %}

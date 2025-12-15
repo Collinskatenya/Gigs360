@@ -13,7 +13,7 @@ urlpatterns = [
     path('add/', views.add_item, name='add_item'),
     
     # View Single Item Details
-    # FIX: Changed <int:pk> to <uuid:pk> to match your database schema (UUIDs)
+    # Correctly uses <uuid:pk> to match your UUID database IDs
     path('item/<uuid:pk>/', views.item_detail, name='item_detail'),
     
     # Edit Item

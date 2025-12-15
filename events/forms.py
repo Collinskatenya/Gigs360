@@ -10,12 +10,11 @@ from inventory.models import InventoryItem
 
 class EventForm(forms.ModelForm):
     # ROBUSTNESS: Start with empty queryset to optimize page load speed.
-    # The actual items are loaded dynamically in __init__.
     items = forms.ModelMultipleChoiceField(
         queryset=InventoryItem.objects.none(), 
         widget=forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input'}),
-        required=False,
-        label="Select Equipment Needed"
+        required=False, # <--- CRITICAL: Allows creating event without selecting gear immediately
+        label="Select Equipment (Optional - Can be added later)"
     )
 
     class Meta:
@@ -35,7 +34,6 @@ class EventForm(forms.ModelForm):
             'client_contact': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Phone/Email'}),
             'staff_in_charge': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Lead Creative'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            # Uses HTML5 date pickers for better mobile/desktop support
             'start_time': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
             'end_time': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
             'transport_cost': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0.00'}),
@@ -45,17 +43,18 @@ class EventForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
-        # Safely extract user
+        # Safely extract user to filter their specific inventory
         user = kwargs.pop('user', None) 
         super(EventForm, self).__init__(*args, **kwargs)
 
         if user:
             # --- INTELLIGENT INVENTORY FILTER ---
-            
-            # ✅ VERIFIED FIX: Matches InventoryItem.owner field.
+            # 1. Show items owned by user
+            # 2. Exclude broken items (LOST/DAMAGED)
             query = Q(owner=user) & ~Q(status__in=['LOST', 'DAMAGED'])
             
-            # ROBUSTNESS: Ensure currently booked items don't disappear on Edit.
+            # ROBUSTNESS: Ensure currently booked items remain visible in the form
+            # even if they were marked DAMAGED after the booking was made.
             if self.instance.pk:
                 current_item_ids = self.instance.manifest.values_list('item_id', flat=True)
                 query = query | Q(id__in=current_item_ids)
@@ -70,7 +69,7 @@ class EventForm(forms.ModelForm):
 
 
 # ==========================================
-# 2. INVOICING & QUOTE FORMS (New)
+# 2. INVOICING & QUOTE FORMS
 # ==========================================
 
 class DocumentForm(forms.ModelForm):
@@ -81,7 +80,7 @@ class DocumentForm(forms.ModelForm):
             'doc_type': forms.Select(attrs={'class': 'form-select'}),
             'client_name': forms.TextInput(attrs={'class': 'form-control'}),
             
-            # ✅ FIXED: Changed forms.EmailField (Logic) to forms.EmailInput (Widget)
+            # ✅ FIXED: Used EmailInput (Widget) instead of EmailField (Field Class)
             'client_email': forms.EmailInput(attrs={'class': 'form-control'}),
             
             'client_phone': forms.TextInput(attrs={'class': 'form-control'}),
@@ -95,7 +94,7 @@ class DocumentForm(forms.ModelForm):
 LineItemFormSet = inlineformset_factory(
     Document, LineItem,
     fields=('description', 'details', 'quantity', 'unit_price'),
-    extra=1,  # Shows 1 empty row by default
+    extra=1,  # Shows 1 empty row by default for new items
     can_delete=True,
     widgets={
         'description': forms.TextInput(attrs={'class': 'form-control fw-bold', 'placeholder': 'Item / Package Name'}),
