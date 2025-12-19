@@ -16,7 +16,7 @@
                     </p>
                 </div>
                 <div>
-                    <a href="{% url 'event_dashboard' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 me-2">
+                    <a href="{% url 'events:event_dashboard' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 me-2">
                         Cancel
                     </a>
                 </div>
@@ -87,7 +87,7 @@
                                    placeholder="Type to search gear/services..." 
                                    list="inventory-list"
                                    id="{{ form.description.auto_id }}">
-                            </div>
+                        </div>
                         
                         <div class="col-md-4">
                             {{ form.details }}
@@ -146,17 +146,25 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // 1. Load Inventory Data from View (Passed as JSON)
-        // This makes the autocomplete work!
-        const inventoryData = JSON.parse('{{ inventory_json|escapejs }}');
+        // 1. Load Inventory Data safely
+        const rawJson = '{{ inventory_json|escapejs }}';
+        let inventoryData = [];
+        
+        if (rawJson) {
+            try {
+                inventoryData = JSON.parse(rawJson);
+            } catch (e) {
+                console.error("Error parsing inventory JSON:", e);
+            }
+        }
+
         const dataList = document.getElementById('inventory-list');
         
         // Populate Datalist options
-        if (inventoryData) {
+        if (inventoryData.length > 0) {
             inventoryData.forEach(item => {
                 const option = document.createElement('option');
                 option.value = item.name;
-                // We store price in a data attribute (though datalist doesn't officially support it, we find via JS)
                 dataList.appendChild(option);
             });
         }

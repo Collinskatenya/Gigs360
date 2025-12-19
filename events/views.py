@@ -4,16 +4,18 @@ from django.contrib import messages
 from django.utils import timezone
 from django.http import JsonResponse, HttpResponse
 from django.utils.dateparse import parse_datetime
+from django.views.decorators.http import require_POST  # Security Check
 import json 
 
 # Import forms and models
 from .forms import EventForm, DocumentForm, LineItemFormSet
 from .models import Event, EventItem, Document
 from inventory.models import InventoryItem 
+from core.models import Notification  # <--- CRITICAL: Enables Bell Notifications
 from .utils import render_to_pdf
 
 # --- CONFIGURATION ---
-DASHBOARD_URL_NAME = 'event_dashboard' 
+DASHBOARD_URL_NAME = 'events:event_dashboard' 
 
 # ==========================================
 # 1. EVENT DASHBOARD & OPERATIONS
@@ -254,13 +256,15 @@ def create_document(request, event_id):
                 item.save()
             formset.save()
 
+            # Calculate Totals
             total = sum(item.quantity * item.unit_price for item in doc.items.all())
             doc.subtotal = total
             doc.total_amount = total
             doc.save()
 
             messages.success(request, f"{doc.get_doc_type_display()} created successfully!")
-            return redirect('generate_pdf', pk=doc.pk)
+            # Redirect to the PDF generation view to preview it
+            return redirect('events:generate_pdf', pk=doc.pk)
     else:
         initial_data = {
             'client_name': event.client_name,
@@ -310,7 +314,7 @@ def generate_document_pdf(request, pk):
         doc = Document.objects.get(pk=pk, user=request.user)
     except (Document.DoesNotExist, ValueError):
         messages.warning(request, "⚠️ That document is unavailable or has been deleted.")
-        return redirect('document_list')
+        return redirect('events:document_list')
     
     context = {
         'doc': doc,
@@ -334,3 +338,44 @@ def generate_document_pdf(request, pk):
         return response
         
     return HttpResponse("Error generating PDF", status=500)
+
+
+# ==========================================
+# 3. SAFETY & MAINTENANCE (Safe Delete)
+# ==========================================
+
+@login_required
+@require_POST  # FIX: Ensures this view only accepts POST requests
+def delete_document(request, pk):
+    """
+    Safely deletes a document AND creates a persistent notification.
+    """
+    # 1. Fetch Document
+    doc = get_object_or_404(Document, pk=pk, user=request.user)
+    
+    # 2. Security Check (Case-Insensitive)
+    # This prevents deleting SENT or PAID invoices, keeping financial records safe.
+    if str(doc.status).upper() != 'DRAFT':
+        messages.error(request, f"⛔ Restricted: Cannot delete {doc.doc_number} because it is {doc.status}.")
+        return redirect('events:document_list')
+
+    # 3. Capture info for notification BEFORE deleting
+    doc_number = doc.doc_number
+    
+    # 4. Perform Delete
+    doc.delete()
+    
+    # 5. CREATE BELL NOTIFICATION (Persistent)
+    # This ensures it shows up in the bell menu even after the page refresh.
+    Notification.objects.create(
+        user=request.user,
+        title="Document Deleted",
+        message=f"Draft document {doc_number} was permanently deleted.",
+        notification_type='success',  # Makes it show green/blue icon in bell
+        link='#'  # No link because the item is gone
+    )
+
+    # 6. Flash Message (Temporary banner)
+    messages.success(request, f"✅ Document {doc_number} deleted successfully.")
+    
+    return redirect('events:document_list')

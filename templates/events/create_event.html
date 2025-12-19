@@ -19,7 +19,7 @@
             </h3>
             <p class="text-muted small">Step 1: Logistics & Client Details. You can add gear later.</p>
         </div>
-        <a href="{% url 'event_dashboard' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 hover-lift">
+        <a href="{% url 'events:event_dashboard' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 hover-lift">
             <i class="bi bi-x-lg me-2"></i> Cancel
         </a>
     </div>
@@ -210,8 +210,11 @@ document.addEventListener('DOMContentLoaded', function() {
         statusBadge.className = 'badge bg-warning text-dark rounded-pill';
         statusBadge.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Checking...';
 
-        // Call the API
-        fetch(`/events/api/check-availability/?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`)
+        // --- UPDATED FIX: Uses Django Namespace URL + JS Parameters ---
+        const baseUrl = "{% url 'events:check_availability' %}";
+        const queryParams = `?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
+        
+        fetch(baseUrl + queryParams)
             .then(response => response.json())
             .then(data => {
                 if (data.items) {

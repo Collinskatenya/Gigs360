@@ -1,7 +1,7 @@
 from django.urls import path
 from . import views
 
-# CRITICAL: This namespace is required for {% url 'inventory:inventory_list' %} to work
+# CRITICAL: This namespace is required for sidebar links to work
 app_name = 'inventory'
 
 urlpatterns = [
@@ -13,19 +13,19 @@ urlpatterns = [
     path('add/', views.add_item, name='add_item'),
     
     # View Single Item Details
-    # Correctly uses <uuid:pk> to match your UUID database IDs
+    # Uses <uuid:pk> to match your database IDs
     path('item/<uuid:pk>/', views.item_detail, name='item_detail'),
     
-    # Edit Item
-    path('edit/<uuid:pk>/', views.edit_item, name='edit_item'),
+    # Edit Item (View function is 'update_item', URL name is 'update_item')
+    path('update/<uuid:pk>/', views.update_item, name='update_item'),
     
     # Delete item
     path('delete/<uuid:pk>/', views.delete_item, name='delete_item'),
 
     # --- QR Scanner Features ---
-    # Matches 'rapid_scan' view name
     path('rapid-scan/', views.rapid_scan, name='rapid_scan'),
     
-    # The Hidden API that processes the scan (AJAX)
-    path('api/scan/', views.scan_api, name='scan_api'),
+    # API for AJAX calls
+    # Name must be 'scan_api' to match your rapid_scan.html template
+    path('api/scan/', views.process_scan_api, name='scan_api'),
 ]

@@ -7,10 +7,11 @@ def notifications(request):
     """
     if request.user.is_authenticated:
         # 1. Get the Badge Count (Unread only)
+        # This determines if the red dot appears
         count = Notification.objects.filter(user=request.user, is_read=False).count()
         
         # 2. Get the Dropdown List (Recent 10, regardless of read status)
-        # We limit to 10 to keep the query fast on every page load.
+        # This ensures the dropdown isn't empty just because you read the messages.
         recent_notifications = Notification.objects.filter(user=request.user).order_by('-created_at')[:10]
         
         return {

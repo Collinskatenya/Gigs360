@@ -24,14 +24,17 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     
     # Third Party Apps
-    'django_daraja',  # For M-Pesa Integration
+    # 'django_daraja',  # <--- UNCOMMENT when you install django-daraja and build finance app
     
     # My Apps
     'core',           # Handles Custom User & Auth
     'inventory',      # Handles Gear & QR Codes
     'events',         # Handles Gigs & PDF Invoicing
-    'finance',        # Handles Transactions (Future)
-    'community',      # Handles GigHub (Future)
+    
+    # ⚠️ These apps don't exist yet. Keeping them active would crash the server.
+    # Uncomment them only after you run 'python manage.py startapp finance', etc.
+    # 'finance',        
+    # 'community',      
 ]
 
 MIDDLEWARE = [
@@ -58,7 +61,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 
-                # 🚨 CRITICAL ADDITION FOR NOTIFICATIONS 🚨
+                # 🚨 GLOBAL NOTIFICATIONS (Verified)
                 'core.context_processors.notifications', 
             ],
         },
@@ -125,5 +128,17 @@ CSRF_COOKIE_HTTPONLY = False
 # Email (Console Backend for testing - prints emails to terminal)
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 DEFAULT_FROM_EMAIL = 'Gigs360 <noreply@gigs360.co.ke>'
+
+# -------------------------------------------------------------------------
+# 💳 M-PESA DARAJA API CONFIGURATION (Future Use)
+# -------------------------------------------------------------------------
+# These are the Sandbox (Test) Credentials.
+# When you go live, change ENVIRONMENT to 'production' and update keys.
+MPESA_ENVIRONMENT = 'sandbox' 
+MPESA_CONSUMER_KEY = 'your_consumer_key_here'     
+MPESA_CONSUMER_SECRET = 'your_consumer_secret_here' 
+MPESA_SHORTCODE = '174379' # Standard Test Paybill
+MPESA_PASSKEY = 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919'
+MPESA_CALLBACK_URL = 'https://your-domain.com/finance/callback/' 
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
