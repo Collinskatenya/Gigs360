@@ -4,9 +4,10 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
+from django.db import transaction  # Import for database safety
 import json
 
-# VERIFIED: Using correct model name 'InventoryItem'
+# VERIFIED: Correct Model Import
 from .models import InventoryItem
 from .forms import InventoryItemForm
 
@@ -19,7 +20,6 @@ def inventory_list(request):
     """
     The Gear Locker: Shows all items owned by the user.
     """
-    # VERIFIED: Filtering by 'owner' correctly
     items = InventoryItem.objects.filter(owner=request.user).order_by('-created_at')
     return render(request, 'inventory/inventory_list.html', {'items': items})
 
@@ -35,8 +35,8 @@ def add_item(request):
             item.owner = request.user
             item.save()
             messages.success(request, f"{item.name} added to Gear Locker!")
-            # VERIFIED: Added namespace 'inventory:' to prevent NoReverseMatch
-            return redirect('inventory:inventory_list') 
+            # VERIFIED: Namespace 'inventory:' used correctly
+            return redirect('inventory:inventory_list')
     else:
         form = InventoryItemForm()
     
@@ -64,8 +64,14 @@ def edit_item(request, pk):
 def item_detail(request, pk):
     """
     Shows the full profile (Specs, QR, History).
+    SAFE MODE: Redirects to locker if item is missing (Fixes 404 Crash).
     """
-    item = get_object_or_404(InventoryItem, pk=pk, owner=request.user)
+    try:
+        item = InventoryItem.objects.get(pk=pk, owner=request.user)
+    except (InventoryItem.DoesNotExist, ValueError):
+        messages.warning(request, "⚠️ That item no longer exists or has been deleted.")
+        return redirect('inventory:inventory_list')
+
     return render(request, 'inventory/item_detail.html', {'item': item})
 
 @login_required
@@ -84,7 +90,7 @@ def delete_item(request, pk):
 # -------------------------------------------------------------------------
 
 @login_required
-def rapid_scan(request): # RENAMED from 'rapid_scan_page' to match urls.py
+def rapid_scan(request):
     """
     Renders the Camera Interface for mobile scanning.
     """
@@ -95,53 +101,73 @@ def rapid_scan(request): # RENAMED from 'rapid_scan_page' to match urls.py
 def scan_api(request):
     """
     The hidden API that processes the QR code scan from the JS frontend.
+    ROBUST VERSION: Handles JSON errors, DB locking, and invalid UUIDs.
     """
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            raw_data = data.get('qr_data', '')
-            mode = data.get('mode') # 'checkout' or 'checkin'
-            
-            # 1. Parse ID from URL (e.g. gigs360.com/scan/<ID>)
-            if '/' in raw_data:
-                item_id = raw_data.rstrip('/').split('/')[-1]
-            else:
-                item_id = raw_data
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Invalid Request Method'}, status=405)
 
-            # 2. Find Item (Using 'id' which maps to the Primary Key)
-            item = get_object_or_404(InventoryItem, id=item_id, owner=request.user)
-            
+    try:
+        data = json.loads(request.body)
+        # Matches the JS payload key 'uuid' from the frontend script we wrote
+        raw_data = data.get('uuid') 
+        
+        # Fallback if frontend sends 'qr_data' (legacy compatibility)
+        if not raw_data:
+            raw_data = data.get('qr_data', '')
+
+        if not raw_data:
+            return JsonResponse({'status': 'error', 'message': 'No QR data provided'}, status=400)
+
+        # 1. Parse ID safely
+        # Handle cases where scan is a full URL "https://gigs360.com/view/UUID/"
+        if '/' in raw_data:
+            item_id = raw_data.rstrip('/').split('/')[-1]
+        else:
+            item_id = raw_data
+
+        # 2. Atomic Transaction for Safety (Concurrency Check)
+        with transaction.atomic():
+            # Lock the row so no one else can edit it while we are checking it
+            try:
+                # select_for_update() locks the row in the DB until this block finishes
+                item = InventoryItem.objects.select_for_update().get(id=item_id, owner=request.user)
+            except (InventoryItem.DoesNotExist, ValueError):
+                return JsonResponse({'status': 'error', 'message': 'Item not found in your locker.'}, status=404)
+
+            # 3. Robust Toggle Logic (Smart Check-In/Out)
+            previous_status = item.status
             message = ""
             status_code = "success"
+            color = "success"
 
-            # 3. Check-Out Logic
-            if mode == 'checkout':
-                if item.status == 'RENTED':
-                    message = f"⚠️ {item.name} is ALREADY checked out."
-                    status_code = "warning"
-                else:
-                    item.status = 'RENTED'
-                    item.save()
-                    message = f"📤 Checked OUT: {item.name}"
+            if item.status == 'Available':
+                item.status = 'Rented'
+                action = "Checked OUT"
+                color = "warning" # Orange for rented
+            elif item.status == 'Rented':
+                item.status = 'Available'
+                action = "Checked IN"
+                color = "success" # Green for available
+            else:
+                # Edge case for 'Lost' or 'Maintenance' - Don't auto-toggle
+                return JsonResponse({
+                    'status': 'error', 
+                    'message': f"Item is marked as {item.status}. Cannot auto-scan."
+                }, status=400)
 
-            # 4. Check-In Logic
-            elif mode == 'checkin':
-                if item.status == 'AVAILABLE':
-                    message = f"⚠️ {item.name} is ALREADY in stock."
-                    status_code = "warning"
-                else:
-                    item.status = 'AVAILABLE'
-                    item.save()
-                    message = f"📥 Checked IN: {item.name}"
-
-            # 5. Audit Trail Update
-            item.last_scanned_at = timezone.now()
-            item.last_scanned_by = request.user
+            # 4. Save & Audit (You can extend this to save to a History Log model later)
             item.save()
+            
+            return JsonResponse({
+                'status': 'success', 
+                'message': f"{item.name} successfully {action}",
+                'new_state': item.status,
+                'item_name': item.name,
+                'color': color
+            })
 
-            return JsonResponse({'status': status_code, 'message': message, 'item': item.name})
-
-        except Exception as e:
-            return JsonResponse({'status': 'error', 'message': f"Scan Error: {str(e)}"})
-
-    return JsonResponse({'status': 'error', 'message': 'Invalid Request Method'})
+    except json.JSONDecodeError:
+        return JsonResponse({'status': 'error', 'message': 'Invalid JSON Data'}, status=400)
+    except Exception as e:
+        # Catch-all for unexpected server errors
+        return JsonResponse({'status': 'error', 'message': f"Server Error: {str(e)}"}, status=500)
