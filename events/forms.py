@@ -10,6 +10,7 @@ from inventory.models import InventoryItem
 
 class EventForm(forms.ModelForm):
     # ROBUSTNESS: Start with empty queryset to optimize page load speed.
+    # The actual items are populated dynamically in __init__ based on the logged-in user.
     items = forms.ModelMultipleChoiceField(
         queryset=InventoryItem.objects.none(), 
         widget=forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input'}),
@@ -23,13 +24,14 @@ class EventForm(forms.ModelForm):
             'title', 'event_type', 'start_time', 'end_time', 'location', 
             'description', 'client_name', 'client_contact', 'staff_in_charge',
             'transport_cost', 'labor_cost', 'miscellaneous_cost',
-            'is_completed'
+            'items', 'is_completed'
         ]
         
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Wedding at Karen Manor'}),
             'event_type': forms.Select(attrs={'class': 'form-select'}),
-            'location': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Venue Location'}),
+            # ID added to location for Google Maps Autocomplete
+            'location': forms.TextInput(attrs={'id': 'id_location', 'class': 'form-control', 'placeholder': 'Venue Location'}),
             'client_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Client Name'}),
             'client_contact': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Phone/Email'}),
             'staff_in_charge': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Lead Creative'}),
@@ -53,8 +55,8 @@ class EventForm(forms.ModelForm):
             # 2. Exclude broken items (LOST/DAMAGED)
             query = Q(owner=user) & ~Q(status__in=['LOST', 'DAMAGED'])
             
-            # ROBUSTNESS: Ensure currently booked items remain visible in the form
-            # even if they were marked DAMAGED after the booking was made.
+            # ROBUSTNESS: If editing an event, ensure currently booked items remain 
+            # visible in the list, even if they were marked DAMAGED after booking.
             if self.instance.pk:
                 current_item_ids = self.instance.manifest.values_list('item_id', flat=True)
                 query = query | Q(id__in=current_item_ids)
@@ -62,7 +64,7 @@ class EventForm(forms.ModelForm):
             # Apply the filter to the form field
             self.fields['items'].queryset = InventoryItem.objects.filter(query)
             
-        # Pre-check boxes if editing an existing event
+        # Pre-check boxes if editing an existing event so the user sees what's already selected
         if self.instance.pk:
             current_items = self.instance.manifest.values_list('item_id', flat=True)
             self.fields['items'].initial = current_items
@@ -79,10 +81,7 @@ class DocumentForm(forms.ModelForm):
         widgets = {
             'doc_type': forms.Select(attrs={'class': 'form-select'}),
             'client_name': forms.TextInput(attrs={'class': 'form-control'}),
-            
-            # ✅ FIXED: Used EmailInput (Widget) instead of EmailField (Field Class)
             'client_email': forms.EmailInput(attrs={'class': 'form-control'}),
-            
             'client_phone': forms.TextInput(attrs={'class': 'form-control'}),
             'issue_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'due_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),

@@ -11,7 +11,7 @@ import json
 from .forms import EventForm, DocumentForm, LineItemFormSet
 from .models import Event, EventItem, Document
 from inventory.models import InventoryItem 
-from core.models import Notification  # <--- CRITICAL: Enables Bell Notifications
+from core.models import Notification  # Enables Bell Notifications
 from .utils import render_to_pdf
 
 # --- CONFIGURATION ---
@@ -194,6 +194,32 @@ def update_event(request, pk):
         'form': form, 
         'title': 'Edit Event'
     })
+
+# --- NEW: Cancel/Delete Event Feature ---
+@login_required
+@require_POST
+def delete_event(request, pk):
+    """
+    Deletes an event and automatically frees up all associated gear.
+    """
+    event = get_object_or_404(Event, pk=pk, user=request.user)
+    title = event.title
+    
+    # Deleting the event cascades and deletes all EventItem records,
+    # instantly freeing up the gear for other bookings.
+    event.delete()
+    
+    # Log to Notifications
+    Notification.objects.create(
+        user=request.user,
+        title="Event Cancelled",
+        message=f"Event '{title}' was cancelled. Gear has been returned to inventory.",
+        notification_type='warning',
+        link='#'
+    )
+
+    messages.success(request, f"Event '{title}' has been cancelled and deleted.")
+    return redirect('events:event_dashboard')
 
 @login_required
 def event_report(request, pk):

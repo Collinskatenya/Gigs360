@@ -5,7 +5,7 @@ from django.utils import timezone
 import uuid
 
 # ==========================================
-# 1. EVENT OPERATIONS (Your Verified Code)
+# 1. EVENT OPERATIONS
 # ==========================================
 
 class Event(models.Model):
@@ -84,7 +84,9 @@ class EventItem(models.Model):
     """
     The 'Manifest' - Tracks specific inventory items for ONE event.
     """
+    # CRITICAL: on_delete=CASCADE ensures gear is freed if event is cancelled/deleted.
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='manifest')
+    
     # Use string reference to prevent circular imports
     item = models.ForeignKey('inventory.InventoryItem', on_delete=models.CASCADE) 
     
@@ -108,7 +110,6 @@ class EventItem(models.Model):
 class Document(models.Model):
     """
     Stores Quotes, Invoices, and Receipts.
-    Supports the 'KK Photography' style of detailed breakdown.
     """
     DOC_TYPES = [
         ('QUOTE', 'Quotation'),
@@ -127,13 +128,16 @@ class Document(models.Model):
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    # CRITICAL: SET_NULL ensures invoice history is kept even if the Event is deleted.
     event = models.ForeignKey(Event, on_delete=models.SET_NULL, null=True, blank=True, related_name='documents')
+    
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     
     doc_type = models.CharField(max_length=10, choices=DOC_TYPES, default='QUOTE')
     doc_number = models.CharField(max_length=50, unique=True, editable=False)
     
-    # Client Snapshot (In case event details change later, the invoice remains static)
+    # Client Snapshot 
     client_name = models.CharField(max_length=200)
     client_email = models.EmailField(blank=True)
     client_phone = models.CharField(max_length=50, blank=True)
@@ -152,12 +156,11 @@ class Document(models.Model):
     discount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     
-    # Payment Tracking (For Receipts)
+    # Payment Tracking
     amount_paid = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     deposit_percentage = models.IntegerField(default=50, help_text="e.g. 70 for 70% deposit required")
     
-    # Smart Terms (AI Populated)
-    # This matches the 'Terms & Conditions' section in your PDF
+    # Smart Terms 
     notes = models.TextField(blank=True, help_text="Bank details, M-Pesa numbers, etc.")
     terms = models.TextField(blank=True, default="1. 70% Deposit required to secure booking.\n2. Balance due on delivery.")
 
@@ -166,6 +169,7 @@ class Document(models.Model):
         if not self.doc_number:
             prefix = self.doc_type[:2] # 'QU', 'IN', 'RE'
             today = timezone.now().strftime('%Y%m%d')
+            # Count existing docs for today to increment sequence
             count = Document.objects.filter(created_at__date=timezone.now().date()).count() + 1
             self.doc_number = f"{prefix}-{today}-{count:03d}"
         
@@ -188,10 +192,9 @@ class Document(models.Model):
 class LineItem(models.Model):
     """
     Represents rows in the Invoice/Quote.
-    Can be a single item (e.g., "Sony A7") or a Package (e.g., "Gold Package").
     """
     document = models.ForeignKey(Document, related_name='items', on_delete=models.CASCADE)
-    description = models.CharField(max_length=255) # e.g. "Photography - Gold Package"
+    description = models.CharField(max_length=255) 
     details = models.TextField(blank=True, help_text="Bullet points of what is included")
     quantity = models.IntegerField(default=1)
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)

@@ -40,11 +40,17 @@ def notify_profile_update(sender, instance, created, **kwargs):
             changes.append("Email")
             
         if changes:
+            # We use a try/except block to prevent crashes if the URL changes later
+            try:
+                link = reverse('settings') 
+            except:
+                link = '#'
+
             Notification.objects.create(
                 user=instance,
                 title="Security Alert",
                 message=f"Your {', '.join(changes)} was updated successfully.",
-                link=reverse('settings'),
+                link=link,
                 notification_type='warning'
             )
 
@@ -58,8 +64,8 @@ def notify_inventory_change(sender, instance, created, **kwargs):
     Triggered when Gear is Added or Edited.
     """
     action = "Added" if created else "Updated"
-    # Use 'inventory:item_detail' to match your urls.py namespace
     try:
+        # Correct: Uses 'inventory:' namespace
         link = reverse('inventory:item_detail', args=[instance.id])
     except:
         link = "#"
@@ -94,11 +100,17 @@ def notify_event_creation(sender, instance, created, **kwargs):
     Triggered when a new Gig is created.
     """
     if created:
+        try:
+            # FIX APPLIED HERE: Added 'events:' namespace
+            link = reverse('events:update_event', args=[instance.id])
+        except:
+            link = '#'
+
         Notification.objects.create(
             user=instance.user,
             title="New Gig Scheduled",
             message=f"Event '{instance.title}' is set for {instance.start_time.strftime('%b %d')}.",
-            link=reverse('update_event', args=[instance.id]),
+            link=link,
             notification_type='success'
         )
 
@@ -117,11 +129,17 @@ def notify_manifest_update(sender, instance, created, **kwargs):
         elif instance.scanned_in_at:
             status_msg = "scanned IN (Returned)"
 
+        try:
+            # FIX APPLIED HERE: Added 'events:' namespace
+            link = reverse('events:event_report', args=[instance.event.id])
+        except:
+            link = '#'
+
         Notification.objects.create(
             user=instance.event.user,
             title="Manifest Update",
             message=f"Gear '{instance.item.name}' was {status_msg} for '{instance.event.title}'.",
-            link=reverse('event_report', args=[instance.event.id]),
+            link=link,
             notification_type='info'
         )
 
@@ -136,10 +154,17 @@ def notify_invoice_creation(sender, instance, created, **kwargs):
     """
     if created:
         doc_type = instance.get_doc_type_display()
+        
+        try:
+            # FIX APPLIED HERE: Added 'events:' namespace
+            link = reverse('events:generate_pdf', args=[instance.id])
+        except:
+            link = '#'
+
         Notification.objects.create(
             user=instance.user,
             title=f"{doc_type} Ready",
             message=f"{doc_type} #{instance.doc_number} for {instance.client_name} is ready for download.",
-            link=reverse('generate_pdf', args=[instance.id]),
+            link=link,
             notification_type='success'
         )

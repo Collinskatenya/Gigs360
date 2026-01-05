@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block title %}
-    {% if form.instance.pk %}Edit Event{% else %}Plan New Gig{% endif %} | Gigs360
+    {% if form.instance.pk %}Edit: {{ form.instance.title }}{% else %}Plan New Gig{% endif %} | Gigs360
 {% endblock %}
 
 {% block dashboard_content %}
@@ -17,11 +17,19 @@
                     Plan New Gig
                 {% endif %}
             </h3>
-            <p class="text-muted small">Step 1: Logistics & Client Details. You can add gear later.</p>
+            <p class="text-muted small">Step 1: Logistics & Client Details. AI-Powered Availability Check.</p>
         </div>
-        <a href="{% url 'events:event_dashboard' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 hover-lift">
-            <i class="bi bi-x-lg me-2"></i> Cancel
-        </a>
+        <div class="d-flex gap-2">
+            {% if form.instance.pk %}
+            <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3 hover-lift" data-bs-toggle="modal" data-bs-target="#deleteEventModal">
+                <i class="bi bi-trash"></i> Cancel Gig
+            </button>
+            {% endif %}
+            
+            <a href="{% url 'events:event_dashboard' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 hover-lift">
+                <i class="bi bi-x-lg me-2"></i> Close
+            </a>
+        </div>
     </div>
 
     <form method="POST">
@@ -31,10 +39,18 @@
             <div class="col-lg-10">
                 
                 <div class="card border-0 shadow-sm rounded-4 mb-4">
-                    <div class="card-header bg-white py-3 fw-bold border-bottom">
-                        <i class="bi bi-geo-alt-fill text-primary me-2"></i> Event Details
+                    <div class="card-header bg-white py-3 fw-bold border-bottom d-flex align-items-center">
+                        <span class="bg-primary-subtle text-primary rounded-circle p-2 me-2"><i class="bi bi-calendar-event-fill"></i></span>
+                        Event Details
                     </div>
                     <div class="card-body p-4">
+                        {% if form.errors %}
+                            <div class="alert alert-danger shadow-sm rounded-3">
+                                <strong><i class="bi bi-exclamation-triangle-fill"></i> Please fix the errors:</strong>
+                                {{ form.errors }}
+                            </div>
+                        {% endif %}
+
                         <div class="row g-3">
                             <div class="col-md-8">
                                 <label class="form-label small fw-bold text-muted">Event Title</label>
@@ -57,6 +73,7 @@
                             <div class="col-12">
                                 <label class="form-label small fw-bold text-muted">Venue / Location</label>
                                 {{ form.location }}
+                                <div class="form-text text-primary"><i class="bi bi-geo-alt"></i> Start typing to search locations in East Africa...</div>
                             </div>
                         </div>
                     </div>
@@ -64,18 +81,18 @@
 
                 <div class="card border-0 shadow-sm rounded-4 mb-4">
                     <div class="card-body p-4">
-                        <h6 class="text-uppercase text-muted fw-bold small mb-3">Client Information</h6>
+                        <h6 class="text-uppercase text-muted fw-bold small mb-3 border-bottom pb-2">Client Information</h6>
                         <div class="row g-3">
                             <div class="col-md-4">
                                 <label class="form-label small fw-bold text-muted">Client Name</label>
                                 {{ form.client_name }}
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label small fw-bold text-muted">Contact (Phone/Email)</label>
+                                <label class="form-label small fw-bold text-muted">Contact</label>
                                 {{ form.client_contact }}
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label small fw-bold text-muted">Staff In-Charge</label>
+                                <label class="form-label small fw-bold text-muted">Staff Lead</label>
                                 {{ form.staff_in_charge }}
                             </div>
                         </div>
@@ -85,18 +102,24 @@
                 <div class="accordion mb-4 shadow-sm rounded-4 overflow-hidden" id="gearAccordion">
                     <div class="accordion-item border-0">
                         <h2 class="accordion-header" id="headingGear">
-                            <button class="accordion-button collapsed bg-light text-dark fw-bold py-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapseGear" aria-expanded="false">
+                            <button class="accordion-button collapsed bg-white text-dark fw-bold py-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapseGear" aria-expanded="false">
                                 <div class="d-flex w-100 justify-content-between align-items-center me-3">
-                                    <span><i class="bi bi-camera-video-fill me-2 text-warning"></i> Select Equipment (Optional)</span>
-                                    <span id="availability-badge" class="badge bg-secondary rounded-pill fw-normal" style="font-size: 0.75rem;">Set Dates First</span>
+                                    <div class="d-flex align-items-center">
+                                        <span class="bg-warning-subtle text-warning rounded-circle p-2 me-2"><i class="bi bi-camera-reels-fill"></i></span>
+                                        <span>Select Equipment</span>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <span id="selection-counter" class="badge bg-light text-dark border rounded-pill fw-normal">0 Selected</span>
+                                        <span id="availability-badge" class="badge bg-secondary rounded-pill fw-normal">Set Dates First</span>
+                                    </div>
                                 </div>
                             </button>
                         </h2>
                         <div id="collapseGear" class="accordion-collapse collapse" data-bs-parent="#gearAccordion">
-                            <div class="accordion-body bg-white p-0">
+                            <div class="accordion-body bg-light p-0">
                                 
-                                <div class="p-3 border-bottom bg-light">
-                                    <input type="text" id="inventorySearch" class="form-control" placeholder="🔍 Search cameras, lights, mics...">
+                                <div class="p-3 border-bottom bg-white sticky-top shadow-sm" style="z-index: 5;">
+                                    <input type="text" id="inventorySearch" class="form-control rounded-pill" placeholder="🔍 Filter gear (e.g. 'Sony', 'XLR')...">
                                 </div>
 
                                 <div class="inventory-grid p-3" style="max-height: 400px; overflow-y: auto;">
@@ -104,16 +127,18 @@
                                         <div class="row g-2">
                                             {% for checkbox in form.items %}
                                             <div class="col-md-6 col-lg-4 item-row">
-                                                <label class="d-flex align-items-center gap-2 border rounded p-2 h-100 hover-bg-light cursor-pointer">
+                                                <label class="d-flex align-items-center gap-2 border bg-white rounded p-2 h-100 hover-shadow cursor-pointer position-relative">
                                                     {{ checkbox.tag }}
-                                                    <span class="small fw-bold item-label text-truncate">{{ checkbox.choice_label }}</span>
-                                                    <span class="status-indicator ms-auto"></span>
+                                                    <div class="d-flex flex-column w-100 overflow-hidden">
+                                                        <span class="small fw-bold item-label text-truncate">{{ checkbox.choice_label }}</span>
+                                                    </div>
+                                                    <span class="status-indicator"></span>
                                                 </label>
                                             </div>
                                             {% endfor %}
                                         </div>
                                     {% else %}
-                                        <div class="text-center py-4 text-muted">
+                                        <div class="text-center py-5 text-muted">
                                             <i class="bi bi-box-seam display-4 opacity-25"></i>
                                             <p class="mt-2 small">Your Gear Locker is empty.</p>
                                             <a href="{% url 'inventory:add_item' %}" class="btn btn-sm btn-primary rounded-pill">Add Gear</a>
@@ -121,34 +146,40 @@
                                     {% endif %}
                                 </div>
 
+                                <div class="p-3 bg-white border-top text-end">
+                                    <button type="button" class="btn btn-dark btn-sm rounded-pill px-4" data-bs-toggle="collapse" data-bs-target="#collapseGear">
+                                        <i class="bi bi-check2"></i> Confirm Selection
+                                    </button>
+                                </div>
+
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card border-0 shadow-sm rounded-4 mb-5">
                     <div class="card-body p-4">
-                        <h6 class="text-uppercase text-muted fw-bold small mb-3">Internal Costs & Notes</h6>
+                        <h6 class="text-uppercase text-muted fw-bold small mb-3 border-bottom pb-2">Financials & Notes</h6>
                         <div class="row g-3">
                             <div class="col-12">
                                 {{ form.description }}
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label small fw-bold text-muted">Transport Cost</label>
+                                <label class="form-label small fw-bold text-muted">Transport</label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-white text-muted">KES</span>
                                     {{ form.transport_cost }}
                                 </div>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label small fw-bold text-muted">Labor Cost</label>
+                                <label class="form-label small fw-bold text-muted">Labor</label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-white text-muted">KES</span>
                                     {{ form.labor_cost }}
                                 </div>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label small fw-bold text-muted">Misc Cost</label>
+                                <label class="form-label small fw-bold text-muted">Misc</label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-white text-muted">KES</span>
                                     {{ form.miscellaneous_cost }}
@@ -165,10 +196,14 @@
                     </div>
                 </div>
 
-                <div class="d-grid gap-2 d-md-flex justify-content-md-end pb-5">
-                    <button type="submit" class="btn btn-primary btn-lg fw-bold px-5 rounded-pill shadow hover-lift" style="background-color: #003366; border: none;">
-                        <i class="bi bi-check-circle-fill me-2"></i> Save Gig
-                    </button>
+                <div class="fixed-bottom bg-white border-top shadow py-3 px-4 d-flex justify-content-between align-items-center" style="z-index: 1050;">
+                    <span class="text-muted small d-none d-md-block">Changes saved automatically on submit.</span>
+                    <div class="d-flex gap-2 w-100 w-md-auto justify-content-end">
+                         <a href="{% url 'events:event_dashboard' %}" class="btn btn-light border rounded-pill px-4">Cancel</a>
+                        <button type="submit" class="btn btn-primary fw-bold px-5 rounded-pill shadow-sm" style="background-color: #003366; border: none;">
+                            <i class="bi bi-check-circle-fill me-2"></i> Save Gig
+                        </button>
+                    </div>
                 </div>
 
             </div>
@@ -176,41 +211,98 @@
     </form>
 </div>
 
+{% if form.instance.pk %}
+<div class="modal fade" id="deleteEventModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title fs-6"><i class="bi bi-exclamation-triangle-fill me-2"></i> Cancel Event?</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">Are you sure you want to cancel <strong>{{ form.instance.title }}</strong>?</p>
+                <p class="small text-muted mt-2 mb-0">This will remove the event and <strong>immediately release all booked gear</strong> back to the inventory.</p>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Keep Event</button>
+                <form action="{% url 'events:delete_event' form.instance.pk %}" method="POST">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger btn-sm">Yes, Cancel Gig</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places&callback=initAutocomplete" async defer></script>
+
 <script>
+// --- 1. GOOGLE MAPS AUTOCOMPLETE ---
+function initAutocomplete() {
+    const locationInput = document.getElementById('id_location'); 
+    if (locationInput) {
+        const options = {
+            componentRestrictions: { country: ["ke", "ug", "tz", "rw"] }, // Focus on East Africa
+            fields: ["formatted_address", "geometry", "name"],
+            strictBounds: false,
+        };
+        const autocomplete = new google.maps.places.Autocomplete(locationInput, options);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const startInput = document.querySelector('input[name="start_time"]');
     const endInput = document.querySelector('input[name="end_time"]');
     const statusBadge = document.getElementById('availability-badge');
+    const selectionCounter = document.getElementById('selection-counter');
     const itemRows = document.querySelectorAll('.item-row');
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
 
-    // 1. FILTER: Search bar functionality
-    document.getElementById('inventorySearch').addEventListener('keyup', function() {
-        let searchText = this.value.toLowerCase();
-        itemRows.forEach(function(row) {
-            let label = row.querySelector('.item-label').innerText.toLowerCase();
-            if (label.includes(searchText)) {
-                row.style.display = ""; // Show
-            } else {
-                row.style.display = "none"; // Hide
-            }
+    // --- 2. UPDATE SELECTION COUNTER ---
+    function updateCounter() {
+        let count = 0;
+        checkboxes.forEach(cb => { if (cb.checked && !cb.disabled) count++; });
+        selectionCounter.innerText = `${count} Selected`;
+        
+        if (count > 0) {
+            selectionCounter.classList.remove('bg-light', 'text-dark');
+            selectionCounter.classList.add('bg-success', 'text-white');
+        } else {
+            selectionCounter.classList.add('bg-light', 'text-dark');
+            selectionCounter.classList.remove('bg-success', 'text-white');
+        }
+    }
+    checkboxes.forEach(cb => cb.addEventListener('change', updateCounter));
+    updateCounter(); // Init
+
+    // --- 3. SEARCH FILTER ---
+    const searchInput = document.getElementById('inventorySearch');
+    if (searchInput) {
+        searchInput.addEventListener('keyup', function() {
+            let searchText = this.value.toLowerCase();
+            itemRows.forEach(function(row) {
+                let label = row.querySelector('.item-label').innerText.toLowerCase();
+                row.style.display = label.includes(searchText) ? "" : "none";
+            });
         });
-    });
+    }
 
-    // 2. API: Check Availability
+    // --- 4. SMART AVAILABILITY CHECK ---
     function checkAvailability() {
+        if (!startInput || !endInput) return;
         const start = startInput.value;
         const end = endInput.value;
 
         if (!start || !end) {
             statusBadge.className = 'badge bg-secondary rounded-pill';
-            statusBadge.innerText = 'Select Dates First';
+            statusBadge.innerText = 'Set Dates First';
             return;
         }
 
         statusBadge.className = 'badge bg-warning text-dark rounded-pill';
-        statusBadge.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Checking...';
+        statusBadge.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Checking...';
 
-        // --- UPDATED FIX: Uses Django Namespace URL + JS Parameters ---
         const baseUrl = "{% url 'events:check_availability' %}";
         const queryParams = `?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
         
@@ -228,22 +320,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
                         if (availableIds.has(itemId)) {
                             // Available
-                            label.classList.remove('bg-danger-subtle', 'opacity-50', 'border-danger');
+                            label.classList.remove('bg-danger-subtle', 'opacity-50');
                             checkbox.disabled = false;
                             indicator.innerHTML = '<i class="bi bi-check-circle-fill text-success"></i>';
                         } else {
-                            // Conflict! (Already booked)
-                            // Allow keeping it checked if we are editing and it was ALREADY checked
+                            // Conflict
                             if (!checkbox.checked) {
                                 label.classList.add('bg-danger-subtle', 'opacity-50');
                                 checkbox.disabled = true;
-                                indicator.innerHTML = '<small class="text-danger fw-bold">Booked</small>';
+                                indicator.innerHTML = '<small class="text-danger fw-bold ms-2">Booked</small>';
                             }
                         }
                     });
                     
                     statusBadge.className = 'badge bg-success rounded-pill';
                     statusBadge.innerText = 'Availability Updated';
+                    updateCounter(); // Re-run counter to exclude disabled
                 }
             })
             .catch(err => {
@@ -253,7 +345,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
 
-    // Trigger check when dates change
     if (startInput && endInput) {
         startInput.addEventListener('change', checkAvailability);
         endInput.addEventListener('change', checkAvailability);
@@ -263,15 +354,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <style>
     .hover-lift:hover { transform: translateY(-2px); transition: 0.2s; }
+    .hover-shadow:hover { box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; border-color: #003366 !important; }
     .cursor-pointer { cursor: pointer; }
-    .hover-bg-light:hover { background-color: #f8f9fa; border-color: #003366 !important; }
     
-    /* Make checkboxes bigger and cleaner */
     input[type=checkbox].form-check-input {
         width: 1.2em;
         height: 1.2em;
         margin-top: 0;
         cursor: pointer;
     }
+    
+    /* Make the bottom bar sticky */
+    body { padding-bottom: 80px; }
 </style>
 {% endblock %}

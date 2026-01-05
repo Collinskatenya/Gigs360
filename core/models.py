@@ -105,7 +105,7 @@ class Notification(models.Model):
     TYPES = [
         ('success', 'Success'), # Green Check
         ('info', 'Info'),       # Blue Info
-        ('warning', 'Warning'), # Yellow Triangle
+        ('warning', 'Warning'), # Yellow Triangle 
         ('error', 'Error'),     # Red Alert
     ]
 
