@@ -129,16 +129,24 @@ CSRF_COOKIE_HTTPONLY = False
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 DEFAULT_FROM_EMAIL = 'Gigs360 <noreply@gigs360.co.ke>'
 
-# -------------------------------------------------------------------------
 # 💳 M-PESA DARAJA API CONFIGURATION (Future Use)
 # -------------------------------------------------------------------------
 # These are the Sandbox (Test) Credentials.
 # When you go live, change ENVIRONMENT to 'production' and update keys.
 MPESA_ENVIRONMENT = 'sandbox' 
-MPESA_CONSUMER_KEY = 'your_consumer_key_here'     
+MPESA_CONSUMER_KEY = 'your_consumer_key_here'      
 MPESA_CONSUMER_SECRET = 'your_consumer_secret_here' 
 MPESA_SHORTCODE = '174379' # Standard Test Paybill
 MPESA_PASSKEY = 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919'
 MPESA_CALLBACK_URL = 'https://your-domain.com/finance/callback/' 
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# ==========================================
+# ==========================================
+# 🌍 EXTERNAL SERVICES
+# ==========================================
+# TEMPORARY FIX: Hardcoding the key to force it to work.
+# We will move this back to .env later.
+
+GOOGLE_MAPS_API_KEY = 'AIzaSyAhx9g5jRBP76GEsW4St9Jfywa9cgwe03c'

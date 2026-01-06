@@ -5,6 +5,7 @@ from django.utils import timezone
 from django.http import JsonResponse, HttpResponse
 from django.utils.dateparse import parse_datetime
 from django.views.decorators.http import require_POST
+from django.conf import settings  # <--- CRITICAL IMPORT
 import json 
 
 # Import forms and models
@@ -110,7 +111,11 @@ def create_event(request):
                 if conflict_items.exists():
                     names = ", ".join([r.item.name for r in conflict_items])
                     messages.error(request, f"❌ Booking Failed: The following items are already booked: {names}")
-                    return render(request, 'events/create_event.html', {'form': form})
+                    # Return with API Key for map
+                    return render(request, 'events/create_event.html', {
+                        'form': form,
+                        'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY 
+                    })
 
             event = form.save(commit=False)
             event.user = request.user
@@ -132,7 +137,11 @@ def create_event(request):
     else:
         form = EventForm(user=request.user)
 
-    return render(request, 'events/create_event.html', {'form': form})
+    # Return with API Key for map
+    return render(request, 'events/create_event.html', {
+        'form': form,
+        'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY 
+    })
 
 @login_required
 def update_event(request, pk):
@@ -169,7 +178,11 @@ def update_event(request, pk):
                 if conflict_items.exists():
                     names = ", ".join([r.item.name for r in conflict_items])
                     messages.error(request, f"❌ Update Failed: Conflict with items: {names}")
-                    return render(request, 'events/create_event.html', {'form': form, 'title': 'Edit Event'})
+                    return render(request, 'events/create_event.html', {
+                        'form': form, 
+                        'title': 'Edit Event',
+                        'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY
+                    })
 
             event_obj = form.save()
             
@@ -192,7 +205,8 @@ def update_event(request, pk):
 
     return render(request, 'events/create_event.html', {
         'form': form, 
-        'title': 'Edit Event'
+        'title': 'Edit Event',
+        'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY # FIX: Uses variable, not raw key
     })
 
 # --- NEW: Cancel/Delete Event Feature ---

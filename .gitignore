@@ -1,23 +1,20 @@
---- Django Core ---
-
+# --- Django Core ---
 *.log
 *.pot
 *.pyc
-pycache/
+__pycache__/
 db.sqlite3
 db.sqlite3-journal
 media/
 
---- Environment & Secrets (CRITICAL) ---
-
+# --- Environment & Secrets (CRITICAL) ---
 .env
 .venv
 env/
 venv/
 ENV/
 
---- Editor Files (Junk files from VS Code) ---
-
+# --- Editor Files (Junk files from VS Code) ---
 .vscode/
 .idea/
 *.swp
