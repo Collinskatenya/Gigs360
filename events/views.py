@@ -4,14 +4,14 @@ from django.contrib import messages
 from django.utils import timezone
 from django.http import JsonResponse, HttpResponse
 from django.utils.dateparse import parse_datetime
-from django.views.decorators.http import require_POST  # Security Check
+from django.views.decorators.http import require_POST
 import json 
 
 # Import forms and models
 from .forms import EventForm, DocumentForm, LineItemFormSet
 from .models import Event, EventItem, Document
 from inventory.models import InventoryItem 
-from core.models import Notification  # Enables Bell Notifications
+from core.models import Notification 
 from .utils import render_to_pdf
 
 # --- CONFIGURATION ---
@@ -271,25 +271,23 @@ def create_document(request, event_id):
         formset = LineItemFormSet(request.POST)
 
         if form.is_valid() and formset.is_valid():
+            # 1. Save Parent Document First to get an ID
             doc = form.save(commit=False)
             doc.event = event
             doc.user = request.user
-            doc.save()
+            doc.save() # CRITICAL: Creates the UUID so items can attach to it
 
-            items = formset.save(commit=False)
-            for item in items:
-                item.document = doc
-                item.save()
-            formset.save()
+            # 2. Bind Formset to the saved Document
+            formset.instance = doc
+            formset.save() 
 
-            # Calculate Totals
-            total = sum(item.quantity * item.unit_price for item in doc.items.all())
+            # 3. Calculate Totals based on saved items
+            total = sum(item.total_price for item in doc.items.all())
             doc.subtotal = total
             doc.total_amount = total
             doc.save()
 
             messages.success(request, f"{doc.get_doc_type_display()} created successfully!")
-            # Redirect to the PDF generation view to preview it
             return redirect('events:generate_pdf', pk=doc.pk)
     else:
         initial_data = {
@@ -371,7 +369,7 @@ def generate_document_pdf(request, pk):
 # ==========================================
 
 @login_required
-@require_POST  # FIX: Ensures this view only accepts POST requests
+@require_POST  # Security Check
 def delete_document(request, pk):
     """
     Safely deletes a document AND creates a persistent notification.
@@ -392,16 +390,14 @@ def delete_document(request, pk):
     doc.delete()
     
     # 5. CREATE BELL NOTIFICATION (Persistent)
-    # This ensures it shows up in the bell menu even after the page refresh.
     Notification.objects.create(
         user=request.user,
         title="Document Deleted",
         message=f"Draft document {doc_number} was permanently deleted.",
-        notification_type='success',  # Makes it show green/blue icon in bell
-        link='#'  # No link because the item is gone
+        notification_type='success',
+        link='#'
     )
 
-    # 6. Flash Message (Temporary banner)
     messages.success(request, f"✅ Document {doc_number} deleted successfully.")
     
     return redirect('events:document_list')

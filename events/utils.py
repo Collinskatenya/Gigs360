@@ -8,7 +8,7 @@ from xhtml2pdf import pisa
 def link_callback(uri, rel):
     """
     Convert HTML URIs to absolute system paths so xhtml2pdf can access those resources.
-    Critical for rendering Logos and Profile Pictures in the PDF.
+    Critical for rendering Logos, Profile Pictures, and CSS in the PDF.
     """
     sUrl = settings.STATIC_URL      # Typically /static/
     sRoot = settings.STATIC_ROOT    # Typically /home/userX/project/static/
@@ -19,10 +19,10 @@ def link_callback(uri, rel):
     if uri.startswith(mUrl):
         path = os.path.join(mRoot, uri.replace(mUrl, ""))
     elif uri.startswith(sUrl):
-        # First try STATIC_ROOT (Production)
+        # 1. Try STATIC_ROOT (Production scenario where collectstatic has run)
         path = os.path.join(sRoot, uri.replace(sUrl, ""))
         
-        # Fallback for Development (DEBUG=True)
+        # 2. Fallback for Development (DEBUG=True) where static files are scattered
         if not os.path.isfile(path) and settings.DEBUG:
             for static_dir in settings.STATICFILES_DIRS:
                 dev_path = os.path.join(static_dir, uri.replace(sUrl, ""))
@@ -32,10 +32,10 @@ def link_callback(uri, rel):
     else:
         return uri  # Handle absolute URIs (e.g. http://some.tld/foo.png)
 
-    # Ensure the file exists, or the PDF might crash or show a red box
+    # Ensure the file exists, or the PDF engine might crash
     if not os.path.isfile(path):
         # Fail silently by returning None, or log error
-        # print(f"PDF Error: Asset not found at {path}")
+        # print(f"PDF Gen Warning: Asset not found at {path}")
         return None
             
     return path
@@ -49,9 +49,12 @@ def render_to_pdf(template_src, context_dict={}):
     result = BytesIO()
     
     # Generate PDF
-    # We use UTF-8 to ensure Currency Symbols (KES) render correctly
+    # encoding='UTF-8' is CRITICAL for Currency Symbols (KES, $, €)
     pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result, link_callback=link_callback)
     
     if not pdf.err:
-        return HttpResponse(result.getvalue(), content_type='application/pdf')
+        # FIX: Return the raw bytes, not an HttpResponse.
+        # The View (views.py) will wrap this in an HttpResponse with the correct headers.
+        return result.getvalue()
+        
     return None
