@@ -4,6 +4,10 @@ from django.contrib.auth.forms import UserCreationForm
 
 User = get_user_model()
 
+# ==========================================
+# 1. SIGNUP FORM (PUBLIC)
+# ==========================================
+
 class SignUpForm(UserCreationForm):
     """
     Public Signup Form.
@@ -46,6 +50,14 @@ class SignUpForm(UserCreationForm):
                 field.widget.attrs['class'] = 'form-control'
                 field.widget.attrs['placeholder'] = field.label
 
+    # --- NEW: PREVENT DUPLICATE EMAILS ---
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        # Check if email exists in DB (Case insensitive)
+        if User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError("This email address is already registered. Please login instead.")
+        return email
+
     def save(self, commit=True):
         """
         Maps the dropdown choice to the specific User Boolean flags.
@@ -75,11 +87,15 @@ class SignUpForm(UserCreationForm):
         return user
 
 
+# ==========================================
+# 2. SETTINGS FORM (AUTHENTICATED)
+# ==========================================
+
 class UserSettingsForm(forms.ModelForm):
     """
     Settings Form for authenticated users.
     Handles Profile Picture, Bio, and Business Data.
-    REMOVED: Role changing logic (Users should not change roles casually).
+    Includes new Invoice Theme and Birthday fields.
     """
     class Meta:
         model = User
@@ -87,19 +103,34 @@ class UserSettingsForm(forms.ModelForm):
             'first_name', 'last_name', 'phone_number', 'profile_picture',
             'business_name', 'business_type', 'number_of_employees',
             'bank_name', 'account_number', 'mpesa_number',
-            # 'theme_preference' is handled via JS usually, but kept here for backend sync if needed
+            # --- NEW FIELDS ADDED ---
+            'invoice_color_theme', 'date_of_birth'
         ]
         widgets = {
             'first_name': forms.TextInput(attrs={'class': 'form-control'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control'}),
             'phone_number': forms.TextInput(attrs={'class': 'form-control'}),
+            
             'business_name': forms.TextInput(attrs={'class': 'form-control'}),
             'business_type': forms.Select(attrs={'class': 'form-select'}),
             'number_of_employees': forms.NumberInput(attrs={'class': 'form-control'}),
+            
             'bank_name': forms.TextInput(attrs={'class': 'form-control'}),
             'account_number': forms.TextInput(attrs={'class': 'form-control'}),
             'mpesa_number': forms.TextInput(attrs={'class': 'form-control'}),
+            
             'profile_picture': forms.FileInput(attrs={'class': 'form-control'}),
+            
+            # --- NEW WIDGETS ---
+            'invoice_color_theme': forms.TextInput(attrs={
+                'type': 'color', 
+                'class': 'form-control form-control-color', 
+                'title': 'Choose your invoice theme color'
+            }),
+            'date_of_birth': forms.DateInput(attrs={
+                'type': 'date', 
+                'class': 'form-control'
+            }),
         }
 
     def __init__(self, *args, **kwargs):
@@ -108,3 +139,5 @@ class UserSettingsForm(forms.ModelForm):
         self.fields['profile_picture'].required = False
         self.fields['business_name'].required = False
         self.fields['business_type'].required = False
+        self.fields['invoice_color_theme'].required = False
+        self.fields['date_of_birth'].required = False

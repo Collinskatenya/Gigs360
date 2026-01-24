@@ -143,6 +143,14 @@ MPESA_CALLBACK_URL = 'https://your-domain.com/finance/callback/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ==========================================
+# 📦 INVENTORY LIMITS
+# ==========================================
+INVENTORY_LIMITS = {
+    'FREE': 20,
+    'PRO': 100,
+    'ENTERPRISE': float('inf') # Infinite
+}
+
 # ==========================================
 # 🌍 EXTERNAL SERVICES
 # ==========================================

@@ -129,7 +129,13 @@
                     </div>
                     <div class="col-md-6">
                         <label class="form-label small fw-bold text-muted">Bank Details / Notes</label>
-                        {{ form.notes }}
+                        <div class="input-group">
+                            {{ form.notes }}
+                            <button class="btn btn-outline-primary" type="button" id="aiPolishBtn" title="Polish notes with AI">
+                                <i class="bi bi-stars"></i>
+                            </button>
+                        </div>
+                        <div class="form-text small"><i class="bi bi-stars text-warning"></i> Click the stars to polish your notes professionally.</div>
                     </div>
                 </div>
 
@@ -215,6 +221,27 @@
 
             // Format Currency
             totalDisplay.textContent = "Total: KES " + total.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        }
+
+        // 4. AI Polish Simulation
+        const aiBtn = document.getElementById('aiPolishBtn');
+        const notesField = document.getElementById('id_notes'); // Standard Django ID
+        
+        if(aiBtn && notesField) {
+            aiBtn.addEventListener('click', function() {
+                const original = notesField.value;
+                if(!original) return;
+                
+                // Visual feedback
+                const icon = aiBtn.querySelector('i');
+                icon.className = 'spinner-border spinner-border-sm';
+                
+                setTimeout(() => {
+                    // Simple enhancement simulation
+                    notesField.value = "Payment Terms: 50% Deposit required to secure booking. Balance due 48 hours prior to event.\n\nBank Details:\n" + original;
+                    icon.className = 'bi bi-stars'; // Reset icon
+                }, 800);
+            });
         }
 
         // Run once on load

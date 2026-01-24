@@ -4,14 +4,37 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.db import transaction
+from django.conf import settings # <--- Critical: Needed to read limits from settings.py
 import json
 
 from .models import InventoryItem
 from .forms import InventoryItemForm
+from core.models import Notification  # <--- CRITICAL IMPORT FOR BELL ALERTS
 
 # -------------------------------------------------------------------------
 # 1. GEAR LOCKER MANAGEMENT
 # -------------------------------------------------------------------------
+
+# --- HELPER: CHECK LIMITS ---
+def check_inventory_limit(user):
+    """
+    Returns (True, limit) if user can add more items.
+    Returns (False, limit) if user reached their cap.
+    """
+    # 1. Get current count
+    current_count = InventoryItem.objects.filter(owner=user).count()
+    
+    # 2. Get user's plan (Defaults to 'FREE' if not set)
+    user_plan = getattr(user, 'plan', 'FREE').upper() 
+    
+    # 3. Get the limit from settings.py (Defaults to 20)
+    limit = settings.INVENTORY_LIMITS.get(user_plan, 20)
+    
+    # 4. Check status
+    # Note: Enterprise limit is float('inf'), so this check is always False for them (Safe)
+    if current_count >= limit:
+        return False, limit
+    return True, limit
 
 @login_required
 def inventory_list(request):
@@ -21,6 +44,36 @@ def inventory_list(request):
 
 @login_required
 def add_item(request):
+    # 1. RUN THE CHECK IMMEDIATELY
+    can_add, limit = check_inventory_limit(request.user)
+    
+    if not can_add:
+        # Determine current plan and identify the next upgrade
+        user_plan = getattr(request.user, 'plan', 'FREE').upper()
+        
+        if user_plan == 'FREE':
+            next_package = "Pro"
+        else:
+            next_package = "Enterprise"
+
+        # A. Browser Alert (Immediate Red Box)
+        messages.error(
+            request, 
+            f"🔒 Limit Reached: You have hit the {limit} item limit. Update to the {next_package} package to add more gear."
+        )
+
+        # B. Notification Bell (Persistent Alert)
+        # This adds the red dot to the bell icon in the dashboard
+        Notification.objects.create(
+            user=request.user,
+            title="Inventory Limit Reached",
+            message=f"Your gear locker is full ({limit} items). Update to the {next_package} package to continue growing your inventory.",
+            notification_type='warning', # Warning icon
+            link='/upgrade-plan/' # Link to upgrade page
+        )
+
+        return redirect('inventory:inventory_list')
+
     if request.method == 'POST':
         form = InventoryItemForm(request.POST, request.FILES)
         if form.is_valid():

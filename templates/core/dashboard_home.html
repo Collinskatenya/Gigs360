@@ -26,10 +26,10 @@
                             </span>
                         {% else %}
                             <span class="badge bg-white text-primary fw-bold me-2">
-                                {{ user.get_subscription_plan_display }} Plan
+                                <i class="bi bi-star-fill me-1"></i> {{ plan_name }}
                             </span>
                             
-                            {% if user.subscription_plan == 'Free' %}
+                            {% if user.plan == 'FREE' %}
                                 <a href="{% url 'pricing' %}" class="text-white text-decoration-underline small">Upgrade to Pro &rarr;</a>
                             {% endif %}
                         {% endif %}

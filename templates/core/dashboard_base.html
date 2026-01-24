@@ -48,7 +48,7 @@
                 <i class="bi bi-gear"></i> Settings
             </a>
             
-            {% if not user.profile.is_staff_member and user.profile.plan_tier != 'ENTERPRISE' %}
+            {% if not user.is_staff and user.plan != 'ENTERPRISE' %}
             <a href="{% url 'pricing' %}" class="list-group-item list-group-item-action {% if 'pricing' in request.path %}active{% endif %}">
                 <i class="bi bi-credit-card"></i> Upgrade Plan
             </a>
@@ -71,7 +71,7 @@
                         <div class="text-truncate" style="font-size: 0.75rem;">
                             <span class="text-white-50">
                                 <i class="bi bi-star-fill text-warning" style="font-size: 0.6rem;"></i> 
-                                {% firstof user.subscription_plan user.profile.get_plan_tier_display "Free Plan" %}
+                                {{ user.get_plan_display }}
                             </span>
                         </div>
                     </div>
@@ -99,7 +99,7 @@
             </button>
             
             <div class="d-flex align-items-center gap-3">
-                {% if user.profile.is_verified %}
+                {% if user.is_pro_member %}
                     <span class="badge bg-success bg-opacity-10 text-success border border-success d-none d-md-inline-block">
                         <i class="bi bi-patch-check-fill"></i> Verified Pro
                     </span>
@@ -132,13 +132,15 @@
                         <li>
                             <a href="{% if notif.link %}{{ notif.link }}{% else %}#{% endif %}" 
                                class="dropdown-item p-3 border-bottom d-flex gap-3 align-items-start {% if not notif.is_read %}bg-info-subtle{% endif %}"
-                               onclick="markAsRead('{{ notif.id }}')">
+                               onclick="markAsRead('{{ notif.id }}', this)">
                                 
                                 <div class="mt-1">
                                     {% if notif.notification_type == 'success' %}
                                         <i class="bi bi-check-circle-fill text-success fs-5"></i>
                                     {% elif notif.notification_type == 'warning' %}
                                         <i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i>
+                                    {% elif notif.notification_type == 'danger' %}
+                                        <i class="bi bi-x-circle-fill text-danger fs-5"></i>
                                     {% else %}
                                         <i class="bi bi-info-circle-fill text-primary fs-5"></i>
                                     {% endif %}
@@ -214,12 +216,35 @@
         });
     });
 
-    // 3. Global Notification Handler (AJAX)
-    function markAsRead(notifId) {
+    // 3. FIXED: Notification Counter Logic (Instant Update)
+    function markAsRead(notifId, element) {
+        // Find the red badge
+        const badge = document.querySelector('.badge.bg-danger');
+        
+        // Update Backend (AJAX)
         fetch(`/notifications/read/${notifId}/`, {
             method: 'GET',
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
+
+        // Update Frontend Instantly (Reduce number)
+        if (badge) {
+            let count = parseInt(badge.innerText);
+            if (count > 1) {
+                // If 2+, reduce by 1
+                badge.innerText = count - 1;
+            } else {
+                // If 1, remove the badge entirely
+                badge.remove();
+            }
+        }
+        
+        // Visually gray out the notification in the list immediately
+        if (element) {
+            element.classList.remove('bg-info-subtle');
+            // Optional: Disable the click so it doesn't count down twice
+            element.onclick = null;
+        }
     }
 </script>
 </body>

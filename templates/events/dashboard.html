@@ -25,6 +25,39 @@
         </a>
     </div>
 
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-7">
+                    <h5 class="fw-bold mb-1" style="color: #003366;">
+                        <i class="bi bi-box-seam me-2"></i>Gear Locker Capacity
+                    </h5>
+                    <p class="text-muted small mb-0">
+                        You are using <strong>{{ inventory_count }}</strong> items out of your <strong>{{ inventory_limit }}</strong> item limit.
+                        {% if inventory_limit != 'Unlimited' and inventory_count >= inventory_limit %}
+                            <span class="text-danger fw-bold ms-2"><i class="bi bi-exclamation-triangle-fill"></i> Limit Reached</span>
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="col-md-5">
+                    <div class="d-flex justify-content-between small fw-bold mb-1">
+                        <span>Usage</span>
+                        <span>{{ progress_width|floatformat:0 }}%</span>
+                    </div>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar {% if progress_width > 90 %}bg-danger{% else %}bg-primary{% endif %}" 
+                             role="progressbar" 
+                             style="width: {{ progress_width }}%;" 
+                             aria-valuenow="{{ inventory_count }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <ul class="nav nav-tabs mb-4" id="eventTabs" role="tablist">
         <li class="nav-item">
             <button class="nav-link active fw-bold" id="upcoming-tab" data-bs-toggle="tab" data-bs-target="#upcoming" type="button" style="color: #003366;">

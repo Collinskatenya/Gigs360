@@ -39,9 +39,36 @@ def event_dashboard(request):
         end_time__lt=now
     ).order_by('-end_time')
     
+    # --- INVENTORY STATS & LIMITS ---
+    inventory_count = InventoryItem.objects.filter(owner=request.user).count()
+    
+    # Get user plan (Defaults to FREE if missing)
+    user_plan = getattr(request.user, 'plan', 'FREE').upper()
+    
+    # Get limit from settings.py (Defaults to 20 if settings missing)
+    limit = settings.INVENTORY_LIMITS.get(user_plan, 20)
+    
+    # Calculate Progress Bar Width
+    if limit == float('inf'):
+        limit_display = "Unlimited"
+        # --- FIXED: Soft Goal Logic (1000 items) ---
+        # Instead of a static 5%, we calculate usage against a soft goal of 1000.
+        # This makes 2 items = 0.2% (Realistically small) instead of 5%.
+        progress_width = (inventory_count / 1000) * 100
+    else:
+        limit_display = limit
+        # Avoid division by zero
+        if limit > 0:
+            progress_width = (inventory_count / limit) * 100
+        else:
+            progress_width = 100
+
     return render(request, 'events/dashboard.html', {
         'upcoming': upcoming,
-        'past': past
+        'past': past,
+        'inventory_count': inventory_count,
+        'inventory_limit': limit_display,
+        'progress_width': min(progress_width, 100), # Cap at 100%
     })
 
 @login_required

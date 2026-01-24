@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Sum
 from django.http import JsonResponse
+from django.conf import settings  # <--- Added to read centralized limits
 
 # Email Dependencies
 from django.contrib.sites.shortcuts import get_current_site
@@ -14,7 +15,7 @@ from django.core.mail import EmailMessage
 
 from .forms import SignUpForm, UserSettingsForm
 from .tokens import account_activation_token
-from .models import Notification  # <--- Added for Notification Logic
+from .models import Notification
 from inventory.models import InventoryItem
 
 User = get_user_model()
@@ -85,25 +86,34 @@ def dashboard(request):
     if not user.phone_number or not user.business_name:
         profile_incomplete = True
 
-    # 2. Plan Limits Logic
-    plan_limit = 5
-    if user.subscription_plan == 'Pro':
-        plan_limit = 50
-    elif user.subscription_plan == 'Enterprise':
-        plan_limit = 1000000
+    # 2. Plan Limits Logic (UPDATED)
+    # Uses the centralized settings we defined earlier
+    user_plan = getattr(user, 'plan', 'FREE').upper() # <--- Fixed field name
+    plan_limit = settings.INVENTORY_LIMITS.get(user_plan, 20)
 
     # 3. Inventory Stats
     inventory_count = InventoryItem.objects.filter(owner=user).count()
     usage_percent = 0
-    if plan_limit > 0:
-        usage_percent = (inventory_count / plan_limit) * 100
+    
+    # Handle Infinite Limit display logic
+    if plan_limit == float('inf'):
+        limit_display = "Unlimited"
+        usage_percent = 5 # Small visual bar for enterprise
+    else:
+        limit_display = plan_limit
+        if plan_limit > 0:
+            usage_percent = (inventory_count / plan_limit) * 100
 
     # Base Context
     context = {
         'user': user,
         'role_label': 'Client',
         'is_online': user.is_online() if hasattr(user, 'is_online') else True,
-        'plan_limit': plan_limit if plan_limit < 1000000 else 'Unlimited',
+        
+        # --- FIXED: Added plan_name so "Pro Business" displays correctly ---
+        'plan_name': user.get_plan_display(),
+        
+        'plan_limit': limit_display,
         'inventory_count': inventory_count,
         'usage_percent': min(usage_percent, 100),
         'profile_incomplete': profile_incomplete,
