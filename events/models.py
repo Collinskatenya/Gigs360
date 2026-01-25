@@ -39,6 +39,8 @@ class Event(models.Model):
     # --- CLIENT & STAFF ---
     client_name = models.CharField(max_length=100, blank=True)
     client_contact = models.CharField(max_length=50, blank=True)
+    # --- NEW: Added Email for Automation ---
+    client_email = models.EmailField(max_length=254, blank=True, null=True, help_text="Used for auto-filling invoices")
     staff_in_charge = models.CharField(max_length=100, blank=True, help_text="Lead Creative on site")
     
     # --- FINANCIALS (Internal Costs) ---
@@ -59,6 +61,32 @@ class Event(models.Model):
 
     class Meta:
         ordering = ['start_time']
+
+    # --- SMART DURATION DISPLAY ---
+    @property
+    def duration_display(self):
+        """
+        Returns a formatted string like '4 Hours' or '3 Days'.
+        Used for Dashboards and PDFs.
+        """
+        if not self.start_time or not self.end_time:
+            return ""
+        
+        delta = self.end_time - self.start_time
+        total_seconds = delta.total_seconds()
+        hours = total_seconds / 3600
+        
+        # LOGIC: If < 24 hours, show Hours. If > 24 hours, show Days.
+        if hours < 24:
+            h_int = int(hours) if hours.is_integer() else round(hours, 1)
+            label = "Hour" if h_int == 1 else "Hours"
+            return f"{h_int} {label}"
+        else:
+            import math
+            # Round up: 25 hours counts as 2 days rental
+            days = math.ceil(hours / 24)
+            label = "Day" if days == 1 else "Days"
+            return f"{days} {label}"
 
     @property
     def total_expenses(self):

@@ -152,6 +152,13 @@
                     <div class="info-label">Project Details</div>
                     <div class="info-value" style="font-weight: bold;">{{ doc.event.title }}</div>
                     <div class="info-value">{{ doc.event.start_time|date:"D, d M Y @ H:i" }}</div>
+                    
+                    {% if doc.event.duration_display %}
+                    <div class="info-value" style="color: #003366; font-weight: bold;">
+                        Duration: {{ doc.event.duration_display }}
+                    </div>
+                    {% endif %}
+                    
                     <div class="info-value">{{ doc.event.location }}</div>
                 </div>
                 {% endif %}

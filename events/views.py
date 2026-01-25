@@ -331,9 +331,11 @@ def create_document(request, event_id):
             messages.success(request, f"{doc.get_doc_type_display()} created successfully!")
             return redirect('events:generate_pdf', pk=doc.pk)
     else:
+        # --- UPDATED: PRE-FILL EMAIL FOR AUTOMATION ---
         initial_data = {
             'client_name': event.client_name,
             'client_phone': event.client_contact,
+            'client_email': getattr(event, 'client_email', ''), # Auto-fill Email if it exists
             'issue_date': timezone.now().date(),
             'due_date': timezone.now().date() + timezone.timedelta(days=7),
         }

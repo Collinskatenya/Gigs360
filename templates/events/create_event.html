@@ -70,6 +70,13 @@
                                 {{ form.end_time }}
                             </div>
 
+                            <div class="col-12 mt-2" id="duration-container" style="display: none;">
+                                <span class="badge bg-info bg-opacity-10 text-info border border-info rounded-pill px-3 py-2">
+                                    <i class="bi bi-clock-history me-1"></i> 
+                                    Duration: <span id="duration-text" class="fw-bold">Calculating...</span>
+                                </span>
+                            </div>
+
                             <div class="col-12">
                                 <label class="form-label small fw-bold text-muted">Venue / Location</label>
                                 {{ form.location }}
@@ -83,17 +90,21 @@
                     <div class="card-body p-4">
                         <h6 class="text-uppercase text-muted fw-bold small mb-3 border-bottom pb-2">Client Information</h6>
                         <div class="row g-3">
-                            <div class="col-md-4">
+                            <div class="col-md-6">
                                 <label class="form-label small fw-bold text-muted">Client Name</label>
                                 {{ form.client_name }}
                             </div>
-                            <div class="col-md-4">
-                                <label class="form-label small fw-bold text-muted">Contact</label>
-                                {{ form.client_contact }}
-                            </div>
-                            <div class="col-md-4">
+                            <div class="col-md-6">
                                 <label class="form-label small fw-bold text-muted">Staff Lead</label>
                                 {{ form.staff_in_charge }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-muted">Phone Contact</label>
+                                {{ form.client_contact }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-muted">Email Address (For Invoices)</label>
+                                {{ form.client_email }}
                             </div>
                         </div>
                     </div>
@@ -253,6 +264,11 @@ function initAutocomplete() {
 document.addEventListener('DOMContentLoaded', function() {
     const startInput = document.querySelector('input[name="start_time"]');
     const endInput = document.querySelector('input[name="end_time"]');
+    
+    // Duration Elements
+    const durationDisplay = document.getElementById('duration-text');
+    const durationContainer = document.getElementById('duration-container');
+    
     const statusBadge = document.getElementById('availability-badge');
     const selectionCounter = document.getElementById('selection-counter');
     const itemRows = document.querySelectorAll('.item-row');
@@ -287,11 +303,41 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // --- 4. SMART AVAILABILITY CHECK ---
+    // --- 4. INSTANT DURATION CALCULATOR ---
+    function calculateDuration() {
+        if (startInput.value && endInput.value) {
+            const start = new Date(startInput.value);
+            const end = new Date(endInput.value);
+            
+            if (end > start) {
+                const diffMs = end - start;
+                const totalHours = diffMs / (1000 * 60 * 60);
+                let text = "";
+
+                if (totalHours < 24) {
+                    const h = Math.round(totalHours * 10) / 10;
+                    text = `${h} Hour${h !== 1 ? 's' : ''} Event`;
+                } else {
+                    const d = Math.ceil(totalHours / 24);
+                    text = `${d} Day${d !== 1 ? 's' : ''} Event`;
+                }
+                
+                durationDisplay.textContent = text;
+                durationContainer.style.display = 'block';
+            } else {
+                durationContainer.style.display = 'none';
+            }
+        }
+    }
+
+    // --- 5. SMART AVAILABILITY CHECK ---
     function checkAvailability() {
         if (!startInput || !endInput) return;
         const start = startInput.value;
         const end = endInput.value;
+
+        // Run Duration Check Logic first (client side instant)
+        calculateDuration();
 
         if (!start || !end) {
             statusBadge.className = 'badge bg-secondary rounded-pill';
@@ -347,6 +393,11 @@ document.addEventListener('DOMContentLoaded', function() {
     if (startInput && endInput) {
         startInput.addEventListener('change', checkAvailability);
         endInput.addEventListener('change', checkAvailability);
+        
+        // Run once on load for edit mode
+        if(startInput.value && endInput.value) {
+            calculateDuration();
+        }
     }
 });
 </script>

@@ -22,8 +22,8 @@ class EventForm(forms.ModelForm):
         model = Event
         fields = [
             'title', 'event_type', 'start_time', 'end_time', 'location', 
-            'description', 'client_name', 'client_contact', 'staff_in_charge',
-            'transport_cost', 'labor_cost', 'miscellaneous_cost',
+            'description', 'client_name', 'client_contact', 'client_email', # <--- ADDED THIS
+            'staff_in_charge', 'transport_cost', 'labor_cost', 'miscellaneous_cost',
             'items', 'is_completed'
         ]
         
@@ -34,6 +34,7 @@ class EventForm(forms.ModelForm):
             'location': forms.TextInput(attrs={'id': 'id_location', 'class': 'form-control', 'placeholder': 'Venue Location'}),
             'client_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Client Name'}),
             'client_contact': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Phone/Email'}),
+            'client_email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'client@email.com'}), # <--- ADDED WIDGET
             'staff_in_charge': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Lead Creative'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'start_time': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
