@@ -2,14 +2,15 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 from django.db import transaction
-from django.conf import settings # <--- Critical: Needed to read limits from settings.py
+from django.conf import settings 
 import json
+from django.utils import timezone
 
 from .models import InventoryItem
 from .forms import InventoryItemForm
-from core.models import Notification  # <--- CRITICAL IMPORT FOR BELL ALERTS
+from core.models import Notification
 
 # -------------------------------------------------------------------------
 # 1. GEAR LOCKER MANAGEMENT
@@ -21,18 +22,11 @@ def check_inventory_limit(user):
     Returns (True, limit) if user can add more items.
     Returns (False, limit) if user reached their cap.
     """
-    # 1. Get current count
     current_count = InventoryItem.objects.filter(owner=user).count()
-    
-    # 2. Get user's plan (Defaults to 'FREE' if not set)
     user_plan = getattr(user, 'plan', 'FREE').upper() 
-    
-    # 3. Get the limit from settings.py (Defaults to 20)
     limit = settings.INVENTORY_LIMITS.get(user_plan, 20)
     
-    # 4. Check status
-    # Note: Enterprise limit is float('inf'), so this check is always False for them (Safe)
-    if current_count >= limit:
+    if limit != float('inf') and current_count >= limit:
         return False, limit
     return True, limit
 
@@ -48,30 +42,21 @@ def add_item(request):
     can_add, limit = check_inventory_limit(request.user)
     
     if not can_add:
-        # Determine current plan and identify the next upgrade
         user_plan = getattr(request.user, 'plan', 'FREE').upper()
-        
-        if user_plan == 'FREE':
-            next_package = "Pro"
-        else:
-            next_package = "Enterprise"
+        next_package = "Pro" if user_plan == 'FREE' else "Enterprise"
 
-        # A. Browser Alert (Immediate Red Box)
         messages.error(
             request, 
-            f"🔒 Limit Reached: You have hit the {limit} item limit. Update to the {next_package} package to add more gear."
+            f"🔒 Limit Reached: You have hit the {limit} item limit. Update to {next_package} to add more gear."
         )
 
-        # B. Notification Bell (Persistent Alert)
-        # This adds the red dot to the bell icon in the dashboard
         Notification.objects.create(
             user=request.user,
             title="Inventory Limit Reached",
-            message=f"Your gear locker is full ({limit} items). Update to the {next_package} package to continue growing your inventory.",
-            notification_type='warning', # Warning icon
-            link='/upgrade-plan/' # Link to upgrade page
+            message=f"Your gear locker is full ({limit} items). Update to {next_package} to continue growing.",
+            notification_type='warning',
+            link='/upgrade-plan/' 
         )
-
         return redirect('inventory:inventory_list')
 
     if request.method == 'POST':
@@ -89,9 +74,6 @@ def add_item(request):
 
 @login_required
 def update_item(request, pk):
-    """ 
-    Standard Edit View: Uses get_object_or_404 for clean code.
-    """
     item = get_object_or_404(InventoryItem, pk=pk, owner=request.user)
     
     if request.method == 'POST':
@@ -107,10 +89,6 @@ def update_item(request, pk):
 
 @login_required
 def item_detail(request, pk):
-    """ 
-    SAFE MODE: Redirects if item is missing.
-    Crucial for handling clicks on notifications for deleted items.
-    """
     try:
         item = InventoryItem.objects.get(pk=pk, owner=request.user)
     except (InventoryItem.DoesNotExist, ValueError):
@@ -121,10 +99,6 @@ def item_detail(request, pk):
 
 @login_required
 def delete_item(request, pk):
-    """ 
-    SAFE MODE: Redirects if item is already deleted.
-    Prevents 404 errors if a user double-clicks the delete button.
-    """
     try:
         item = InventoryItem.objects.get(pk=pk, owner=request.user)
         item.delete()
@@ -136,63 +110,88 @@ def delete_item(request, pk):
 
 
 # -------------------------------------------------------------------------
-# 2. RAPID SCANNER API
+# 2. RAPID SCANNER (SECURE & ROBUST)
 # -------------------------------------------------------------------------
 
 @login_required
 def rapid_scan(request):
+    """ Renders the In-App Scanner UI. """
     return render(request, 'inventory/rapid_scan.html')
 
-@csrf_exempt
 @login_required
-def process_scan_api(request):
+@require_POST
+def api_process_scan(request):
     """ 
-    Processes QR code scans safely with database locking.
+    Secure API: Toggles item status (Available <-> Rented).
+    Uses qr_code_id (UUID) to prevent ID guessing.
     """
-    if request.method != 'POST':
-        return JsonResponse({'status': 'error', 'message': 'Invalid Method'}, status=405)
-
     try:
         data = json.loads(request.body)
-        raw_data = data.get('uuid') or data.get('qr_data', '')
+        qr_uuid = data.get('qr_uuid') # JS sends 'qr_uuid'
 
-        if not raw_data:
-            return JsonResponse({'status': 'error', 'message': 'No Data'}, status=400)
+        if not qr_uuid:
+            return JsonResponse({'success': False, 'message': 'No QR data received.'})
 
-        # Handle full URL scans if necessary
-        item_id = raw_data.rstrip('/').split('/')[-1] if '/' in raw_data else raw_data
-
+        # 1. SECURITY: Lookup by UUID AND Owner
+        # This ensures only the owner can change the status.
+        # Use select_for_update to handle rapid-fire scans gracefully (DB Locking).
         with transaction.atomic():
-            try:
-                # Lock row to prevent race conditions (Double Scans)
-                item = InventoryItem.objects.select_for_update().get(id=item_id, owner=request.user)
-            except (InventoryItem.DoesNotExist, ValueError):
-                return JsonResponse({'status': 'error', 'message': 'Item not found.'}, status=404)
-
-            # Toggle Status Logic
-            current_status = str(item.status).capitalize()
-            action = ""
-            color = ""
-
-            if current_status == 'Available':
-                item.status = 'Rented'
-                action = "Checked OUT"
-                color = "warning"
-            elif current_status == 'Rented':
-                item.status = 'Available'
-                action = "Checked IN"
-                color = "success"
-            else:
-                return JsonResponse({'status': 'error', 'message': f"Item is {item.status}"}, status=400)
-
-            item.save()
+            item = InventoryItem.objects.select_for_update().get(
+                qr_code_id=qr_uuid, 
+                owner=request.user
+            )
             
+            # 2. TOGGLE LOGIC
+            # Case-insensitive check just to be safe
+            status_upper = str(item.status).upper()
+            
+            if status_upper == 'AVAILABLE':
+                item.status = 'RENTED'
+                msg = "Checked Out"
+                new_status = 'RENTED'
+            else:
+                # If RENTED, LOST, etc -> Return to Stock
+                item.status = 'AVAILABLE'
+                msg = "Returned to Stock"
+                new_status = 'AVAILABLE'
+            
+            item.last_scanned_at = timezone.now()
+            item.last_scanned_by = request.user
+            item.save()
+
             return JsonResponse({
-                'status': 'success', 
-                'message': f"{item.name} {action}",
-                'new_state': item.status,
-                'color': color
+                'success': True,
+                'item_name': item.name,
+                'new_status': new_status,
+                'message': msg,
+                'time': timezone.now().strftime('%H:%M:%S')
             })
 
+    except InventoryItem.DoesNotExist:
+        return JsonResponse({
+            'success': False, 
+            'message': "Item not found or you are not the owner."
+        })
     except Exception as e:
-        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+        return JsonResponse({'success': False, 'message': str(e)})
+
+# --- PUBLIC LOST & FOUND VIEW ---
+
+def public_item_verify(request, qr_uuid):
+    """
+    Public page for strangers who scan the QR code.
+    """
+    item = get_object_or_404(InventoryItem, qr_code_id=qr_uuid)
+
+    # 1. If Owner scans with standard camera -> Redirect to secure management
+    if request.user.is_authenticated and item.owner == request.user:
+        return redirect('inventory:item_detail', pk=item.id)
+
+    # 2. If Stranger -> Show Lost & Found info
+    context = {
+        'item_name': item.name,
+        # Fallback if owner has no email configured
+        'owner_contact': item.owner.email or "support@gigs360.co.ke", 
+        'company_name': "Gigs360 Creative Services",
+    }
+    return render(request, 'inventory/public_lost_found.html', context)

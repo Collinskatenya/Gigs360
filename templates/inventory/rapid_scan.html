@@ -1,6 +1,8 @@
 {% extends 'core/dashboard_base.html' %}
 {% load static %}
 
+{% block title %}Rapid Scanner | Gigs360{% endblock %}
+
 {% block dashboard_content %}
 <div class="container py-4">
     <div class="row justify-content-center">
@@ -47,41 +49,49 @@
 <script>
     let isScanning = false;
     const SUCCESS_COOLDOWN = 3000; // 3 Seconds wait after success
-    const ERROR_COOLDOWN = 1000;   // 1 Second wait after error
+    const ERROR_COOLDOWN = 1500;   // 1.5 Seconds wait after error
 
     // --- 1. SUCCESS HANDLER ---
     function onScanSuccess(decodedText, decodedResult) {
         if (isScanning) return; 
+        
+        // INTELLIGENT PARSING: Handle full URLs vs Raw UUIDs
+        let uniqueId = decodedText;
+        try {
+            if (decodedText.includes('/verify/')) {
+                const parts = decodedText.split('/verify/');
+                // Take the part after verify/ and remove any trailing slashes
+                uniqueId = parts[1].replace(/\/$/, ""); 
+            }
+        } catch (e) {
+            console.warn("Could not parse URL, using raw text");
+        }
+
         isScanning = true;
 
-        // Play Beep (Optional)
-        // new Audio('/static/audio/beep.mp3').play().catch(e => console.log("Audio blocked"));
-
         // Call Backend
-        fetch("{% url 'inventory:scan_api' %}", {
+        fetch("{% url 'inventory:api_process_scan' %}", {  // FIX: Matches urls.py
             method: 'POST',
             headers: {
                 'X-CSRFToken': '{{ csrf_token }}',
                 'Content-Type': 'application/json'
             },
-            // FIX 1: Send 'uuid' to match Backend Expectation
-            body: JSON.stringify({ uuid: decodedText }) 
+            body: JSON.stringify({ qr_uuid: uniqueId }) // FIX: Matches views.py expectation
         })
         .then(response => {
             if (!response.ok) throw new Error("Server Error");
             return response.json();
         })
         .then(data => {
-            // Update UI
-            updateLog(data);
+            playBeep(data.success); // Play success/fail sound
+            updateLog(data);        // Update UI
             
             // Re-enable scanning after cooldown
             setTimeout(() => { isScanning = false; }, SUCCESS_COOLDOWN);
         })
         .catch(err => {
             console.error("Scan Error:", err);
-            // Handle Network Errors gracefully
-            updateLog({status: 'error', message: 'Network or Server Error', item_name: 'System'});
+            updateLog({success: false, message: 'Network or Server Error', item_name: 'System'});
             setTimeout(() => { isScanning = false; }, ERROR_COOLDOWN);
         });
     }
@@ -94,23 +104,19 @@
 
         let li = document.createElement("li");
         
-        // Determine Styling based on Backend Response
-        // Backend sends: 'success', 'warning', 'error'
-        let icon = 'bi-check-circle-fill';
-        let colorClass = 'text-success';
+        // Determine Styling based on 'success' boolean
+        let icon = data.success ? 'bi-check-circle-fill' : 'bi-x-circle-fill';
+        let colorClass = data.success ? 'text-success' : 'text-danger';
         
-        if (data.status === 'warning') {
-            icon = 'bi-exclamation-circle-fill';
-            colorClass = 'text-warning';
-        } else if (data.status === 'error') {
-            icon = 'bi-x-circle-fill';
-            colorClass = 'text-danger';
+        // Handle specific "Checked Out" vs "Checked In" logic from backend
+        if(data.new_status === 'RENTED') {
+            colorClass = 'text-warning'; // Orange for checking out
+            icon = 'bi-box-arrow-right';
         }
 
-        // FIX 2: Use 'data.item_name' (matches your Backend View)
         let itemName = data.item_name || 'Unknown Item';
 
-        li.className = "list-group-item d-flex justify-content-between align-items-center animate__animated animate__fadeInDown bg-white border-bottom";
+        li.className = "list-group-item d-flex justify-content-between align-items-center animate__fadeInDown bg-white border-bottom";
         li.innerHTML = `
             <div class="d-flex align-items-center">
                 <i class="bi ${icon} ${colorClass} fs-4 me-3"></i>
@@ -134,10 +140,34 @@
         document.getElementById('scan-log').innerHTML = '<li class="list-group-item text-center text-muted small fst-italic" id="empty-msg">Waiting for scan...</li>';
     }
 
-    // --- 3. INITIALIZE ---
+    // --- 3. AUDIO FEEDBACK (No external file needed) ---
+    function playBeep(success) {
+        try {
+            const context = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = context.createOscillator();
+            const gain = context.createGain();
+            osc.connect(gain);
+            gain.connect(context.destination);
+            
+            if (success) {
+                osc.frequency.value = 1200; // High beep
+                osc.type = 'sine';
+            } else {
+                osc.frequency.value = 200; // Low buzz
+                osc.type = 'sawtooth';
+            }
+            
+            osc.start();
+            gain.gain.exponentialRampToValueAtTime(0.00001, context.currentTime + 0.15);
+            osc.stop(context.currentTime + 0.15);
+        } catch(e) { console.log("Audio not supported"); }
+    }
+
+    // --- 4. INITIALIZE ---
     let html5QrcodeScanner = new Html5QrcodeScanner(
         "reader", 
-        { fps: 10, qrbox: {width: 250, height: 250} }
+        { fps: 10, qrbox: {width: 250, height: 250} },
+        /* verbose= */ false
     );
     html5QrcodeScanner.render(onScanSuccess);
 </script>
@@ -151,8 +181,10 @@
         to { opacity: 1; transform: translateY(0); }
     }
     #reader video {
-        border-radius: 0.5rem; /* Rounds the camera feed corners */
+        border-radius: 0.5rem;
         object-fit: cover;
     }
+    /* Hide the library's default stop button if desired */
+    #reader__dashboard_section_csr span { display: none !important; }
 </style>
 {% endblock %}

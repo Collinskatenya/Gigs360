@@ -45,6 +45,11 @@ class InventoryItem(models.Model):
 
     # 2. IDENTIFICATION
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    # --- NEW: SECURE QR ID (For Public Scanning) ---
+    # This separates the internal DB ID from the public verification link
+    qr_code_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='inventory')
     
     name = models.CharField(max_length=200, help_text="e.g. Sony A7S III Body")
@@ -90,9 +95,10 @@ class InventoryItem(models.Model):
     def save(self, *args, **kwargs):
         # Auto-Generate QR Code if it doesn't exist
         if not self.qr_code:
-            # QR Content: Direct link to the scan page for this item
-            # Example: https://gigs360.co.ke/scan/<UUID>/
-            qr_content = f"https://gigs360.co.ke/scan/{self.id}/"
+            # --- UPDATED: Use Secure UUID for Public Verification Link ---
+            # Ideally change domain to your actual live domain in settings
+            base_url = getattr(settings, 'SITE_URL', 'https://gigs360.co.ke')
+            qr_content = f"{base_url}/inventory/verify/{self.qr_code_id}/"
             
             try:
                 # Generate QR Object
