@@ -3,6 +3,7 @@ from django.conf import settings
 from django.utils.http import urlencode
 from django.utils import timezone
 import uuid
+import math
 
 # ==========================================
 # 1. EVENT OPERATIONS
@@ -39,7 +40,6 @@ class Event(models.Model):
     # --- CLIENT & STAFF ---
     client_name = models.CharField(max_length=100, blank=True)
     client_contact = models.CharField(max_length=50, blank=True)
-    # --- NEW: Added Email for Automation ---
     client_email = models.EmailField(max_length=254, blank=True, null=True, help_text="Used for auto-filling invoices")
     staff_in_charge = models.CharField(max_length=100, blank=True, help_text="Lead Creative on site")
     
@@ -65,10 +65,7 @@ class Event(models.Model):
     # --- SMART DURATION DISPLAY ---
     @property
     def duration_display(self):
-        """
-        Returns a formatted string like '4 Hours' or '3 Days'.
-        Used for Dashboards and PDFs.
-        """
+        """Returns a formatted string like '4 Hours' or '3 Days'."""
         if not self.start_time or not self.end_time:
             return ""
         
@@ -76,13 +73,11 @@ class Event(models.Model):
         total_seconds = delta.total_seconds()
         hours = total_seconds / 3600
         
-        # LOGIC: If < 24 hours, show Hours. If > 24 hours, show Days.
         if hours < 24:
             h_int = int(hours) if hours.is_integer() else round(hours, 1)
             label = "Hour" if h_int == 1 else "Hours"
             return f"{h_int} {label}"
         else:
-            import math
             # Round up: 25 hours counts as 2 days rental
             days = math.ceil(hours / 24)
             label = "Day" if days == 1 else "Days"
@@ -112,12 +107,22 @@ class EventItem(models.Model):
     """
     The 'Manifest' - Tracks specific inventory items for ONE event.
     """
-    # CRITICAL: on_delete=CASCADE ensures gear is freed if event is cancelled/deleted.
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='manifest')
     
-    # Use string reference to prevent circular imports
-    item = models.ForeignKey('inventory.InventoryItem', on_delete=models.CASCADE) 
+    # --- TASK 2: HISTORY WIPE FIX ---
+    # OLD: on_delete=models.CASCADE (Bad - deletes log if camera is deleted)
+    # NEW: on_delete=models.SET_NULL (Good - keeps log, sets item ID to None)
+    item = models.ForeignKey(
+        'inventory.InventoryItem', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True
+    ) 
     
+    # SNAPSHOT: We freeze the item name here. If the Item ID is deleted later, 
+    # we still know this event used a "Sony A7III".
+    item_name_snapshot = models.CharField(max_length=200, blank=True, help_text="Preserves item name if original item is deleted")
+
     # Audit Logs
     scanned_out_at = models.DateTimeField(null=True, blank=True)
     scanned_in_at = models.DateTimeField(null=True, blank=True)
@@ -126,9 +131,16 @@ class EventItem(models.Model):
     CONDITION_CHOICES = [('GOOD', 'Good'), ('DAMAGED', 'Damaged'), ('LOST', 'Lost')]
     condition_return = models.CharField(max_length=20, default='GOOD', choices=CONDITION_CHOICES)
 
+    def save(self, *args, **kwargs):
+        # Auto-Freeze the name when creating the link
+        if self.item and not self.item_name_snapshot:
+            self.item_name_snapshot = self.item.name
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        item_name = getattr(self.item, 'name', 'Unknown Item')
-        return f"{item_name} @ {self.event.title}"
+        # Return snapshot name if the actual item object is deleted
+        name = self.item.name if self.item else f"{self.item_name_snapshot} (Deleted)"
+        return f"{name} @ {self.event.title}"
 
 
 # ==========================================
@@ -136,9 +148,7 @@ class EventItem(models.Model):
 # ==========================================
 
 class Document(models.Model):
-    """
-    Stores Quotes, Invoices, and Receipts.
-    """
+    """Stores Quotes, Invoices, and Receipts."""
     DOC_TYPES = [
         ('QUOTE', 'Quotation'),
         ('INVOICE', 'Invoice'),
@@ -152,12 +162,12 @@ class Document(models.Model):
         ('PAID', 'Paid'),
         ('PARTIAL', 'Partially Paid'),
         ('OVERDUE', 'Overdue'),
-        ('ACCEPTED', 'Accepted'), # For Quotes
+        ('ACCEPTED', 'Accepted'),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
-    # CRITICAL: SET_NULL ensures invoice history is kept even if the Event is deleted.
+    # History Protection: Keep invoice even if event is deleted
     event = models.ForeignKey(Event, on_delete=models.SET_NULL, null=True, blank=True, related_name='documents')
     
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -195,13 +205,12 @@ class Document(models.Model):
     def save(self, *args, **kwargs):
         # Auto-Generate Number: QT-20251004-001 or INV-20251004-001
         if not self.doc_number:
-            prefix = self.doc_type[:2] # 'QU', 'IN', 'RE'
+            prefix = self.doc_type[:2] 
             today = timezone.now().strftime('%Y%m%d')
-            # Count existing docs for today to increment sequence
             count = Document.objects.filter(created_at__date=timezone.now().date()).count() + 1
             self.doc_number = f"{prefix}-{today}-{count:03d}"
         
-        # Auto-Update Status based on payment
+        # Auto-Update Status
         if self.amount_paid >= self.total_amount and self.total_amount > 0:
             self.status = 'PAID'
         elif self.amount_paid > 0:
@@ -218,9 +227,7 @@ class Document(models.Model):
 
 
 class LineItem(models.Model):
-    """
-    Represents rows in the Invoice/Quote.
-    """
+    """Represents rows in the Invoice/Quote."""
     document = models.ForeignKey(Document, related_name='items', on_delete=models.CASCADE)
     description = models.CharField(max_length=255) 
     details = models.TextField(blank=True, help_text="Bullet points of what is included")

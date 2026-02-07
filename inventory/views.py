@@ -10,10 +10,11 @@ from django.utils import timezone
 
 from .models import InventoryItem
 from .forms import InventoryItemForm
+# Ensure Notification model exists in core/models.py
 from core.models import Notification
 
 # -------------------------------------------------------------------------
-# 1. GEAR LOCKER MANAGEMENT
+# 1. GEAR LOCKER MANAGEMENT (With Paywall Logic)
 # -------------------------------------------------------------------------
 
 # --- HELPER: CHECK LIMITS ---
@@ -22,10 +23,23 @@ def check_inventory_limit(user):
     Returns (True, limit) if user can add more items.
     Returns (False, limit) if user reached their cap.
     """
+    # 1. Get Current Count
     current_count = InventoryItem.objects.filter(owner=user).count()
-    user_plan = getattr(user, 'plan', 'FREE').upper() 
-    limit = settings.INVENTORY_LIMITS.get(user_plan, 20)
     
+    # 2. Get User Plan (Safely from UserProfile)
+    try:
+        # Assuming OneToOne relationship: User -> UserProfile -> plan
+        user_plan = user.userprofile.plan.upper()
+    except AttributeError:
+        # Fallback if UserProfile doesn't exist yet
+        user_plan = 'FREE'
+
+    # 3. Get Limit from Settings (Default to 15 for Free)
+    # Define this in settings.py: INVENTORY_LIMITS = {'FREE': 15, 'PRO': 100, 'ENTERPRISE': float('inf')}
+    limits = getattr(settings, 'INVENTORY_LIMITS', {'FREE': 15, 'PRO': 100, 'ENTERPRISE': float('inf')})
+    limit = limits.get(user_plan, 15)
+    
+    # 4. Check Limit
     if limit != float('inf') and current_count >= limit:
         return False, limit
     return True, limit
@@ -34,30 +48,46 @@ def check_inventory_limit(user):
 def inventory_list(request):
     """ Shows all items owned by the user. """
     items = InventoryItem.objects.filter(owner=request.user).order_by('-created_at')
-    return render(request, 'inventory/inventory_list.html', {'items': items})
+    
+    # Optional: Context for progress bar
+    can_add, limit = check_inventory_limit(request.user)
+    current_count = items.count()
+    
+    context = {
+        'items': items,
+        'current_count': current_count,
+        'limit': limit if limit != float('inf') else "Unlimited"
+    }
+    return render(request, 'inventory/inventory_list.html', context)
 
 @login_required
 def add_item(request):
-    # 1. RUN THE CHECK IMMEDIATELY
+    # --- PAYWALL ENFORCEMENT START (Task 3) ---
     can_add, limit = check_inventory_limit(request.user)
     
     if not can_add:
-        user_plan = getattr(request.user, 'plan', 'FREE').upper()
+        try:
+            user_plan = request.user.userprofile.plan.upper()
+        except:
+            user_plan = 'FREE'
+            
         next_package = "Pro" if user_plan == 'FREE' else "Enterprise"
 
         messages.error(
             request, 
-            f"🔒 Limit Reached: You have hit the {limit} item limit. Update to {next_package} to add more gear."
+            f"🔒 Limit Reached: You have hit the {limit} item limit. Upgrade to {next_package} to add more gear."
         )
 
+        # Auto-Create Notification
         Notification.objects.create(
             user=request.user,
             title="Inventory Limit Reached",
-            message=f"Your gear locker is full ({limit} items). Update to {next_package} to continue growing.",
+            message=f"Your gear locker is full ({limit} items). Upgrade to {next_package} to continue growing.",
             notification_type='warning',
             link='/upgrade-plan/' 
         )
         return redirect('inventory:inventory_list')
+    # --- PAYWALL ENFORCEMENT END ---
 
     if request.method == 'POST':
         form = InventoryItemForm(request.POST, request.FILES)
