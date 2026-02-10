@@ -1,34 +1,40 @@
 {% extends 'core/dashboard_base.html' %}
+{% load static %}
 
-{% block dashboard_content %}
+{% block title %}Pricing Plans | Gigs360{% endblock %}
+
+{% block content %}
 <div class="container py-5 text-center">
     
-    <h2 class="fw-bold mb-3">Choose Your Plan</h2>
-    
-    {% if user.is_staff %}
-        <div class="alert alert-dark d-inline-block rounded-pill px-4 py-2 mb-5">
-            <i class="bi bi-shield-lock-fill me-2"></i> 
-            You are a <strong>Staff Member</strong>. You have unrestricted system access.
-        </div>
-    {% else %}
-        <p class="text-muted mb-5">Unlock the full potential of Gigs360. Upgrade anytime.</p>
-    {% endif %}
+    <div class="mb-5">
+        <h2 class="fw-bold mb-3 text-dark">Choose Your Plan</h2>
+        
+        {% if user.is_staff %}
+            <div class="alert alert-dark d-inline-block rounded-pill px-4 py-2">
+                <i class="bi bi-shield-lock-fill me-2"></i> 
+                You are a <strong>Staff Member</strong>. You have unrestricted system access.
+            </div>
+        {% else %}
+            <p class="text-muted">Unlock the full potential of Gigs360. Upgrade anytime.</p>
+        {% endif %}
+    </div>
 
     <div class="row justify-content-center g-4">
         
         <div class="col-md-4">
-            <div class="card h-100 shadow-sm border-0 rounded-4">
-                <div class="card-body p-4">
+            <div class="card h-100 shadow-sm border-0 rounded-4 hover-lift">
+                <div class="card-body p-4 d-flex flex-column">
                     <h5 class="fw-bold text-muted">Free Starter</h5>
-                    <h1 class="display-5 fw-bold my-3">KES 0</h1>
-                    <ul class="list-unstyled text-start small mb-4">
+                    <h1 class="display-5 fw-bold my-3 text-dark">KES 0</h1>
+                    <ul class="list-unstyled text-start small mb-4 flex-grow-1">
                         <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i> 5 Inventory Items</li>
                         <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i> Basic Profile</li>
                         <li class="mb-2 text-muted opacity-50"><i class="bi bi-x-circle-fill me-2"></i> No Event Traceability</li>
+                        <li class="mb-2 text-muted opacity-50"><i class="bi bi-x-circle-fill me-2"></i> No QR Code Generation</li>
                     </ul>
                     
-                    {% if user.profile.plan_tier == 'FREE' %}
-                        <button class="btn btn-outline-secondary w-100 rounded-pill" disabled>Current Plan</button>
+                    {% if user.userprofile.plan_tier == 'FREE' %}
+                        <button class="btn btn-outline-secondary w-100 rounded-pill fw-bold" disabled>Current Plan</button>
                     {% else %}
                         <button class="btn btn-outline-secondary w-100 rounded-pill" disabled>Basic Tier</button>
                     {% endif %}
@@ -37,57 +43,76 @@
         </div>
 
         <div class="col-md-4">
-            <div class="card h-100 shadow rounded-4 border-primary border-2 position-relative overflow-hidden">
-                <div class="card-header bg-primary text-white text-uppercase small fw-bold py-2">Most Popular</div>
-                <div class="card-body p-4">
-                    <h5 class="fw-bold text-primary">Pro Business</h5>
-                    <h1 class="display-5 fw-bold my-3">KES 1,500<span class="fs-6 text-muted">/mo</span></h1>
-                    <ul class="list-unstyled text-start small mb-4">
-                        <li class="mb-2"><i class="bi bi-check-circle-fill text-primary me-2"></i> 50 Inventory Items</li>
-                        <li class="mb-2"><i class="bi bi-check-circle-fill text-primary me-2"></i> Verified Badge</li>
-                        <li class="mb-2"><i class="bi bi-check-circle-fill text-primary me-2"></i> Unlimited Events</li>
+            <div class="card h-100 shadow rounded-4 border-2 position-relative overflow-hidden hover-lift" style="border-color: #d9a60e;">
+                <div class="card-header text-white text-uppercase small fw-bold py-2" style="background-color: #0f172a;">
+                    <i class="bi bi-star-fill text-warning me-1"></i> Most Popular
+                </div>
+                <div class="card-body p-4 d-flex flex-column">
+                    <h5 class="fw-bold" style="color: #0f172a;">Pro Business</h5>
+                    <h1 class="display-5 fw-bold my-3 text-dark">KES 1,500<span class="fs-6 text-muted">/mo</span></h1>
+                    <ul class="list-unstyled text-start small mb-4 flex-grow-1">
+                        <li class="mb-2"><i class="bi bi-check-circle-fill me-2" style="color: #d9a60e;"></i> <strong>50</strong> Inventory Items</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill me-2" style="color: #d9a60e;"></i> Verified Badge</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill me-2" style="color: #d9a60e;"></i> Unlimited Events</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill me-2" style="color: #d9a60e;"></i> QR Code Asset Tags</li>
                     </ul>
                     
-                    {% if user.is_staff %}
-                        <button class="btn btn-dark w-100 fw-bold rounded-pill shadow-sm" disabled>Included in Staff Access</button>
-                    
-                    {% elif user.profile.plan_tier == 'PRO' %}
-                        <button class="btn btn-success w-100 fw-bold rounded-pill shadow-sm" disabled>
-                            <i class="bi bi-check-lg"></i> Current Plan
-                        </button>
-                    
-                    {% elif user.profile.plan_tier == 'ENTERPRISE' %}
-                        <a href="#" class="btn btn-outline-secondary w-100 fw-bold rounded-pill">Downgrade to Pro</a>
-                    
-                    {% else %}
-                        <a href="#" class="btn btn-primary w-100 fw-bold rounded-pill shadow-sm" onclick="alert('Payment Integration is the next phase!')">
-                            Upgrade to Pro
-                        </a>
-                    {% endif %}
+                    <div class="mt-auto">
+                        {% if user.is_staff %}
+                            <button class="btn w-100 fw-bold rounded-pill shadow-sm text-white" style="background-color: #0f172a;" disabled>Included in Staff Access</button>
+                        
+                        {% elif user.userprofile.plan_tier == 'PRO' %}
+                            <button class="btn btn-success w-100 fw-bold rounded-pill shadow-sm" disabled>
+                                <i class="bi bi-check-lg"></i> Current Plan
+                            </button>
+                        
+                        {% elif user.userprofile.plan_tier == 'ENTERPRISE' %}
+                            <a href="#" class="btn btn-outline-dark w-100 fw-bold rounded-pill">Downgrade to Pro</a>
+                        
+                        {% else %}
+                            <form action="#" method="POST"> 
+                                {% csrf_token %}
+                                <button type="button" class="btn w-100 fw-bold rounded-pill shadow-sm hover-scale" 
+                                        style="background-color: #d9a60e; color: #000; border: none;"
+                                        onclick="alert('Payment Gateway Integration Coming Soon!')">
+                                    Upgrade to Pro
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="col-md-4">
-            <div class="card h-100 shadow-sm border-0 rounded-4">
-                <div class="card-body p-4">
+            <div class="card h-100 shadow-sm border-0 rounded-4 hover-lift">
+                <div class="card-body p-4 d-flex flex-column">
                     <h5 class="fw-bold text-dark">Enterprise</h5>
-                    <h1 class="display-5 fw-bold my-3">KES 5,000<span class="fs-6 text-muted">/mo</span></h1>
-                    <ul class="list-unstyled text-start small mb-4">
+                    <h1 class="display-5 fw-bold my-3 text-dark">KES 5,000<span class="fs-6 text-muted">/mo</span></h1>
+                    <ul class="list-unstyled text-start small mb-4 flex-grow-1">
                         <li class="mb-2"><i class="bi bi-check-circle-fill text-dark me-2"></i> Unlimited Inventory</li>
                         <li class="mb-2"><i class="bi bi-check-circle-fill text-dark me-2"></i> Dedicated Account Manager</li>
                         <li class="mb-2"><i class="bi bi-check-circle-fill text-dark me-2"></i> API Access</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-dark me-2"></i> Priority Support</li>
                     </ul>
                     
-                    {% if user.profile.plan_tier == 'ENTERPRISE' %}
-                        <button class="btn btn-dark w-100 rounded-pill" disabled>Current Plan</button>
-                    {% else %}
-                        <a href="#" class="btn btn-outline-dark w-100 rounded-pill">Contact Sales</a>
-                    {% endif %}
+                    <div class="mt-auto">
+                        {% if user.userprofile.plan_tier == 'ENTERPRISE' %}
+                            <button class="btn btn-dark w-100 rounded-pill" disabled>Current Plan</button>
+                        {% else %}
+                            <a href="mailto:sales@gigs360.co.ke" class="btn btn-outline-dark w-100 rounded-pill fw-bold">Contact Sales</a>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
 
     </div>
 </div>
+
+<style>
+    .hover-lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .hover-lift:hover { transform: translateY(-5px); box-shadow: 0 1rem 3rem rgba(0,0,0,.1)!important; }
+    .hover-scale:hover { transform: scale(1.02); transition: 0.2s; }
+</style>
 {% endblock %}

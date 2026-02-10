@@ -8,10 +8,10 @@ from django.conf import settings
 import json
 from django.utils import timezone
 
+# MODELS & FORMS
 from .models import InventoryItem
 from .forms import InventoryItemForm
-# Ensure Notification model exists in core/models.py
-from core.models import Notification
+from core.models import Notification  # Ensure this import works with your structure
 
 # -------------------------------------------------------------------------
 # 1. GEAR LOCKER MANAGEMENT (With Paywall Logic)
@@ -26,15 +26,13 @@ def check_inventory_limit(user):
     # 1. Get Current Count
     current_count = InventoryItem.objects.filter(owner=user).count()
     
-    # 2. Get User Plan (Safely from UserProfile)
+    # 2. Get User Plan (Safely)
     try:
-        # Assuming OneToOne relationship: User -> UserProfile -> plan
-        user_plan = user.userprofile.plan.upper()
+        user_plan = user.userprofile.plan_tier.upper() # Use 'plan_tier' based on previous models
     except AttributeError:
-        # Fallback if UserProfile doesn't exist yet
         user_plan = 'FREE'
 
-    # 3. Get Limit from Settings (Default to 15 for Free)
+    # 3. Get Limit from Settings
     # Define this in settings.py: INVENTORY_LIMITS = {'FREE': 15, 'PRO': 100, 'ENTERPRISE': float('inf')}
     limits = getattr(settings, 'INVENTORY_LIMITS', {'FREE': 15, 'PRO': 100, 'ENTERPRISE': float('inf')})
     limit = limits.get(user_plan, 15)
@@ -49,7 +47,6 @@ def inventory_list(request):
     """ Shows all items owned by the user. """
     items = InventoryItem.objects.filter(owner=request.user).order_by('-created_at')
     
-    # Optional: Context for progress bar
     can_add, limit = check_inventory_limit(request.user)
     current_count = items.count()
     
@@ -62,12 +59,12 @@ def inventory_list(request):
 
 @login_required
 def add_item(request):
-    # --- PAYWALL ENFORCEMENT START (Task 3) ---
+    # --- PAYWALL ENFORCEMENT ---
     can_add, limit = check_inventory_limit(request.user)
     
     if not can_add:
         try:
-            user_plan = request.user.userprofile.plan.upper()
+            user_plan = request.user.userprofile.plan_tier.upper()
         except:
             user_plan = 'FREE'
             
@@ -83,11 +80,10 @@ def add_item(request):
             user=request.user,
             title="Inventory Limit Reached",
             message=f"Your gear locker is full ({limit} items). Upgrade to {next_package} to continue growing.",
-            notification_type='warning',
-            link='/upgrade-plan/' 
+            notification_type='warning'
         )
         return redirect('inventory:inventory_list')
-    # --- PAYWALL ENFORCEMENT END ---
+    # ---------------------------
 
     if request.method == 'POST':
         form = InventoryItemForm(request.POST, request.FILES)
@@ -129,13 +125,14 @@ def item_detail(request, pk):
 
 @login_required
 def delete_item(request, pk):
-    try:
-        item = InventoryItem.objects.get(pk=pk, owner=request.user)
-        item.delete()
-        messages.success(request, f"{item.name} deleted.")
-    except (InventoryItem.DoesNotExist, ValueError):
-        messages.warning(request, "⚠️ Item was already deleted.")
-        
+    if request.method == "POST":
+        try:
+            item = InventoryItem.objects.get(pk=pk, owner=request.user)
+            item.delete()
+            messages.success(request, f"{item.name} deleted.")
+        except (InventoryItem.DoesNotExist, ValueError):
+            messages.warning(request, "⚠️ Item was already deleted.")
+            
     return redirect('inventory:inventory_list')
 
 
@@ -163,8 +160,7 @@ def api_process_scan(request):
             return JsonResponse({'success': False, 'message': 'No QR data received.'})
 
         # 1. SECURITY: Lookup by UUID AND Owner
-        # This ensures only the owner can change the status.
-        # Use select_for_update to handle rapid-fire scans gracefully (DB Locking).
+        # Use select_for_update to handle rapid-fire scans gracefully.
         with transaction.atomic():
             item = InventoryItem.objects.select_for_update().get(
                 qr_code_id=qr_uuid, 
@@ -172,7 +168,6 @@ def api_process_scan(request):
             )
             
             # 2. TOGGLE LOGIC
-            # Case-insensitive check just to be safe
             status_upper = str(item.status).upper()
             
             if status_upper == 'AVAILABLE':
@@ -186,7 +181,8 @@ def api_process_scan(request):
                 new_status = 'AVAILABLE'
             
             item.last_scanned_at = timezone.now()
-            item.last_scanned_by = request.user
+            # If you have a 'last_scanned_by' field, set it here:
+            # item.last_scanned_by = request.user 
             item.save()
 
             return JsonResponse({
@@ -219,9 +215,10 @@ def public_item_verify(request, qr_uuid):
 
     # 2. If Stranger -> Show Lost & Found info
     context = {
+        'item': item,
         'item_name': item.name,
-        # Fallback if owner has no email configured
         'owner_contact': item.owner.email or "support@gigs360.co.ke", 
         'company_name': "Gigs360 Creative Services",
     }
-    return render(request, 'inventory/public_lost_found.html', context)
+    # FIX: Renamed from public_lost_found.html to verify_asset.html
+    return render(request, 'inventory/verify_asset.html', context)

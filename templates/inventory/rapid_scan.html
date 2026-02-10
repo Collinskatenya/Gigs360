@@ -3,20 +3,20 @@
 
 {% block title %}Rapid Scanner | Gigs360{% endblock %}
 
-{% block dashboard_content %}
+{% block content %}
 <div class="container py-4">
     <div class="row justify-content-center">
         <div class="col-md-8 col-lg-6 text-center">
             
             <div class="mb-4">
-                <h2 class="fw-bold" style="color: #003366;">⚡ Rapid Scanner</h2>
+                <h2 class="fw-bold text-dark">⚡ Rapid Scanner</h2>
                 <p class="text-muted small">
                     System is in <strong>Smart Mode</strong>. Just scan an item to toggle its status (Check-In ↔ Check-Out).
                 </p>
             </div>
             
-            <div class="card shadow-lg border-0 overflow-hidden mb-3">
-                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center small">
+            <div class="card shadow-lg border-0 overflow-hidden mb-3 rounded-4">
+                <div class="card-header text-white d-flex justify-content-between align-items-center small" style="background-color: #0f172a;">
                     <span><i class="bi bi-camera-video-fill me-2"></i>Live Feed</span>
                     <span class="badge bg-success animate__animated animate__pulse animate__infinite">Active</span>
                 </div>
@@ -32,11 +32,11 @@
             <div class="text-start">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <h6 class="text-uppercase text-muted fw-bold small m-0">Session History</h6>
-                    <button class="btn btn-sm btn-link text-decoration-none small p-0" onclick="clearLog()">Clear</button>
+                    <button class="btn btn-sm btn-link text-decoration-none small p-0 text-secondary" onclick="clearLog()">Clear</button>
                 </div>
                 
-                <ul id="scan-log" class="list-group list-group-flush shadow-sm rounded border-0">
-                    <li class="list-group-item text-center text-muted small fst-italic" id="empty-msg">Waiting for scan...</li>
+                <ul id="scan-log" class="list-group list-group-flush shadow-sm rounded-4 border-0">
+                    <li class="list-group-item text-center text-muted small fst-italic py-3" id="empty-msg">Waiting for scan...</li>
                 </ul>
             </div>
 
@@ -70,13 +70,13 @@
         isScanning = true;
 
         // Call Backend
-        fetch("{% url 'inventory:api_process_scan' %}", {  // FIX: Matches urls.py
+        fetch("{% url 'inventory:api_process_scan' %}", {  
             method: 'POST',
             headers: {
                 'X-CSRFToken': '{{ csrf_token }}',
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ qr_uuid: uniqueId }) // FIX: Matches views.py expectation
+            body: JSON.stringify({ qr_uuid: uniqueId }) 
         })
         .then(response => {
             if (!response.ok) throw new Error("Server Error");
@@ -91,6 +91,7 @@
         })
         .catch(err => {
             console.error("Scan Error:", err);
+            playBeep(false);
             updateLog({success: false, message: 'Network or Server Error', item_name: 'System'});
             setTimeout(() => { isScanning = false; }, ERROR_COOLDOWN);
         });
@@ -110,13 +111,13 @@
         
         // Handle specific "Checked Out" vs "Checked In" logic from backend
         if(data.new_status === 'RENTED') {
-            colorClass = 'text-warning'; // Orange for checking out
+            colorClass = 'text-warning'; // Orange/Yellow for checking out
             icon = 'bi-box-arrow-right';
         }
 
         let itemName = data.item_name || 'Unknown Item';
 
-        li.className = "list-group-item d-flex justify-content-between align-items-center animate__fadeInDown bg-white border-bottom";
+        li.className = "list-group-item d-flex justify-content-between align-items-center animate__fadeInDown bg-white border-bottom py-3";
         li.innerHTML = `
             <div class="d-flex align-items-center">
                 <i class="bi ${icon} ${colorClass} fs-4 me-3"></i>
@@ -137,7 +138,7 @@
     }
 
     function clearLog() {
-        document.getElementById('scan-log').innerHTML = '<li class="list-group-item text-center text-muted small fst-italic" id="empty-msg">Waiting for scan...</li>';
+        document.getElementById('scan-log').innerHTML = '<li class="list-group-item text-center text-muted small fst-italic py-3" id="empty-msg">Waiting for scan...</li>';
     }
 
     // --- 3. AUDIO FEEDBACK (No external file needed) ---
@@ -186,5 +187,8 @@
     }
     /* Hide the library's default stop button if desired */
     #reader__dashboard_section_csr span { display: none !important; }
+    
+    /* Ensure links inside scanner (if any) match brand */
+    #reader a { color: #0f172a; text-decoration: underline; }
 </style>
 {% endblock %}

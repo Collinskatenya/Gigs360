@@ -7,9 +7,11 @@
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-lg-5 col-md-8">
+                
                 <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
-                    <div class="card-header bg-dark text-white text-center py-4">
-                        <h4 class="fw-bold mb-1 text-warning">
+                    
+                    <div class="card-header text-white text-center py-4" style="background-color: #0f172a;">
+                        <h4 class="fw-bold mb-1" style="color: #d9a60e;">
                             <i class="bi bi-rocket-takeoff-fill me-2"></i> Join Gigs360
                         </h4>
                         <small class="text-white-50">Create your account to get started</small>
@@ -20,7 +22,7 @@
                             {% csrf_token %}
                             
                             {% if form.non_field_errors %}
-                                <div class="alert alert-danger small p-2 mb-3">
+                                <div class="alert alert-danger small p-2 mb-3 rounded-3 shadow-sm text-center">
                                     {% for error in form.non_field_errors %}
                                         <i class="bi bi-exclamation-circle me-1"></i> {{ error }}
                                     {% endfor %}
@@ -31,7 +33,7 @@
                                 {{ form.role }}
                                 <label for="{{ form.role.id_for_label }}">I want to join as a...</label>
                                 {% if form.role.errors %}
-                                    <div class="text-danger small mt-1">{{ form.role.errors.0 }}</div>
+                                    <div class="text-danger small mt-1 ps-1">{{ form.role.errors.0 }}</div>
                                 {% endif %}
                             </div>
 
@@ -41,13 +43,13 @@
                                         {{ field }}
                                         <label for="{{ field.id_for_label }}">{{ field.label }}</label>
                                         {% if field.errors %}
-                                            <div class="text-danger small mt-1">{{ field.errors.0 }}</div>
+                                            <div class="text-danger small mt-1 ps-1">{{ field.errors.0 }}</div>
                                         {% endif %}
                                     </div>
                                 {% endif %}
                             {% endfor %}
 
-                            <button type="submit" class="btn btn-warning w-100 py-3 fw-bold rounded-3 shadow-sm text-dark mt-3 transition-hover">
+                            <button type="submit" class="btn w-100 py-3 fw-bold rounded-pill shadow-sm text-dark mt-3 hover-lift" style="background-color: #d9a60e; border-color: #d9a60e;">
                                 Create Account
                             </button>
                         </form>
@@ -55,12 +57,18 @@
 
                     <div class="card-footer bg-light text-center py-3 border-0">
                         <p class="small mb-0 text-muted">
-                            Already have an account? <a href="{% url 'login' %}" class="fw-bold text-primary text-decoration-none">Login</a>
+                            Already have an account? <a href="{% url 'login' %}" class="fw-bold text-decoration-none" style="color: #0f172a;">Login</a>
                         </p>
                     </div>
                 </div>
+
             </div>
         </div>
     </div>
 </section>
+
+<style>
+    .hover-lift:hover { transform: translateY(-2px); transition: 0.2s; box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15)!important; }
+    .form-control:focus, .form-select:focus { border-color: #0f172a; box-shadow: 0 0 0 0.25rem rgba(15, 23, 42, 0.1); }
+</style>
 {% endblock %}

@@ -7,17 +7,22 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <style>
-        body { background-color: #f0f2f5; display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: 'Segoe UI', sans-serif; }
-        .verification-card { max-width: 450px; width: 100%; border: none; box-shadow: 0 15px 35px rgba(0,0,0,0.1); border-radius: 15px; overflow: hidden; }
-        .card-header { background-color: #003366; color: white; padding: 25px; text-align: center; }
+        body { background-color: #f8f9fa; display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: 'Segoe UI', sans-serif; }
+        .verification-card { max-width: 450px; width: 100%; border: none; box-shadow: 0 1rem 3rem rgba(0,0,0,.175); border-radius: 1rem; overflow: hidden; }
+        /* Updated to Navy Brand Color */
+        .card-header { background-color: #0f172a; color: white; padding: 2rem 1.5rem; text-align: center; }
         .asset-id-box { background: #e9ecef; border: 1px dashed #adb5bd; padding: 10px; border-radius: 8px; font-family: monospace; letter-spacing: 1px; color: #495057; font-weight: bold; }
+        .btn-primary { background-color: #0f172a; border-color: #0f172a; }
+        .btn-primary:hover { background-color: #0b1120; border-color: #0b1120; }
+        .btn-outline-primary { color: #0f172a; border-color: #0f172a; }
+        .btn-outline-primary:hover { background-color: #0f172a; color: white; }
     </style>
 </head>
 <body>
 
     <div class="card verification-card">
         <div class="card-header">
-            <h4 class="mb-0 fw-bold"><i class="bi bi-shield-lock-fill me-2"></i>Gigs360 Secure Asset</h4>
+            <h4 class="mb-0 fw-bold"><i class="bi bi-shield-check me-2"></i>Gigs360 Secure Asset</h4>
         </div>
         <div class="card-body p-4 text-center">
             
@@ -39,25 +44,25 @@
                 </div>
             </div>
 
-            <div class="text-start bg-light p-4 rounded-3 border border-secondary border-opacity-25">
+            <div class="text-start bg-white p-4 rounded-3 border shadow-sm">
                 <h6 class="fw-bold text-dark mb-3 text-center text-uppercase border-bottom pb-2">
                     Found this item?
                 </h6>
                 <p class="small text-dark mb-3 text-center fw-semibold">
-                    Please do not try to locate the individual owner. <br>
+                    Please do not attempt to locate the individual owner. <br>
                     Return this item immediately to Gigs360 for verification.
                 </p>
                 
                 <div class="d-grid gap-2">
-                    <a href="tel:+254700000000" class="btn btn-primary fw-bold">
-                        <i class="bi bi-telephone-fill me-2"></i> Call Gigs360 Hotline
+                    <a href="tel:+254700000000" class="btn btn-primary fw-bold rounded-pill">
+                        <i class="bi bi-telephone-fill me-2"></i> Call Hotline
                     </a>
-                    <a href="mailto:recovery@gigs360.co.ke" class="btn btn-outline-primary fw-bold">
+                    <a href="mailto:recovery@gigs360.co.ke" class="btn btn-outline-primary fw-bold rounded-pill">
                         <i class="bi bi-envelope-fill me-2"></i> Email Recovery Team
                     </a>
                 </div>
 
-                <div class="mt-3 small text-muted border-top pt-3">
+                <div class="mt-3 small text-muted border-top pt-3 text-center">
                     <strong>Drop-off Location:</strong><br>
                     <i class="bi bi-geo-alt-fill text-danger me-1"></i> Gigs360 Hub, KVDA Plaza, Eldoret.
                 </div>

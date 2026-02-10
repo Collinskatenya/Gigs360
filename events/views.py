@@ -5,14 +5,17 @@ from django.utils import timezone
 from django.http import JsonResponse, HttpResponse
 from django.utils.dateparse import parse_datetime
 from django.views.decorators.http import require_POST
-from django.conf import settings  # <--- CRITICAL IMPORT
+from django.conf import settings 
 import json 
 
-# Import forms and models
+# FORMS & MODELS
 from .forms import EventForm, DocumentForm, LineItemFormSet
 from .models import Event, EventItem, Document
 from inventory.models import InventoryItem 
 from core.models import Notification 
+
+# UTILS
+# Ensure you have created this utility function in events/utils.py
 from .utils import render_to_pdf
 
 # --- CONFIGURATION ---
@@ -42,22 +45,23 @@ def event_dashboard(request):
     # --- INVENTORY STATS & LIMITS ---
     inventory_count = InventoryItem.objects.filter(owner=request.user).count()
     
-    # Get user plan (Defaults to FREE if missing)
-    user_plan = getattr(request.user, 'plan', 'FREE').upper()
+    # Get user plan (Safely)
+    try:
+        user_plan = request.user.userprofile.plan_tier.upper()
+    except:
+        user_plan = 'FREE'
     
-    # Get limit from settings.py (Defaults to 20 if settings missing)
-    limit = settings.INVENTORY_LIMITS.get(user_plan, 20)
+    # Get limit from settings.py
+    limits = getattr(settings, 'INVENTORY_LIMITS', {'FREE': 15, 'PRO': 100, 'ENTERPRISE': float('inf')})
+    limit = limits.get(user_plan, 15)
     
     # Calculate Progress Bar Width
     if limit == float('inf'):
         limit_display = "Unlimited"
-        # --- FIXED: Soft Goal Logic (1000 items) ---
-        # Instead of a static 5%, we calculate usage against a soft goal of 1000.
-        # This makes 2 items = 0.2% (Realistically small) instead of 5%.
+        # Soft Goal Logic (1000 items) for visual progress
         progress_width = (inventory_count / 1000) * 100
     else:
         limit_display = limit
-        # Avoid division by zero
         if limit > 0:
             progress_width = (inventory_count / limit) * 100
         else:
@@ -138,7 +142,6 @@ def create_event(request):
                 if conflict_items.exists():
                     names = ", ".join([r.item.name for r in conflict_items])
                     messages.error(request, f"❌ Booking Failed: The following items are already booked: {names}")
-                    # Return with API Key for map
                     return render(request, 'events/create_event.html', {
                         'form': form,
                         'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY 
@@ -164,7 +167,6 @@ def create_event(request):
     else:
         form = EventForm(user=request.user)
 
-    # Return with API Key for map
     return render(request, 'events/create_event.html', {
         'form': form,
         'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY 
@@ -173,10 +175,9 @@ def create_event(request):
 @login_required
 def update_event(request, pk):
     """
-    Handles Event updates with Safe Redirection if event is missing.
+    Handles Event updates with Safe Redirection.
     """
     try:
-        # SAFE LOOKUP: Prevents 404 Crash if notification clicks to deleted event
         event = Event.objects.get(pk=pk, user=request.user)
     except Event.DoesNotExist:
         messages.warning(request, "⚠️ That event could not be found (it may have been deleted).")
@@ -213,6 +214,7 @@ def update_event(request, pk):
 
             event_obj = form.save()
             
+            # Sync Manifest Items
             current_manifest_ids = set(EventItem.objects.filter(event=event).values_list('item_id', flat=True))
             new_item_ids = set(item.id for item in new_items)
             
@@ -233,30 +235,24 @@ def update_event(request, pk):
     return render(request, 'events/create_event.html', {
         'form': form, 
         'title': 'Edit Event',
-        'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY # FIX: Uses variable, not raw key
+        'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY
     })
 
-# --- NEW: Cancel/Delete Event Feature ---
 @login_required
 @require_POST
 def delete_event(request, pk):
     """
-    Deletes an event and automatically frees up all associated gear.
+    Deletes an event and frees up gear.
     """
     event = get_object_or_404(Event, pk=pk, user=request.user)
     title = event.title
-    
-    # Deleting the event cascades and deletes all EventItem records,
-    # instantly freeing up the gear for other bookings.
     event.delete()
     
-    # Log to Notifications
     Notification.objects.create(
         user=request.user,
         title="Event Cancelled",
         message=f"Event '{title}' was cancelled. Gear has been returned to inventory.",
-        notification_type='warning',
-        link='#'
+        notification_type='warning'
     )
 
     messages.success(request, f"Event '{title}' has been cancelled and deleted.")
@@ -265,7 +261,7 @@ def delete_event(request, pk):
 @login_required
 def event_report(request, pk):
     """
-    Read-Only Audit Report with Safe Redirection.
+    Read-Only Audit Report.
     """
     try:
         event = Event.objects.get(pk=pk, user=request.user)
@@ -312,30 +308,30 @@ def create_document(request, event_id):
         formset = LineItemFormSet(request.POST)
 
         if form.is_valid() and formset.is_valid():
-            # 1. Save Parent Document First to get an ID
+            # 1. Save Parent Document
             doc = form.save(commit=False)
             doc.event = event
             doc.user = request.user
-            doc.save() # CRITICAL: Creates the UUID so items can attach to it
+            doc.save() 
 
-            # 2. Bind Formset to the saved Document
+            # 2. Bind Formset
             formset.instance = doc
             formset.save() 
 
-            # 3. Calculate Totals based on saved items
+            # 3. Calculate Totals
             total = sum(item.total_price for item in doc.items.all())
             doc.subtotal = total
             doc.total_amount = total
             doc.save()
 
             messages.success(request, f"{doc.get_doc_type_display()} created successfully!")
+            # FIX: Ensure 'generate_pdf' is the correct URL name in events/urls.py
             return redirect('events:generate_pdf', pk=doc.pk)
     else:
-        # --- UPDATED: PRE-FILL EMAIL FOR AUTOMATION ---
         initial_data = {
             'client_name': event.client_name,
             'client_phone': event.client_contact,
-            'client_email': getattr(event, 'client_email', ''), # Auto-fill Email if it exists
+            'client_email': getattr(event, 'client_email', ''),
             'issue_date': timezone.now().date(),
             'due_date': timezone.now().date() + timezone.timedelta(days=7),
         }
@@ -355,7 +351,7 @@ def create_document(request, event_id):
         formset = LineItemFormSet(initial=formset_initial)
         formset.extra = 0 if formset_initial else 1
 
-    return render(request, 'events/create_document.html', {
+    return render(request, 'events/create_quote.html', { # FIX: Use correct template name
         'form': form,
         'formset': formset,
         'event': event,
@@ -374,10 +370,9 @@ def document_list(request):
 @login_required
 def generate_document_pdf(request, pk):
     """
-    Generates a professional PDF with Safe Redirection.
+    Generates a professional PDF.
     """
     try:
-        # SAFE LOOKUP: Prevents crash if invoice notification clicked after deletion
         doc = Document.objects.get(pk=pk, user=request.user)
     except (Document.DoesNotExist, ValueError):
         messages.warning(request, "⚠️ That document is unavailable or has been deleted.")
@@ -406,41 +401,27 @@ def generate_document_pdf(request, pk):
         
     return HttpResponse("Error generating PDF", status=500)
 
-
-# ==========================================
-# 3. SAFETY & MAINTENANCE (Safe Delete)
-# ==========================================
-
 @login_required
-@require_POST  # Security Check
+@require_POST 
 def delete_document(request, pk):
     """
-    Safely deletes a document AND creates a persistent notification.
+    Safely deletes a document.
     """
-    # 1. Fetch Document
     doc = get_object_or_404(Document, pk=pk, user=request.user)
     
-    # 2. Security Check (Case-Insensitive)
-    # This prevents deleting SENT or PAID invoices, keeping financial records safe.
     if str(doc.status).upper() != 'DRAFT':
         messages.error(request, f"⛔ Restricted: Cannot delete {doc.doc_number} because it is {doc.status}.")
         return redirect('events:document_list')
 
-    # 3. Capture info for notification BEFORE deleting
     doc_number = doc.doc_number
-    
-    # 4. Perform Delete
     doc.delete()
     
-    # 5. CREATE BELL NOTIFICATION (Persistent)
     Notification.objects.create(
         user=request.user,
         title="Document Deleted",
         message=f"Draft document {doc_number} was permanently deleted.",
-        notification_type='success',
-        link='#'
+        notification_type='success'
     )
 
     messages.success(request, f"✅ Document {doc_number} deleted successfully.")
-    
     return redirect('events:document_list')

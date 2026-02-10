@@ -1,153 +1,236 @@
+import uuid
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.conf import settings
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.utils import timezone
-from django.urls import reverse
 
 # ==========================================
 # 1. CUSTOM USER MODEL
 # ==========================================
 
 class User(AbstractUser):
-    # --- ROLE FLAGS ---
-    is_client = models.BooleanField(default=False, verbose_name="Is Freelancer")
-    is_vendor = models.BooleanField(default=False, verbose_name="Is Vendor")
-    is_planner = models.BooleanField(default=False, verbose_name="Is Agency")
-    
-    # --- STAFF GOVERNANCE ---
-    ROLE_CHOICES = [
-        ('ADMIN', 'Super Admin'),
-        ('UX_EXPERT', 'UX/UI Designer'),
-        ('DEV', 'Software Engineer'),
-        ('MARKETING', 'Marketing Lead'),
-        ('FINANCE', 'Finance Manager'),
-        ('SUPPORT', 'Customer Support'),
+    """
+    The Custom User Model required by settings.AUTH_USER_MODEL.
+    """
+    pass
+
+
+# ==========================================
+# 2. ENTERPRISE ABSTRACT MODELS
+# ==========================================
+
+class TimeStampedModel(models.Model):
+    """Standardizes timestamping across the entire SaaS."""
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+
+class SoftDeleteManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(is_deleted=False)
+
+class SoftDeleteModel(models.Model):
+    is_deleted = models.BooleanField(default=False, db_index=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+
+    objects = SoftDeleteManager() 
+    all_objects = models.Manager() 
+
+    def delete(self, using=None, keep_parents=False):
+        self.is_deleted = True
+        self.deleted_at = timezone.now()
+        self.save()
+
+    def restore(self):
+        self.is_deleted = False
+        self.deleted_at = None
+        self.save()
+
+    class Meta:
+        abstract = True
+
+
+# ==========================================
+# 3. SECURITY & LOGS
+# ==========================================
+
+class SecurityLog(TimeStampedModel):
+    ACTION_CHOICES = [
+        ('LOGIN', 'Login Success'),
+        ('LOGIN_FAIL', 'Login Failed'),
+        ('LOGOUT', 'Logout'),
+        ('SUDO_MODE', 'Critical Action'),
+        ('BAN_IP', 'IP Banned'),
+        ('PASSWORD_CHANGE', 'Password Changed'),
+        ('STAFF_ACCESS', 'Staff Accessed User Account'),
+        ('KYC_VERIFY', 'KYC Verification'),
     ]
-    staff_role = models.CharField(max_length=50, choices=ROLE_CHOICES, blank=True, null=True)
-    employee_id = models.CharField(max_length=20, blank=True, null=True, help_text="e.g. GIG-EMP-001")
-
-    # --- BUSINESS INFO ---
-    BUSINESS_TYPE_CHOICES = [
-        ('PHOTO', 'Photography & Video'),
-        ('DECOR', 'Decor & Flowers'),
-        ('ENT', 'MC & DJ'),
-        ('PLANNING', 'Event Planning'),
-        ('SECURITY', 'Security & Bouncers'),
-        ('CATERING', 'Catering'),
-        ('OTHER', 'Other'),
-    ]
-    business_name = models.CharField(max_length=100, blank=True, null=True)
-    business_type = models.CharField(max_length=50, choices=BUSINESS_TYPE_CHOICES, blank=True, null=True)
-    number_of_employees = models.PositiveIntegerField(default=1, blank=True, null=True)
     
-    # --- CONTACT & MEDIA ---
-    phone_number = models.CharField(max_length=15, blank=True, null=True)
-    profile_picture = models.ImageField(upload_to='profile_pics/', blank=True, null=True)
-    
-    # --- NEW: INVOICE & BRANDING (Added for PDF Polish) ---
-    company_logo = models.ImageField(upload_to='logos/', blank=True, null=True, help_text="Used on PDF Invoices")
-    invoice_color_theme = models.CharField(
-        max_length=7, 
-        default='#003366', 
-        help_text="Hex code for invoice header background (e.g. #003366)"
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='security_logs'
     )
-
-    # --- NEW: PERSONALIZATION (Added for Birthday Wishes) ---
-    date_of_birth = models.DateField(blank=True, null=True, help_text="For automated birthday wishes")
-
-    # --- SUBSCRIPTION ---
-    PLAN_CHOICES = [
-        ('FREE', 'Free Starter'),
-        ('PRO', 'Pro Business'),
-        ('ENTERPRISE', 'Enterprise'),
-    ]
-    plan = models.CharField(
-        max_length=20, 
-        choices=PLAN_CHOICES, 
-        default='FREE'
-    )
-    subscription_expiry = models.DateTimeField(blank=True, null=True)
-
-    # --- PAYMENT INFO ---
-    bank_name = models.CharField(max_length=100, blank=True, null=True)
-    account_number = models.CharField(max_length=50, blank=True, null=True)
-    mpesa_number = models.CharField(max_length=15, blank=True, null=True)
-    
-    # --- SETTINGS ---
-    theme_preference = models.CharField(
-        max_length=10, 
-        choices=[('light', 'Light'), ('dark', 'Dark')], 
-        default='light'
-    )
-
-    # --- HELPER METHODS ---
-    def get_role_label(self):
-        """Returns the dashboard badge label"""
-        if self.is_superuser: return "System Owner"
-        if self.is_staff and self.staff_role: return self.get_staff_role_display()
-        for code, label in self.PLAN_CHOICES:
-            if code == self.plan:
-                return label
-        return self.plan
-
-    @property
-    def is_pro_member(self):
-        return self.plan in ['PRO', 'ENTERPRISE']
-
-    def is_online(self):
-        if self.last_login:
-            return (timezone.now() - self.last_login).seconds < 900
-        return False
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    action = models.CharField(max_length=50, choices=ACTION_CHOICES, db_index=True)
+    details = models.TextField(help_text="User Agent, Device Info, or Error Message")
+    is_suspicious = models.BooleanField(default=False)
 
     def __str__(self):
-        if self.business_name:
-            return f"{self.username} ({self.business_name})"
-        return self.username
+        user_str = self.user.username if self.user else "Anonymous"
+        return f"[{self.created_at.strftime('%H:%M:%S')}] {user_str} - {self.get_action_display()}"
 
 
 # ==========================================
-# 2. HOLIDAY MESSAGING (NEW)
+# 4. COMMUNICATIONS & ALERTS
 # ==========================================
 
-class HolidayMessage(models.Model):
-    """
-    Stores bulk SMS templates for National Holidays.
-    """
-    title = models.CharField(max_length=100, help_text="e.g. Jamhuri Day")
-    send_date = models.DateField(help_text="When to send this message")
-    message_content = models.TextField(max_length=160, help_text="SMS content (max 160 chars)")
+class Notification(TimeStampedModel):
+    TYPE_CHOICES = [
+        ('info', 'Information'),
+        ('success', 'Success'),
+        ('warning', 'Warning'),
+        ('danger', 'Critical Alert'),
+    ]
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notifications')
+    title = models.CharField(max_length=200)
+    message = models.TextField()
+    notification_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='info')
+    link = models.CharField(max_length=200, blank=True)
+    is_read = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.title} - {self.user.username}"
+
+class HolidayMessage(TimeStampedModel):
+    title = models.CharField(max_length=100)
+    send_date = models.DateField()
+    message_content = models.TextField(max_length=160)
     is_sent = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.title} - {self.send_date}"
 
 
 # ==========================================
-# 3. NOTIFICATION SYSTEM
+# 5. USER PROFILE (Identity Layer)
 # ==========================================
 
-class Notification(models.Model):
-    """
-    Stores persistent alerts for the user (Bell Icon).
-    """
-    TYPE_CHOICES = [
-        ('success', 'Success'), # Green
-        ('info', 'Info'),       # Blue
-        ('warning', 'Warning'), # Yellow
-        ('danger', 'Danger'),   # Red
-    ]
-
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
-    title = models.CharField(max_length=255)
-    message = models.TextField()
-    link = models.CharField(max_length=255, blank=True, null=True, help_text="URL to redirect to when clicked")
-    notification_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='info')
+class UserProfile(TimeStampedModel): 
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='userprofile')
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
-    is_read = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
+    # --- IDENTITY & KYC ---
+    profile_picture = models.ImageField(upload_to='profile_pics/', default='default.jpg', blank=True)
+    phone_number = models.CharField(max_length=20, blank=True, null=True)
+    bio = models.TextField(blank=True, max_length=500, null=True)
+    
+    # LEGAL DATA
+    kra_pin = models.CharField(max_length=20, blank=True, null=True, unique=True, db_index=True)
+    id_number = models.CharField(max_length=20, blank=True, null=True, unique=True, db_index=True)
+    dob = models.DateField(null=True, blank=True)
+    
+    # --- BUSINESS ---
+    business_name = models.CharField(max_length=100, blank=True, null=True)
+    company_logo = models.ImageField(upload_to='company_logos/', blank=True, null=True)
+    invoice_color_theme = models.CharField(max_length=7, default='#003366')
+    
+    CATEGORY_CHOICES = [
+        ('Photography & Video', 'Photography & Video'),
+        ('Sound & DJ', 'Sound & DJ'),
+        ('Decor & Flowers', 'Decor & Flowers'),
+        ('Event Planning', 'Event Planning'),
+        ('Transport & Logistics', 'Transport & Logistics'),
+        ('Security & Bouncers', 'Security & Bouncers'),
+        ('Catering', 'Catering'),
+        ('Other', 'Other'),
+    ]
+    business_category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, default='Other', null=True, blank=True)
 
-    class Meta:
-        ordering = ['-created_at']
+    # --- ROLES ---
+    is_freelancer = models.BooleanField(default=False)
+    is_vendor = models.BooleanField(default=False)
+    is_agency = models.BooleanField(default=False)
+    
+    # --- SUBSCRIPTION ---
+    PLAN_CHOICES = [('free', 'Free Starter'), ('pro', 'Pro Business'), ('enterprise', 'Enterprise')]
+    plan = models.CharField(max_length=20, choices=PLAN_CHOICES, default='free')
+    subscription_end_date = models.DateTimeField(null=True, blank=True)
+    auto_renew = models.BooleanField(default=False)
+    
+    # --- SECURITY ---
+    is_verified = models.BooleanField(default=False)
+    is_2fa_enabled = models.BooleanField(default=False)
+    last_login_ip = models.GenericIPAddressField(null=True, blank=True)
+    terms_accepted = models.BooleanField(default=False)
+    terms_version = models.CharField(max_length=50, blank=True, null=True)
+    terms_accepted_at = models.DateTimeField(null=True, blank=True)
+
+    # --- PAYMENT ---
+    bank_name = models.CharField(max_length=100, blank=True, null=True)
+    account_number = models.CharField(max_length=50, blank=True, null=True)
+    mpesa_number = models.CharField(max_length=15, blank=True, null=True)
 
     def __str__(self):
-        return f"{self.user.username} - {self.title}"
+        return f"{self.user.username}'s Profile"
+
+    @property
+    def is_subscription_active(self):
+        if self.plan == 'free': return True
+        return self.subscription_end_date and self.subscription_end_date > timezone.now()
+
+
+# ==========================================
+# 6. HELPDESK SYSTEM (The Missing Piece!)
+# ==========================================
+
+class SupportTicket(TimeStampedModel):
+    CATEGORY_CHOICES = [
+        ('billing', 'Billing & Finance'),
+        ('verification', 'Account Verification'),
+        ('technical', 'Technical Issue'),
+        ('general', 'General Inquiry'),
+        ('internal', 'Internal Staff Issue'), 
+    ]
+    STATUS_CHOICES = [('open', 'Open'), ('in_progress', 'In Progress'), ('resolved', 'Resolved')]
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='support_tickets')
+    subject = models.CharField(max_length=200)
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
+    description = models.TextField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='open')
+    priority = models.CharField(max_length=10, choices=[('low', 'Low'), ('medium', 'Medium'), ('high', 'High')], default='medium')
+
+    def __str__(self):
+        return f"[{self.get_status_display()}] {self.subject}"
+
+class TicketMessage(TimeStampedModel):
+    ticket = models.ForeignKey(SupportTicket, on_delete=models.CASCADE, related_name='messages')
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    message = models.TextField()
+    
+    def __str__(self):
+        return f"Msg by {self.sender.username}"
+
+
+# --- SIGNALS ---
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        UserProfile.objects.create(user=instance)
+
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)
+def save_user_profile(sender, instance, **kwargs):
+    try:
+        instance.userprofile.save()
+    except UserProfile.DoesNotExist:
+        UserProfile.objects.create(user=instance)

@@ -3,16 +3,16 @@
 
 {% block title %}Create Quote | Gigs360{% endblock %}
 
-{% block dashboard_content %}
+{% block content %}
 <div class="container-fluid py-4">
     <div class="row justify-content-center">
         <div class="col-lg-11">
             
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h3 class="fw-bold" style="color: #003366;">Create Document</h3>
-                    <p class="text-muted small">
-                        Event: <strong class="text-dark">{{ event.title }}</strong>
+                    <h3 class="fw-bold text-dark">Create Document</h3>
+                    <p class="text-muted small mb-0">
+                        Event: <strong class="text-primary">{{ event.title }}</strong>
                     </p>
                 </div>
                 <div>
@@ -84,7 +84,7 @@
                                    name="{{ form.description.html_name }}" 
                                    value="{{ form.description.value|default:'' }}" 
                                    class="form-control fw-bold item-search" 
-                                   placeholder="Type to search gear/services..." 
+                                   placeholder="Search gear..." 
                                    list="inventory-list"
                                    id="{{ form.description.auto_id }}">
                         </div>
@@ -108,7 +108,7 @@
                             {% if formset.can_delete %}
                                 <div class="form-check d-inline-block">
                                     {{ form.DELETE }}
-                                    <label class="form-check-label text-danger small"><i class="bi bi-trash"></i></label>
+                                    <label class="form-check-label text-danger small" title="Remove Item"><i class="bi bi-trash"></i></label>
                                 </div>
                             {% endif %}
                         </div>
@@ -135,7 +135,7 @@
                                 <i class="bi bi-stars"></i>
                             </button>
                         </div>
-                        <div class="form-text small"><i class="bi bi-stars text-warning"></i> Click the stars to polish your notes professionally.</div>
+                        <div class="form-text small"><i class="bi bi-stars text-warning"></i> Use AI to format payment terms professionally.</div>
                     </div>
                 </div>
 
@@ -152,7 +152,7 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // 1. Load Inventory Data safely
+        // 1. Load Inventory Data
         const rawJson = '{{ inventory_json|escapejs }}';
         let inventoryData = [];
         
@@ -166,7 +166,7 @@
 
         const dataList = document.getElementById('inventory-list');
         
-        // Populate Datalist options
+        // Populate Datalist
         if (inventoryData.length > 0) {
             inventoryData.forEach(item => {
                 const option = document.createElement('option');
@@ -178,28 +178,25 @@
         const container = document.getElementById('line-items-container');
         const totalDisplay = document.getElementById('live-total-display');
 
-        // 2. Auto-Fill Price on Item Selection
+        // 2. Auto-Fill Price & Calc Total
         container.addEventListener('input', function(e) {
-            // Logic for Autocomplete Price Filling
             if (e.target.classList.contains('item-search')) {
                 const val = e.target.value;
                 const match = inventoryData.find(i => i.name === val);
                 
                 if (match) {
-                    // Find the price input in the same row
                     const row = e.target.closest('.item-row');
                     const priceInput = row.querySelector('input[name$="-unit_price"]');
                     if (priceInput) {
                         priceInput.value = match.daily_rate;
-                        calculateTotal(); // Update total immediately
+                        calculateTotal();
                     }
                 }
             }
-            // Recalculate on any input change (qty or price)
             calculateTotal(); 
         });
 
-        // 3. Live Total Calculation
+        // 3. Calculation Logic
         function calculateTotal() {
             let total = 0;
             const rows = container.querySelectorAll('.item-row');
@@ -210,7 +207,6 @@
                 const deleteInput = row.querySelector('input[name$="-DELETE"]');
 
                 if (qtyInput && priceInput) {
-                    // Ignore rows marked for deletion
                     if (deleteInput && deleteInput.checked) return;
 
                     const qty = parseFloat(qtyInput.value) || 0;
@@ -219,32 +215,27 @@
                 }
             });
 
-            // Format Currency
             totalDisplay.textContent = "Total: KES " + total.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
         }
 
-        // 4. AI Polish Simulation
+        // 4. AI Polish Logic (Simulation)
         const aiBtn = document.getElementById('aiPolishBtn');
-        const notesField = document.getElementById('id_notes'); // Standard Django ID
+        const notesField = document.getElementById('id_notes');
         
         if(aiBtn && notesField) {
             aiBtn.addEventListener('click', function() {
                 const original = notesField.value;
-                if(!original) return;
-                
-                // Visual feedback
                 const icon = aiBtn.querySelector('i');
-                icon.className = 'spinner-border spinner-border-sm';
+                icon.className = 'spinner-border spinner-border-sm'; // Loading state
                 
                 setTimeout(() => {
-                    // Simple enhancement simulation
-                    notesField.value = "Payment Terms: 50% Deposit required to secure booking. Balance due 48 hours prior to event.\n\nBank Details:\n" + original;
-                    icon.className = 'bi bi-stars'; // Reset icon
-                }, 800);
+                    notesField.value = "PAYMENT TERMS:\n• 50% Deposit to secure booking.\n• Balance due 48 hours prior to event.\n\nBANK DETAILS:\n" + (original || "Account Name: Gigs360\nBank: KCB\nAcc No: 1234567890");
+                    icon.className = 'bi bi-stars'; // Reset
+                }, 600);
             });
         }
 
-        // Run once on load
+        // Initial Calc
         calculateTotal();
     });
 </script>
@@ -252,12 +243,8 @@
 <style>
     .hover-lift:hover { transform: translateY(-2px); transition: 0.2s; }
     textarea { resize: vertical; }
-    /* Hide the ugly default checkbox, make it clickable */
     input[type=checkbox][name$="-DELETE"] { 
-        cursor: pointer; 
-        width: 16px; 
-        height: 16px; 
-        accent-color: #dc3545;
+        cursor: pointer; width: 16px; height: 16px; accent-color: #dc3545;
     }
 </style>
 {% endblock %}

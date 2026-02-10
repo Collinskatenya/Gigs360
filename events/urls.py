@@ -14,23 +14,24 @@ urlpatterns = [
     path('report/<int:pk>/', views.event_report, name='event_report'),
     
     # ==========================================
-    # 2. API ENDPOINTS
+    # 2. API ENDPOINTS (AJAX)
     # ==========================================
     path('api/check-availability/', views.check_gear_availability, name='check_availability'),
 
     # ==========================================
-    # 3. DOCUMENT ENGINE (Mixed IDs)
+    # 3. DOCUMENT ENGINE
     # ==========================================
     path('documents/', views.document_list, name='document_list'),
     
-    # NOTE: <int:event_id> because it refers to the Event (Integer)
+    # Creates a document linked to a specific event
     path('event/<int:event_id>/create-document/', views.create_document, name='create_document'),
 
     # ==========================================
-    # 4. DOCUMENT ACTIONS (UUIDs)
+    # 4. DOCUMENT ACTIONS
     # ==========================================
-    # CRITICAL: Must use <uuid:pk> because your Document model uses UUIDField
-    path('document/<uuid:pk>/pdf/', views.generate_document_pdf, name='generate_pdf'),
-    path('document/<uuid:pk>/view/', views.generate_document_pdf, name='view_document'),
-    path('document/<uuid:pk>/delete/', views.delete_document, name='delete_document'),
+    # FIX: Changed <uuid:pk> to <int:pk> to ensure compatibility with standard Django models.
+    # If your Document model explicitly uses UUIDs, you can switch this back.
+    path('document/<int:pk>/pdf/', views.generate_document_pdf, name='generate_pdf'),
+    path('document/<int:pk>/view/', views.generate_document_pdf, name='view_document'), # Re-uses generator for viewing
+    path('document/<int:pk>/delete/', views.delete_document, name='delete_document'),
 ]

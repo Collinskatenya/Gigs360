@@ -1,18 +1,17 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
+from .models import UserProfile
 
 User = get_user_model()
 
 # ==========================================
-# 1. SIGNUP FORM (PUBLIC)
+# 1. SIGNUP FORM (Smart Link to Profile)
 # ==========================================
 
 class SignUpForm(UserCreationForm):
     """
-    Public Signup Form.
-    RESTRICTED: Only allows Clients (Freelancers, Vendors, Agencies).
-    Staff accounts must be created by Super Admin.
+    Creates the User AND automatically sets the Role in UserProfile.
     """
     ROLE_CHOICES = [
         ('freelancer', 'Freelancer (Photographer, DJ, Model)'),
@@ -26,118 +25,99 @@ class SignUpForm(UserCreationForm):
         label="I want to join as a..."
     )
 
-    email = forms.EmailField(
-        required=True, 
-        widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'name@example.com'})
-    )
-    first_name = forms.CharField(
-        required=True, 
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'First Name'})
-    )
-    last_name = forms.CharField(
-        required=True, 
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Last Name'})
-    )
+    email = forms.EmailField(required=True, widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'name@example.com'}))
+    first_name = forms.CharField(required=True, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'First Name'}))
+    last_name = forms.CharField(required=True, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Last Name'}))
 
     class Meta(UserCreationForm.Meta):
         model = User
-        fields = ('username', 'email', 'first_name', 'last_name', 'role')
+        fields = ('username', 'email', 'first_name', 'last_name')
 
     def __init__(self, *args, **kwargs):
         super(SignUpForm, self).__init__(*args, **kwargs)
-        for field_name, field in self.fields.items():
-            if 'role' not in field_name:
-                field.widget.attrs['class'] = 'form-control'
-                field.widget.attrs['placeholder'] = field.label
-
-    # --- NEW: PREVENT DUPLICATE EMAILS ---
-    def clean_email(self):
-        email = self.cleaned_data.get('email')
-        # Check if email exists in DB (Case insensitive)
-        if User.objects.filter(email__iexact=email).exists():
-            raise forms.ValidationError("This email address is already registered. Please login instead.")
-        return email
+        for field in self.fields:
+            if field != 'role':
+                self.fields[field].widget.attrs['class'] = 'form-control'
 
     def save(self, commit=True):
-        """
-        Maps the dropdown choice to the specific User Boolean flags.
-        """
+        # 1. Save the User Auth Data
         user = super().save(commit=False)
-        role = self.cleaned_data.get('role')
+        user.email = self.cleaned_data['email']
+        user.first_name = self.cleaned_data['first_name']
+        user.last_name = self.cleaned_data['last_name']
         
-        # 1. Reset all Client flags (Safe default)
-        user.is_vendor = False
-        user.is_planner = False
-        user.is_client = False
-        
-        # 2. Force Staff flags to False (Security)
-        user.is_staff = False
-        user.is_superuser = False
-
-        # 3. Set the specific flag
-        if role == 'vendor':
-            user.is_vendor = True
-        elif role == 'agency':
-            user.is_planner = True
-        else:
-            user.is_client = True 
-            
         if commit:
             user.save()
+            # 2. Update the Linked Profile (Created by Signal)
+            # We must use getattr because the signal creates it instantly
+            if hasattr(user, 'userprofile'):
+                profile = user.userprofile
+                role = self.cleaned_data.get('role')
+                
+                # Reset flags
+                profile.is_freelancer = False
+                profile.is_vendor = False
+                profile.is_agency = False
+                
+                # Set new flag
+                if role == 'vendor':
+                    profile.is_vendor = True
+                elif role == 'agency':
+                    profile.is_agency = True
+                else:
+                    profile.is_freelancer = True
+                
+                profile.save()
         return user
 
 
 # ==========================================
-# 2. SETTINGS FORM (AUTHENTICATED)
+# 2. SETTINGS FORMS (Split for Security)
 # ==========================================
 
-class UserSettingsForm(forms.ModelForm):
-    """
-    Settings Form for authenticated users.
-    Handles Profile Picture, Bio, and Business Data.
-    Includes new Invoice Theme and Birthday fields.
-    """
+class UserUpdateForm(forms.ModelForm):
+    """Updates Login Details (Name, Email)"""
+    email = forms.EmailField(widget=forms.EmailInput(attrs={'class': 'form-control'}))
+    first_name = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}))
+    last_name = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}))
+
     class Meta:
         model = User
-        fields = [
-            'first_name', 'last_name', 'phone_number', 'profile_picture',
-            'business_name', 'business_type', 'number_of_employees',
-            'bank_name', 'account_number', 'mpesa_number',
-            # --- NEW FIELDS ADDED ---
-            'invoice_color_theme', 'date_of_birth'
-        ]
-        widgets = {
-            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'phone_number': forms.TextInput(attrs={'class': 'form-control'}),
-            
-            'business_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'business_type': forms.Select(attrs={'class': 'form-select'}),
-            'number_of_employees': forms.NumberInput(attrs={'class': 'form-control'}),
-            
-            'bank_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'account_number': forms.TextInput(attrs={'class': 'form-control'}),
-            'mpesa_number': forms.TextInput(attrs={'class': 'form-control'}),
-            
-            'profile_picture': forms.FileInput(attrs={'class': 'form-control'}),
-            
-            # --- NEW WIDGETS ---
-            'invoice_color_theme': forms.TextInput(attrs={
-                'type': 'color', 
-                'class': 'form-control form-control-color', 
-                'title': 'Choose your invoice theme color'
-            }),
-            'date_of_birth': forms.DateInput(attrs={
-                'type': 'date', 
-                'class': 'form-control'
-            }),
-        }
+        fields = ['first_name', 'last_name', 'email']
 
+
+class UserProfileForm(forms.ModelForm):
+    """
+    Updates Business Data (KYC, Banking, Logos).
+    Connects to the UserProfile model.
+    """
+    # Custom Date Picker
+    dob = forms.DateField(
+        required=False, 
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+        label="Date of Birth"
+    )
+    # Custom Color Picker
+    invoice_color_theme = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={'type': 'color', 'class': 'form-control form-control-color', 'title': 'Choose your brand color'}),
+        label="Invoice Brand Color"
+    )
+
+    class Meta:
+        model = UserProfile
+        fields = [
+            'profile_picture', 'company_logo', 
+            'phone_number', 'bio',
+            'business_name', 'business_category',
+            'kra_pin', 'id_number', 'dob',
+            'bank_name', 'account_number', 'mpesa_number',
+            'invoice_color_theme'
+        ]
+        
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Ensure optional fields don't block validation
-        self.fields['profile_picture'].required = False
-        self.fields['business_name'].required = False
-        self.fields['business_type'].required = False
-        self.fields['invoice_color_theme'].required = False
-        self.fields['date_of_birth'].required = False
+        super(UserProfileForm, self).__init__(*args, **kwargs)
+        # Apply bootstrap style to all standard inputs
+        for field in self.fields:
+            if 'class' not in self.fields[field].widget.attrs:
+                self.fields[field].widget.attrs.update({'class': 'form-control'})

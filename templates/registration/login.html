@@ -9,7 +9,8 @@
             <div class="col-lg-4 col-md-6">
                 
                 <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
-                    <div class="card-header bg-primary text-white text-center py-4">
+                    
+                    <div class="card-header text-white text-center py-4" style="background-color: #0f172a;">
                         <h4 class="fw-bold mb-1">Welcome Back</h4>
                         <p class="small text-white-50 mb-0">Login to manage your business</p>
                     </div>
@@ -19,24 +20,24 @@
                             {% csrf_token %}
                             
                             {% if form.non_field_errors %}
-                                <div class="alert alert-danger small p-2 text-center mb-3 rounded-3">
+                                <div class="alert alert-danger small p-2 text-center mb-3 rounded-3 shadow-sm">
                                     {% for error in form.non_field_errors %}
-                                        <i class="bi bi-exclamation-circle me-1"></i> {{ error }}
+                                        <i class="bi bi-exclamation-triangle-fill me-1"></i> {{ error }}
                                     {% endfor %}
                                 </div>
                             {% endif %}
 
                             <div class="form-floating mb-3">
-                                <input type="text" name="username" class="form-control" id="id_username" placeholder="Username" required>
-                                <label for="id_username">Username</label>
+                                <input type="text" name="username" class="form-control rounded-3" id="id_username" placeholder="Username" required>
+                                <label for="id_username" class="text-muted">Username</label>
                             </div>
 
                             <div class="form-floating mb-4">
-                                <input type="password" name="password" class="form-control" id="id_password" placeholder="Password" required>
-                                <label for="id_password">Password</label>
+                                <input type="password" name="password" class="form-control rounded-3" id="id_password" placeholder="Password" required>
+                                <label for="id_password" class="text-muted">Password</label>
                             </div>
 
-                            <button type="submit" class="btn btn-primary w-100 py-3 fw-bold rounded-3 shadow-sm">
+                            <button type="submit" class="btn w-100 py-3 fw-bold rounded-pill shadow-sm hover-lift text-white" style="background-color: #0f172a;">
                                 Login to Dashboard
                             </button>
                         </form>
@@ -44,7 +45,8 @@
 
                     <div class="card-footer bg-light text-center py-3 border-0">
                         <p class="small mb-1 text-muted">
-                            Don't have an account? <a href="{% url 'signup' %}" class="fw-bold text-warning text-decoration-none">Create one</a>
+                            Don't have an account? 
+                            <a href="{% url 'signup' %}" class="fw-bold text-decoration-none" style="color: #d9a60e;">Create one</a>
                         </p>
                         <a href="{% url 'password_reset' %}" class="small text-muted text-decoration-underline">Forgot Password?</a>
                     </div>
@@ -54,4 +56,9 @@
         </div>
     </div>
 </section>
+
+<style>
+    .hover-lift:hover { transform: translateY(-2px); transition: 0.2s; box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15)!important; }
+    .form-control:focus { border-color: #0f172a; box-shadow: 0 0 0 0.25rem rgba(15, 23, 42, 0.1); }
+</style>
 {% endblock %}

@@ -3,24 +3,25 @@
 
 {% block title %}Add Inventory | Gigs360{% endblock %}
 
-{% block dashboard_content %}
+{% block content %}
 <div class="container-fluid px-4">
+    
     <div class="d-flex justify-content-between align-items-center my-4">
         <div>
             <h3 class="fw-bold text-dark mb-0">Add New Gear</h3>
-            <p class="text-muted small">Expand your inventory locker.</p>
+            <p class="text-muted small mb-0">Expand your inventory locker.</p>
         </div>
-        <a href="{% url 'inventory:inventory_list' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+        <a href="{% url 'inventory:inventory_list' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 hover-lift">
             <i class="bi bi-arrow-left me-2"></i> Back to List
         </a>
     </div>
 
-    {% if user.subscription_plan == 'Free' %}
+    {% if user.userprofile.plan_tier == 'FREE' %}
     <div class="alert alert-info border-0 shadow-sm rounded-3 d-flex align-items-center mb-4">
         <i class="bi bi-info-circle-fill fs-4 me-3 text-info"></i>
         <div>
             <strong>Free Plan Limit:</strong> You can add up to 5 items. 
-            <a href="{% url 'pricing' %}" class="fw-bold text-decoration-underline">Upgrade to Pro</a> for 50 items & Advanced Tracking.
+            <a href="{% url 'pricing' %}" class="fw-bold text-decoration-underline text-info">Upgrade to Pro</a> for 50 items & Advanced Tracking.
         </div>
     </div>
     {% endif %}
@@ -30,6 +31,13 @@
             <form method="POST" enctype="multipart/form-data" id="inventoryForm">
                 {% csrf_token %}
                 
+                {% if form.errors %}
+                    <div class="alert alert-danger shadow-sm rounded-3 mb-4">
+                        <strong><i class="bi bi-exclamation-triangle-fill"></i> Please fix the errors:</strong>
+                        {{ form.errors }}
+                    </div>
+                {% endif %}
+
                 <div class="row g-4">
                     <div class="col-md-8">
                         <label class="form-label fw-bold small text-uppercase text-muted">Item Name</label>
@@ -55,20 +63,20 @@
                     <div class="col-md-6">
                         <label class="form-label fw-bold small text-uppercase text-muted">Daily Rate (KES)</label>
                         <div class="input-group">
-                            <span class="input-group-text bg-light border-end-0">KES</span>
+                            <span class="input-group-text bg-light border-end-0 fw-bold text-muted">KES</span>
                             {{ form.daily_rate }}
                         </div>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-bold small text-uppercase text-muted">Insurance Value (KES)</label>
                         <div class="input-group">
-                            <span class="input-group-text bg-light border-end-0">KES</span>
+                            <span class="input-group-text bg-light border-end-0 fw-bold text-muted">KES</span>
                             {{ form.replacement_value }}
                         </div>
                     </div>
 
                     <div class="col-12 mt-4">
-                        <h6 class="text-primary fw-bold border-bottom pb-2">Identification & State</h6>
+                        <h6 class="text-primary fw-bold border-bottom pb-2" style="color: #0f172a !important;">Identification & State</h6>
                     </div>
 
                     <div class="col-md-6" id="serialNumberSection">
@@ -107,13 +115,13 @@
 
                 <div class="mt-5 pt-3 border-top d-flex justify-content-between align-items-center">
                     <span class="text-muted small">
-                        {% if user.subscription_plan == 'Free' %}
+                        {% if user.userprofile.plan_tier == 'FREE' %}
                             <i class="bi bi-circle-fill text-success me-1" style="font-size: 8px;"></i> Free Plan Active
                         {% else %}
                             <i class="bi bi-star-fill text-warning me-1"></i> Pro Features Enabled
                         {% endif %}
                     </span>
-                    <button type="submit" class="btn btn-primary fw-bold px-5 py-2 rounded-pill shadow-sm hover-lift">
+                    <button type="submit" class="btn btn-primary fw-bold px-5 py-2 rounded-pill shadow-sm hover-lift" style="background-color: #0f172a; border-color: #0f172a;">
                         <i class="bi bi-plus-lg me-2"></i> Save Item
                     </button>
                 </div>
@@ -124,31 +132,28 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // We select by Name because IDs can vary by Django setup
+        // Robust selection by Name
         const trackingSelect = document.querySelector('select[name="tracking_type"]');
         const serialSection = document.getElementById('serialNumberSection');
         
         function toggleSerial() {
             if (!trackingSelect || !serialSection) return;
 
-            // robustness: check for 'BULK' or 'bulk' regardless of case
+            // Check for 'BULK' regardless of case
             const value = trackingSelect.value.toUpperCase();
             
             if (value === 'BULK') {
-                // If Bulk, hide serial input
                 serialSection.style.display = 'none';
-                // Optional: You might want to clear the serial input if hidden
+                // Clear input if hidden to avoid validation errors
                 const serialInput = serialSection.querySelector('input');
                 if(serialInput) serialInput.value = '';
             } else {
-                // If Unique, show serial input
                 serialSection.style.display = 'block';
             }
         }
 
-        // Run on load and change
         if (trackingSelect) {
-            toggleSerial();
+            toggleSerial(); // Run on load
             trackingSelect.addEventListener('change', toggleSerial);
         }
     });
@@ -157,5 +162,11 @@
 <style>
     .hover-lift:hover { transform: translateY(-2px); transition: transform 0.2s; }
     textarea { width: 100%; border: 1px solid #dee2e6; border-radius: 0.375rem; padding: 0.5rem; }
+    
+    /* Ensure form controls match the theme */
+    .form-control:focus, .form-select:focus {
+        border-color: #0f172a;
+        box-shadow: 0 0 0 0.25rem rgba(15, 23, 42, 0.1);
+    }
 </style>
 {% endblock %}

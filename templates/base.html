@@ -5,55 +5,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Gigs360{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=5">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=6">
 </head>
 <body class="d-flex flex-column min-vh-100">
 
-    <!-- 1. TOP BAR (GOLD) -->
-    <div class="top-bar">
+    <div class="top-bar" style="background-color: #d9a60e; color: #000; padding: 8px 0; font-size: 0.85rem; font-weight: 600;">
         <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
-            <!-- Left: Contact -->
             <div class="d-flex align-items-center gap-3">
                 <span><i class="bi bi-envelope-fill me-1"></i> hello@gigs360.co.ke</span>
                 <span class="d-none d-md-inline opacity-50">|</span>
                 <span><i class="bi bi-telephone-fill me-1"></i> +254 700 000 000</span>
             </div>
 
-            <!-- Right: Socials & Switcher -->
             <div class="d-flex align-items-center gap-3">
-                <div class="social-icons">
-                    <a href="#"><i class="bi bi-instagram"></i></a>
-                    <a href="#"><i class="bi bi-facebook"></i></a>
-                    <a href="#"><i class="bi bi-twitter-x"></i></a>
-                    <a href="#"><i class="bi bi-linkedin"></i></a>
-                    <a href="#"><i class="bi bi-tiktok"></i></a>
-                    <a href="#"><i class="bi bi-youtube"></i></a>
-                </div>
-                
-                <div class="vr opacity-25 mx-2"></div>
-
-                <!-- Theme Switcher Dropdown -->
-                <div class="dropdown">
-                    <button class="btn btn-sm btn-link text-dark text-decoration-none dropdown-toggle p-0 fw-bold d-flex align-items-center gap-1" type="button" data-bs-toggle="dropdown">
-                        <i class="bi bi-circle-half"></i> <span class="d-none d-lg-inline">Theme</span>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="z-index: 1050;">
-                        <li><button class="dropdown-item" data-theme-value="light"><i class="bi bi-sun-fill text-warning"></i> Light</button></li>
-                        <li><button class="dropdown-item" data-theme-value="dark"><i class="bi bi-moon-stars-fill text-primary"></i> Dark</button></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><button class="dropdown-item" data-theme-value="auto"><i class="bi bi-laptop"></i> System</button></li>
-                    </ul>
+                <div class="social-icons d-flex gap-2">
+                    <a href="#" class="text-dark"><i class="bi bi-instagram"></i></a>
+                    <a href="#" class="text-dark"><i class="bi bi-facebook"></i></a>
+                    <a href="#" class="text-dark"><i class="bi bi-twitter-x"></i></a>
+                    <a href="#" class="text-dark"><i class="bi bi-linkedin"></i></a>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 2. MAIN NAVBAR (BLUE) -->
-    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom sticky-top">
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top shadow-sm" style="background-color: #0f172a;">
         <div class="container">
-            <a class="navbar-brand d-flex align-items-center gap-2" href="{% url 'home' %}">
+            <a class="navbar-brand d-flex align-items-center gap-2 fw-bold" href="{% url 'home' %}" style="font-size: 1.5rem;">
                 <i class="bi bi-lightning-charge-fill text-warning"></i> Gigs360
             </a>
             
@@ -63,74 +43,49 @@
             
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto align-items-center">
-                    <li class="nav-item"><a class="nav-link" href="{% url 'home' %}"><i class="bi bi-house-door-fill"></i> Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'home' %}"><i class="bi bi-house-door-fill me-1"></i> Home</a></li>
                     
-                    <!-- FREELANCERS DROPDOWN -->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-people-fill"></i> Freelancers
+                            <i class="bi bi-people-fill me-1"></i> Freelancers
                         </a>
-                        <ul class="dropdown-menu shadow border-0">
+                        <ul class="dropdown-menu shadow border-0 rounded-3 mt-2">
                             <li><h6 class="dropdown-header text-uppercase small fw-bold opacity-75">Visual & Audio</h6></li>
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-camera-fill text-primary"></i> Photographers</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-camera-reels-fill text-primary"></i> Videographers</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-music-note-beamed text-primary"></i> DJs & Sound</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="bi bi-camera-fill text-primary me-2"></i> Photographers</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="bi bi-camera-reels-fill text-primary me-2"></i> Videographers</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="bi bi-music-note-beamed text-primary me-2"></i> DJs & Sound</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><h6 class="dropdown-header text-uppercase small fw-bold opacity-75">Talent</h6></li>
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-mic-fill text-primary"></i> MCs & Hypemen</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-phone-fill text-primary"></i> Content Creators</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-brush-fill text-primary"></i> Makeup Artists (MUA)</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-palette-fill text-primary"></i> Graphic Designers</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="bi bi-mic-fill text-primary me-2"></i> MCs & Hypemen</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="bi bi-phone-fill text-primary me-2"></i> Content Creators</a></li>
                         </ul>
                     </li>
 
-                    <!-- SERVICE PROVIDERS DROPDOWN -->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-gear-wide-connected"></i> Vendors
+                            <i class="bi bi-gear-wide-connected me-1"></i> Vendors
                         </a>
-                        <ul class="dropdown-menu shadow border-0">
+                        <ul class="dropdown-menu shadow border-0 rounded-3 mt-2">
                             <li><h6 class="dropdown-header text-uppercase small fw-bold opacity-75">Event Setup</h6></li>
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-flower1 text-danger"></i> Decor & Florists</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-house-door-fill text-danger"></i> Tents & Furniture</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-lightbulb-fill text-danger"></i> Lighting & Screens</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><h6 class="dropdown-header text-uppercase small fw-bold opacity-75">Logistics & Food</h6></li>
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-cup-straw text-danger"></i> Catering & Mixology</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-cake2-fill text-danger"></i> Cake & Bakery</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-shield-lock-fill text-danger"></i> Security & Bouncers</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-truck text-danger"></i> Transport & Logistics</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="bi bi-flower1 text-danger me-2"></i> Decor & Florists</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="bi bi-house-door-fill text-danger me-2"></i> Tents & Furniture</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="bi bi-lightbulb-fill text-danger me-2"></i> Lighting & Screens</a></li>
                         </ul>
                     </li>
 
-                    <!-- AGENCIES DROPDOWN -->
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-building-fill"></i> Agencies
-                        </a>
-                        <ul class="dropdown-menu shadow border-0">
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-calendar-check-fill text-success"></i> Event Planners</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-megaphone-fill text-success"></i> Marketing & PR</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-person-badge-fill text-success"></i> Talent Management</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-film text-success"></i> Production Houses</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-ticket-perforated-fill text-success"></i> Ticketing Partners</a></li>
-                        </ul>
-                    </li>
+                    <li class="nav-item"><a class="nav-link" href="#pricing"><i class="bi bi-tag-fill me-1"></i> Pricing</a></li>
 
-                    <li class="nav-item"><a class="nav-link" href="#pricing"><i class="bi bi-tag-fill"></i> Pricing</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#community"><i class="bi bi-chat-heart-fill"></i> Community</a></li>
-
-                    <!-- Login / CTA -->
                     {% if user.is_authenticated %}
                         <li class="nav-item ms-lg-3">
-                            <!-- FIX: Changed href="#" to href="{% url 'dashboard' %}" -->
-                            <a class="btn btn-cta-gold shadow-sm" href="{% url 'dashboard' %}">
+                            <a class="btn shadow-sm fw-bold rounded-pill px-4" href="{% url 'dashboard' %}" style="background-color: #d9a60e; color: #000; border: none;">
                                 <i class="bi bi-speedometer2 me-1"></i> Dashboard
                             </a>
                         </li>
                     {% else %}
                         <li class="nav-item ms-lg-3">
-                            <a class="btn btn-cta-gold shadow-sm" href="{% url 'login' %}">Get Started</a>
+                            <a class="btn shadow-sm fw-bold rounded-pill px-4 hover-lift" href="{% url 'login' %}" style="background-color: #d9a60e; color: #000; border: none;">
+                                Get Started
+                            </a>
                         </li>
                     {% endif %}
                 </ul>
@@ -138,19 +93,22 @@
         </div>
     </nav>
 
-    <!-- CONTENT -->
     <main class="flex-grow-1">
         {% block content %}{% endblock %}
     </main>
 
-    <!-- FOOTER -->
-    <footer class="bg-dark text-white py-4 mt-auto">
+    <footer class="text-white py-4 mt-auto" style="background-color: #0f172a;">
         <div class="container text-center">
-            <p class="mb-0 small text-white-50">&copy; {% now "Y" %} Gigs360 Technologies.</p>
+            <p class="mb-0 small text-white-50">&copy; {% now "Y" %} Gigs360 Technologies. All Rights Reserved.</p>
         </div>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{% static 'js/theme.js' %}"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .dropdown-item:active, .dropdown-item:hover { background-color: #f8f9fa; color: #0f172a; }
+        .hover-lift:hover { transform: translateY(-2px); transition: 0.2s; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    </style>
 </body>
 </html>

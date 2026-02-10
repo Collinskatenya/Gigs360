@@ -5,7 +5,7 @@ from . import views
 app_name = 'inventory'
 
 urlpatterns = [
-    # --- Standard Inventory Actions ---
+    # --- Standard Inventory Actions (Integer IDs) ---
     # List all items (The Gear Locker)
     path('', views.inventory_list, name='inventory_list'),
     
@@ -13,14 +13,14 @@ urlpatterns = [
     path('add/', views.add_item, name='add_item'),
     
     # View Single Item Details
-    # Uses <uuid:pk> to match your database IDs
-    path('item/<uuid:pk>/', views.item_detail, name='item_detail'),
+    # FIX: Changed <uuid:pk> to <int:pk> to match standard Django IDs
+    path('item/<int:pk>/', views.item_detail, name='item_detail'),
     
     # Edit Item
-    path('update/<uuid:pk>/', views.update_item, name='update_item'),
+    path('update/<int:pk>/', views.update_item, name='update_item'),
     
     # Delete item
-    path('delete/<uuid:pk>/', views.delete_item, name='delete_item'),
+    path('delete/<int:pk>/', views.delete_item, name='delete_item'),
 
     # --- QR Scanner Features ---
     # 1. The In-App Scanner UI (For You/Staff)
@@ -30,6 +30,6 @@ urlpatterns = [
     path('api/scan/', views.api_process_scan, name='api_process_scan'),
 
     # 3. Public Verification Page (Lost & Found / Stranger Scans)
-    # Uses the secure UUID we added to models.py, NOT the database PK
-    path('verify/<uuid:qr_uuid>/', views.public_item_verify, name='public_verify'),
+    # CRITICAL: This uses the specific 'qr_code_id' UUID field, NOT the database PK
+    path('verify/<uuid:qr_uuid>/', views.public_item_verify, name='public_item_verify'),
 ]
