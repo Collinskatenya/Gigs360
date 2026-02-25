@@ -1,24 +1,27 @@
 from django.contrib import admin
 from django.urls import path, include
+from django.contrib.auth import views as auth_views
 from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
-    # 1. Admin Panel
-    path('admin/', admin.site.urls),
+    # 🚨 SECURITY: The default admin is now hidden at this random URL
+    path('hq-vault-access-99x/', admin.site.urls),
     
-    # 2. Django Built-in Auth (Password reset, etc.)
-    path('accounts/', include('django.contrib.auth.urls')),
-    
-    # 3. Core App URLs (Home, Dashboard, Settings, Auth)
+    # 🛡️ THE SECURE TERMINAL: Routing for the Staff-only login page
+    path('staff/login/', auth_views.LoginView.as_view(
+        template_name='core/staff_login.html',
+        redirect_authenticated_user=True,
+        next_page='staff_dashboard' 
+    ), name='staff_login'),
+
+    # Standard App URLs
     path('', include('core.urls')),
-    
-    # 4. Feature Apps
     path('inventory/', include('inventory.urls')),
     path('events/', include('events.urls')),
 ]
 
-# Serve Media Files (Images) in Development
+# 📁 LOCAL DEVELOPMENT SERVING (Critical for CSS, QR Codes, and PDFs)
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

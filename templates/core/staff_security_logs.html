@@ -1,0 +1,77 @@
+{% extends 'core/staff_base.html' %}
+{% load static %}
+
+{% block title %}Security Logs | Gigs360 HQ{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1 text-dark">Security Logs & Audit Trail</h2>
+            <p class="text-muted mb-0 small">
+                <i class="bi bi-shield-check text-danger me-1"></i>
+                Total Recorded Events: <strong class="text-dark">{{ log_count }}</strong>
+            </p>
+        </div>
+        <a href="{% url 'staff_dashboard' %}" class="btn btn-outline-dark rounded-pill px-4 hover-lift">
+            <i class="bi bi-arrow-left me-2"></i>Back to Command
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light text-muted small text-uppercase fw-bold">
+                        <tr>
+                            <th class="ps-4 py-3 border-0">Timestamp</th>
+                            <th class="py-3 border-0">Actor</th>
+                            <th class="py-3 border-0">Action Taken</th>
+                            <th class="py-3 border-0">IP Address</th>
+                            <th class="text-end pe-4 py-3 border-0">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td class="ps-4 py-3 text-muted small">
+                                <i class="bi bi-clock-history me-1"></i> {{ log.created_at|date:"M d, Y - H:i" }}
+                            </td>
+                            <td>
+                                <div class="fw-bold text-dark small">{{ log.user.username }}</div>
+                                <div class="text-muted" style="font-size: 0.75rem;">{{ log.user.email }}</div>
+                            </td>
+                            <td>
+                                <div class="fw-bold text-dark small">{{ log.action }}</div>
+                                <div class="text-muted text-truncate" style="max-width: 250px; font-size: 0.75rem;">
+                                    {{ log.details|default:"No additional details provided." }}
+                                </div>
+                            </td>
+                            <td class="font-monospace text-muted small">
+                                {{ log.ip_address|default:"127.0.0.1" }}
+                            </td>
+                            <td class="text-end pe-4">
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success-subtle px-2 py-1"><i class="bi bi-check2-circle"></i> Logged</span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5 text-muted">
+                                <i class="bi bi-shield-x display-4 text-secondary opacity-25"></i>
+                                <p class="mt-3 mb-0">No security events have been logged yet.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<style>
+    .hover-lift:hover { transform: translateY(-2px); transition: 0.2s; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+</style>
+{% endblock %}

@@ -9,7 +9,7 @@
     <style>
         body { background-color: #f8f9fa; display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: 'Segoe UI', sans-serif; }
         .verification-card { max-width: 450px; width: 100%; border: none; box-shadow: 0 1rem 3rem rgba(0,0,0,.175); border-radius: 1rem; overflow: hidden; }
-        /* Updated to Navy Brand Color */
+        /* Brand Navy */
         .card-header { background-color: #0f172a; color: white; padding: 2rem 1.5rem; text-align: center; }
         .asset-id-box { background: #e9ecef; border: 1px dashed #adb5bd; padding: 10px; border-radius: 8px; font-family: monospace; letter-spacing: 1px; color: #495057; font-weight: bold; }
         .btn-primary { background-color: #0f172a; border-color: #0f172a; }
@@ -32,7 +32,7 @@
                 </span>
             </div>
 
-            <h2 class="fw-bold text-dark mb-2">{{ item_name }}</h2>
+            <h2 class="fw-bold text-dark mb-2">{{ item.name }}</h2>
             <p class="text-muted small mb-3">
                 This item is a registered asset protected by the Gigs360 Tracking System.
             </p>
@@ -40,7 +40,7 @@
             <div class="mb-4">
                 <small class="text-uppercase text-muted fw-bold" style="font-size: 0.7rem;">Asset Reference ID</small>
                 <div class="asset-id-box mt-1 text-truncate">
-                    {{ item.qr_code_id|stringformat:"s"|slice:":8"|upper }}
+                    {{ item.id|stringformat:"s"|slice:":8"|upper }}
                 </div>
             </div>
 
@@ -71,7 +71,7 @@
             <hr class="my-4 opacity-10">
 
             <p class="small text-muted mb-2">Gigs360 Staff / Owner?</p>
-            <a href="/accounts/login/" class="btn btn-link btn-sm text-decoration-none text-muted">
+            <a href="{% url 'login' %}" class="btn btn-link btn-sm text-decoration-none text-muted">
                 <i class="bi bi-lock-fill"></i> Secure Login
             </a>
 

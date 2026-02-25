@@ -27,12 +27,22 @@
                 
                 <div class="row g-3 mb-4 border-bottom pb-4">
                     <div class="col-12">
-                        <h6 class="text-uppercase text-primary fw-bold small"><i class="bi bi-person-lines-fill me-1"></i> Client & Dates</h6>
+                        <h6 class="text-uppercase text-primary fw-bold small"><i class="bi bi-sliders me-1"></i> Document Settings</h6>
                     </div>
+                    
                     <div class="col-md-3">
                         <label class="form-label small fw-bold text-muted">Type</label>
                         {{ form.doc_type }}
                     </div>
+                    
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold text-muted">Theme Color</label>
+                        <div class="d-flex align-items-center gap-2">
+                            {{ form.brand_color }}
+                            <small class="text-muted" style="font-size: 0.75rem;">PDF Accent</small>
+                        </div>
+                    </div>
+
                     <div class="col-md-3">
                         <label class="form-label small fw-bold text-muted">Issue Date</label>
                         {{ form.issue_date }}
@@ -41,7 +51,12 @@
                         <label class="form-label small fw-bold text-muted">Due Date</label>
                         {{ form.due_date }}
                     </div>
-                    <div class="col-12"></div>
+                </div>
+
+                <div class="row g-3 mb-4 border-bottom pb-4">
+                    <div class="col-12">
+                        <h6 class="text-uppercase text-primary fw-bold small"><i class="bi bi-person-lines-fill me-1"></i> Client Details</h6>
+                    </div>
                     <div class="col-md-4">
                         <label class="form-label small fw-bold text-muted">Client Name</label>
                         {{ form.client_name }}
@@ -59,9 +74,11 @@
                 <div class="d-flex justify-content-between align-items-end mb-2">
                     <h6 class="text-uppercase text-primary fw-bold small mb-0"><i class="bi bi-list-check me-1"></i> Billable Items</h6>
                     
+                    {% if not formset.initial %}
                     <a href="?populate=true" class="btn btn-sm btn-outline-primary bg-light border-0 fw-bold hover-lift" title="Pull items from Event Gear List">
                         <i class="bi bi-box-arrow-in-down me-1"></i> Import from Event Manifest
                     </a>
+                    {% endif %}
                 </div>
 
                 <div class="row g-2 mb-1 px-3 d-none d-md-flex text-muted small fw-bold text-uppercase">
@@ -152,7 +169,7 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // 1. Load Inventory Data
+        // 1. Load Inventory Data for Search
         const rawJson = '{{ inventory_json|escapejs }}';
         let inventoryData = [];
         
@@ -166,7 +183,7 @@
 
         const dataList = document.getElementById('inventory-list');
         
-        // Populate Datalist
+        // Populate Datalist options
         if (inventoryData.length > 0) {
             inventoryData.forEach(item => {
                 const option = document.createElement('option');
@@ -178,7 +195,7 @@
         const container = document.getElementById('line-items-container');
         const totalDisplay = document.getElementById('live-total-display');
 
-        // 2. Auto-Fill Price & Calc Total
+        // 2. Auto-Fill Price & Calc Total on Input
         container.addEventListener('input', function(e) {
             if (e.target.classList.contains('item-search')) {
                 const val = e.target.value;
@@ -207,6 +224,7 @@
                 const deleteInput = row.querySelector('input[name$="-DELETE"]');
 
                 if (qtyInput && priceInput) {
+                    // Ignore rows marked for deletion
                     if (deleteInput && deleteInput.checked) return;
 
                     const qty = parseFloat(qtyInput.value) || 0;
@@ -235,7 +253,7 @@
             });
         }
 
-        // Initial Calc
+        // Initial Calculation
         calculateTotal();
     });
 </script>
@@ -243,6 +261,7 @@
 <style>
     .hover-lift:hover { transform: translateY(-2px); transition: 0.2s; }
     textarea { resize: vertical; }
+    /* Style the delete checkbox to look like a button or distinct toggle */
     input[type=checkbox][name$="-DELETE"] { 
         cursor: pointer; width: 16px; height: 16px; accent-color: #dc3545;
     }

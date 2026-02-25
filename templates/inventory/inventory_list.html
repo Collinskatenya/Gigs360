@@ -64,7 +64,7 @@
                         </td>
 
                         <td>
-                            {% if user.userprofile.plan_tier == 'FREE' %}
+                            {% if user.userprofile.plan|upper == 'FREE' %}
                                 <span class="badge bg-secondary bg-opacity-25 text-secondary" data-bs-toggle="tooltip" title="Upgrade to Pro to view Serial Numbers">
                                     <i class="bi bi-lock-fill me-1"></i> Locked
                                 </span>
@@ -106,7 +106,7 @@
                                     <i class="bi bi-pencil"></i>
                                 </a>
 
-                                {% if user.userprofile.plan_tier == 'FREE' %}
+                                {% if user.userprofile.plan|upper == 'FREE' %}
                                     <button class="btn btn-sm btn-light border text-muted" disabled style="cursor: not-allowed;" title="Upgrade to Download QR">
                                         <i class="bi bi-qr-code"></i>
                                     </button>

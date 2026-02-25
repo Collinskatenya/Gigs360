@@ -23,6 +23,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     
+    # CRITICAL FIX: Added humanize to fix the Staff Dashboard TemplateSyntaxError
+    'django.contrib.humanize',
+    
     # Third Party Apps
     # 'django_daraja',  # <--- UNCOMMENT when you install django-daraja and build finance app
     
@@ -45,6 +48,9 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    
+    # 🚨 INJECTED: The Asymmetric Presence Tracker Engine
+    'core.middleware.ActiveUserMiddleware',
 ]
 
 ROOT_URLCONF = 'radagig.urls'

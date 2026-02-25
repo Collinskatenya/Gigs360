@@ -1,0 +1,203 @@
+{% extends 'core/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0 bg-light" style="min-height: 100vh;">
+    
+    <div class="bg-white border-bottom py-3 px-4">
+        <div class="container-xl">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0 small fw-bold text-uppercase">
+                    <li class="breadcrumb-item"><a href="{% url 'inventory:marketplace_hub' %}" class="text-decoration-none text-muted">Discovery Hub</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'inventory:marketplace_hub' %}?category={{ item.category.slug }}" class="text-decoration-none text-muted">{{ item.category.name }}</a></li>
+                    <li class="breadcrumb-item active text-dark" aria-current="page">{{ item.name|truncatechars:30 }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="container-xl py-4 py-lg-5">
+        <div class="row g-5">
+            
+            <div class="col-lg-8">
+                
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-5">
+                    <div id="showroomGallery" class="carousel slide carousel-fade" data-bs-ride="carousel">
+                        <div class="carousel-inner bg-dark" style="aspect-ratio: 16/9;">
+                            
+                            <div class="carousel-item active h-100">
+                                {% if item.image %}
+                                    <img src="{{ item.image.url }}" class="d-block w-100 h-100 object-fit-contain" alt="{{ item.name }}">
+                                {% else %}
+                                    <div class="w-100 h-100 d-flex flex-column align-items-center justify-content-center text-white-50">
+                                        <i class="bi {{ item.category.icon|default:'bi-camera' }} display-1 mb-3"></i>
+                                        <p>No Cover Image Provided</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            {% for photo in gallery %}
+                                <div class="carousel-item h-100">
+                                    <img src="{{ photo.image.url }}" class="d-block w-100 h-100 object-fit-contain" alt="{{ item.name }} angle {{ forloop.counter }}">
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        {% if gallery.exists %}
+                            <button class="carousel-control-prev" type="button" data-bs-target="#showroomGallery" data-bs-slide="prev">
+                                <span class="carousel-control-prev-icon bg-dark rounded-circle p-3 shadow" aria-hidden="true"></span>
+                                <span class="visually-hidden">Previous</span>
+                            </button>
+                            <button class="carousel-control-next" type="button" data-bs-target="#showroomGallery" data-bs-slide="next">
+                                <span class="carousel-control-next-icon bg-dark rounded-circle p-3 shadow" aria-hidden="true"></span>
+                                <span class="visually-hidden">Next</span>
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-start mb-4">
+                    <div>
+                        <h1 class="fw-bold text-dark display-6 mb-2">{{ item.name }}</h1>
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3 py-2 rounded-pill fs-6 shadow-sm">
+                                <i class="bi {{ item.category.icon|default:'bi-tag' }} me-1"></i> {{ item.category.name }}
+                            </span>
+                            {% if item.search_location %}
+                                <span class="text-muted fw-bold small"><i class="bi bi-geo-alt-fill text-danger me-1"></i> Located in {{ item.search_location }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-4 opacity-10">
+
+                <h5 class="fw-bold text-dark mb-4">Gear Specifications</h5>
+                <div class="row row-cols-2 row-cols-md-4 g-3 mb-5">
+                    <div class="col">
+                        <div class="p-3 bg-white border rounded-4 text-center h-100 shadow-sm">
+                            <i class="bi bi-activity text-muted fs-4 mb-2 d-block"></i>
+                            <span class="d-block small text-muted text-uppercase fw-bold" style="font-size: 0.7rem;">Condition</span>
+                            <span class="fw-bold text-dark">{{ item.get_condition_display }}</span>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="p-3 bg-white border rounded-4 text-center h-100 shadow-sm">
+                            <i class="bi bi-palette text-muted fs-4 mb-2 d-block"></i>
+                            <span class="d-block small text-muted text-uppercase fw-bold" style="font-size: 0.7rem;">Color</span>
+                            <span class="fw-bold text-dark">{{ item.color|default:"N/A" }}</span>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="p-3 bg-white border rounded-4 text-center h-100 shadow-sm">
+                            <i class="bi bi-boxes text-muted fs-4 mb-2 d-block"></i>
+                            <span class="d-block small text-muted text-uppercase fw-bold" style="font-size: 0.7rem;">Quantity</span>
+                            <span class="fw-bold text-dark">{{ item.quantity }} Available</span>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="p-3 bg-white border rounded-4 text-center h-100 shadow-sm">
+                            <i class="bi bi-shield-check text-muted fs-4 mb-2 d-block"></i>
+                            <span class="d-block small text-muted text-uppercase fw-bold" style="font-size: 0.7rem;">Insurance Val.</span>
+                            <span class="fw-bold text-dark">{% if item.replacement_value %}KES {{ item.replacement_value|floatformat:0 }}{% else %}N/A{% endif %}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <h5 class="fw-bold text-dark mb-3">About this gear</h5>
+                <div class="bg-white p-4 rounded-4 shadow-sm border mb-5">
+                    {% if item.description %}
+                        <p class="text-muted mb-0" style="white-space: pre-wrap; line-height: 1.7;">{{ item.description }}</p>
+                    {% else %}
+                        <p class="text-muted fst-italic mb-0">The vendor has not provided a detailed description for this item.</p>
+                    {% endif %}
+                </div>
+
+            </div>
+
+            <div class="col-lg-4">
+                <div class="position-sticky" style="top: 2rem;">
+                    <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                        
+                        <div class="bg-dark text-white p-4 text-center" style="background-color: #0f172a !important;">
+                            <span class="d-block small text-white-50 text-uppercase fw-bold mb-1">Rental Rate</span>
+                            {% if item.daily_rate %}
+                                <h2 class="display-5 fw-bold mb-0">KES {{ item.daily_rate|floatformat:0 }}<span class="fs-6 text-white-50 fw-normal"> / day</span></h2>
+                            {% else %}
+                                <h2 class="display-6 fw-bold mb-0 text-info">Contact for Quote</h2>
+                            {% endif %}
+                        </div>
+
+                        <div class="card-body p-4 p-md-5">
+                            
+                            <div class="d-grid gap-3 mb-4">
+                                {% if user.is_authenticated %}
+                                    {% if user == item.owner %}
+                                        <a href="{% url 'inventory:update_item' item.pk %}" class="btn btn-outline-dark fw-bold rounded-pill py-3">
+                                            <i class="bi bi-pencil-square me-2"></i> Edit Your Gear
+                                        </a>
+                                    {% else %}
+                                        <button class="btn fw-bold rounded-pill py-3 text-white shadow-sm hover-lift" style="background-color: #3b82f6; border-color: #3b82f6;">
+                                            <i class="bi bi-calendar-check me-2"></i> Request to Rent
+                                        </button>
+                                        <button class="btn btn-light fw-bold rounded-pill py-3 border text-dark shadow-sm hover-lift">
+                                            <i class="bi bi-chat-dots me-2"></i> Message Vendor
+                                        </button>
+                                    {% endif %}
+                                {% else %}
+                                    <a href="{% url 'login' %}?next={{ request.path }}" class="btn fw-bold rounded-pill py-3 text-white shadow-sm hover-lift" style="background-color: #3b82f6; border-color: #3b82f6;">
+                                        <i class="bi bi-box-arrow-in-right me-2"></i> Log in to Rent
+                                    </a>
+                                    <p class="text-center small text-muted mt-2 mb-0">You must have a verified account to book gear.</p>
+                                {% endif %}
+                            </div>
+
+                            <hr class="my-4 opacity-10">
+
+                            <div class="d-flex align-items-center">
+                                <div class="position-relative me-3">
+                                    {% if item.owner.userprofile.profile_picture %}
+                                        <img src="{{ item.owner.userprofile.profile_picture.url }}" class="rounded-circle border shadow-sm object-fit-cover" style="width: 60px; height: 60px;">
+                                    {% else %}
+                                        <div class="rounded-circle bg-light d-flex align-items-center justify-content-center border shadow-sm text-dark fw-bold fs-4" style="width: 60px; height: 60px;">
+                                            {{ item.owner.username|make_list|first|upper }}
+                                        </div>
+                                    {% endif %}
+                                    
+                                    {% if item.owner.userprofile.is_verified %}
+                                        <span class="position-absolute bottom-0 end-0 translate-middle p-1 bg-success border border-light rounded-circle" title="Verified Vendor">
+                                            <span class="visually-hidden">Verified</span>
+                                        </span>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <h6 class="fw-bold text-dark mb-0 text-truncate" style="max-width: 180px;">
+                                        {{ item.owner.userprofile.business_name|default:item.owner.username }}
+                                    </h6>
+                                    <span class="small text-muted">
+                                        {% if item.owner.userprofile.is_verified %}
+                                            <i class="bi bi-patch-check-fill text-success me-1"></i> Verified Vendor
+                                        {% else %}
+                                            <i class="bi bi-shield-exclamation text-warning me-1"></i> Standard Profile
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<style>
+    .hover-lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .hover-lift:hover { transform: translateY(-3px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; }
+    .object-fit-contain { object-fit: contain; }
+</style>
+{% endblock %}

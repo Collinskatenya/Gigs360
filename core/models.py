@@ -88,7 +88,34 @@ class SecurityLog(TimeStampedModel):
 
 
 # ==========================================
-# 4. COMMUNICATIONS & ALERTS
+# 4. SUPER ADMIN COMMAND (DEFCON KILL SWITCHES)
+# ==========================================
+
+class SystemConfiguration(TimeStampedModel):
+    """
+    Singleton model for Super Admin global settings and DEFCON Kill Switches.
+    Only one row of this will ever exist in the database.
+    """
+    # 🚨 DEFCON Tiers
+    defcon_3_freeze_signups = models.BooleanField(default=False, help_text="DEFCON 3: Stops new user registrations (Bot attack defense).")
+    defcon_2_freeze_marketplace = models.BooleanField(default=False, help_text="DEFCON 2: Disables all checkout/booking APIs.")
+    defcon_1_nuclear_shutdown = models.BooleanField(default=False, help_text="DEFCON 1: Full system maintenance mode. Logs out all non-admins.")
+
+    # Platform Finance Globals
+    platform_commission_rate = models.DecimalField(max_digits=5, decimal_places=2, default=10.00, help_text="Default % commission per transaction.")
+
+    def save(self, *args, **kwargs):
+        # OOP Singleton logic: Ensure only one config row ever exists
+        if self.__class__.objects.exists() and not self.pk:
+            self.pk = self.__class__.objects.first().pk
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return "Gigs360 Global Master Configuration"
+
+
+# ==========================================
+# 5. COMMUNICATIONS & ALERTS
 # ==========================================
 
 class Notification(TimeStampedModel):
@@ -122,27 +149,38 @@ class HolidayMessage(TimeStampedModel):
 
 
 # ==========================================
-# 5. USER PROFILE (Identity Layer)
+# 6. USER PROFILE (Identity & MIS Layer)
 # ==========================================
 
 class UserProfile(TimeStampedModel): 
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='userprofile')
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
-    # --- IDENTITY & KYC ---
+    # --- PERSONAL IDENTITY ---
     profile_picture = models.ImageField(upload_to='profile_pics/', default='default.jpg', blank=True)
+    middle_name = models.CharField(max_length=50, blank=True, null=True)
     phone_number = models.CharField(max_length=20, blank=True, null=True)
+    gender = models.CharField(max_length=20, choices=[('Male', 'Male'), ('Female', 'Female'), ('Other', 'Other')], blank=True, null=True)
     bio = models.TextField(blank=True, max_length=500, null=True)
-    
-    # LEGAL DATA
-    kra_pin = models.CharField(max_length=20, blank=True, null=True, unique=True, db_index=True)
-    id_number = models.CharField(max_length=20, blank=True, null=True, unique=True, db_index=True)
     dob = models.DateField(null=True, blank=True)
     
-    # --- BUSINESS ---
+    # --- LEGAL & ZERO-UPLOAD KYC ---
+    # Note: In production, consider encrypting these fields using django-cryptography
+    kra_pin = models.CharField(max_length=20, blank=True, null=True, unique=True, db_index=True)
+    id_number = models.CharField(max_length=20, blank=True, null=True, unique=True, db_index=True)
+    is_identity_locked = models.BooleanField(default=False, help_text="If True, user cannot edit ID/KRA without Admin Support Ticket.")
+    
+    # --- BUSINESS MIS & OPERATIONS ---
     business_name = models.CharField(max_length=100, blank=True, null=True)
     company_logo = models.ImageField(upload_to='company_logos/', blank=True, null=True)
     invoice_color_theme = models.CharField(max_length=7, default='#003366')
+    
+    county_of_residence = models.CharField(max_length=100, blank=True, null=True)
+    current_city = models.CharField(max_length=100, blank=True, null=True)
+    office_number = models.CharField(max_length=20, blank=True, null=True)
+    
+    EMPLOYEE_CHOICES = [('1-5', '1-5'), ('6-20', '6-20'), ('21-50', '21-50'), ('51+', '51+')]
+    employee_count = models.CharField(max_length=20, choices=EMPLOYEE_CHOICES, blank=True, null=True)
     
     CATEGORY_CHOICES = [
         ('Photography & Video', 'Photography & Video'),
@@ -162,15 +200,17 @@ class UserProfile(TimeStampedModel):
     is_agency = models.BooleanField(default=False)
     
     # --- SUBSCRIPTION ---
-    PLAN_CHOICES = [('free', 'Free Starter'), ('pro', 'Pro Business'), ('enterprise', 'Enterprise')]
-    plan = models.CharField(max_length=20, choices=PLAN_CHOICES, default='free')
+    PLAN_CHOICES = [('FREE', 'Free Starter'), ('PRO', 'Pro Business'), ('ENTERPRISE', 'Enterprise')]
+    plan = models.CharField(max_length=20, choices=PLAN_CHOICES, default='FREE')
     subscription_end_date = models.DateTimeField(null=True, blank=True)
     auto_renew = models.BooleanField(default=False)
     
-    # --- SECURITY ---
+    # --- SECURITY & PRESENCE ---
     is_verified = models.BooleanField(default=False)
     is_2fa_enabled = models.BooleanField(default=False)
     last_login_ip = models.GenericIPAddressField(null=True, blank=True)
+    last_active = models.DateTimeField(default=timezone.now, db_index=True) # Asymmetric Presence Tracker
+
     terms_accepted = models.BooleanField(default=False)
     terms_version = models.CharField(max_length=50, blank=True, null=True)
     terms_accepted_at = models.DateTimeField(null=True, blank=True)
@@ -185,23 +225,33 @@ class UserProfile(TimeStampedModel):
 
     @property
     def is_subscription_active(self):
-        if self.plan == 'free': return True
+        if self.plan == 'FREE': return True
         return self.subscription_end_date and self.subscription_end_date > timezone.now()
+        
+    @property
+    def is_online(self):
+        """Returns True if the user was active in the last 3 minutes."""
+        now = timezone.now()
+        return self.last_active >= now - timezone.timedelta(minutes=3)
 
 
 # ==========================================
-# 6. HELPDESK SYSTEM (The Missing Piece!)
+# 7. UNIFIED MESSAGING & HELPDESK HUB
 # ==========================================
 
 class SupportTicket(TimeStampedModel):
     CATEGORY_CHOICES = [
         ('billing', 'Billing & Finance'),
         ('verification', 'Account Verification'),
-        ('technical', 'Technical Issue'),
+        ('technical', 'Technical Issue / Bug'),
         ('general', 'General Inquiry'),
         ('internal', 'Internal Staff Issue'), 
     ]
-    STATUS_CHOICES = [('open', 'Open'), ('in_progress', 'In Progress'), ('resolved', 'Resolved')]
+    STATUS_CHOICES = [
+        ('open', 'Open'), 
+        ('in_progress', 'Processing'), 
+        ('resolved', 'Resolved')
+    ]
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='support_tickets')
     subject = models.CharField(max_length=200)
@@ -209,17 +259,35 @@ class SupportTicket(TimeStampedModel):
     description = models.TextField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='open')
     priority = models.CharField(max_length=10, choices=[('low', 'Low'), ('medium', 'Medium'), ('high', 'High')], default='medium')
+    last_message_at = models.DateTimeField(default=timezone.now)
+
+    def save(self, *args, **kwargs):
+        if self.category in ['billing', 'internal']:
+            self.priority = 'high'
+        super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"[{self.get_status_display()}] {self.subject}"
+        return f"[{self.status.upper()}] {self.subject} - {self.user.username}"
+
 
 class TicketMessage(TimeStampedModel):
     ticket = models.ForeignKey(SupportTicket, on_delete=models.CASCADE, related_name='messages')
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     message = models.TextField()
     
+    # Read Receipts
+    is_read = models.BooleanField(default=False, db_index=True)
+    read_at = models.DateTimeField(null=True, blank=True)
+    
+    # 🚨 Ghost Notes (Invisible to the client)
+    is_internal_note = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['created_at']
+
     def __str__(self):
-        return f"Msg by {self.sender.username}"
+        note_flag = " [NOTE]" if self.is_internal_note else ""
+        return f"Msg{note_flag} from {self.sender.username} in Ticket #{self.ticket.id}"
 
 
 # --- SIGNALS ---

@@ -1,14 +1,14 @@
 {% extends 'core/dashboard_base.html' %}
 {% load static %}
 
-{% block title %}Add Inventory | Gigs360{% endblock %}
+{% block title %}{{ title }} | Gigs360{% endblock %}
 
 {% block content %}
 <div class="container-fluid px-4">
     
     <div class="d-flex justify-content-between align-items-center my-4">
         <div>
-            <h3 class="fw-bold text-dark mb-0">Add New Gear</h3>
+            <h3 class="fw-bold text-dark mb-0">{{ title|default:"Add New Gear" }}</h3>
             <p class="text-muted small mb-0">Expand your inventory locker.</p>
         </div>
         <a href="{% url 'inventory:inventory_list' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 hover-lift">
@@ -16,7 +16,7 @@
         </a>
     </div>
 
-    {% if user.userprofile.plan_tier == 'FREE' %}
+    {% if user.userprofile.plan|upper == 'FREE' %}
     <div class="alert alert-info border-0 shadow-sm rounded-3 d-flex align-items-center mb-4">
         <i class="bi bi-info-circle-fill fs-4 me-3 text-info"></i>
         <div>
@@ -27,18 +27,50 @@
     {% endif %}
 
     <div class="card border-0 shadow-sm rounded-4">
-        <div class="card-body p-4">
+        <div class="card-body p-4 p-md-5">
             <form method="POST" enctype="multipart/form-data" id="inventoryForm">
                 {% csrf_token %}
                 
                 {% if form.errors %}
                     <div class="alert alert-danger shadow-sm rounded-3 mb-4">
                         <strong><i class="bi bi-exclamation-triangle-fill"></i> Please fix the errors:</strong>
-                        {{ form.errors }}
+                        <ul class="mb-0 mt-2 small">
+                            {% for field, errors in form.errors.items %}
+                                {% for error in errors %}<li><strong>{{ field|title }}:</strong> {{ error }}</li>{% endfor %}
+                            {% endfor %}
+                        </ul>
                     </div>
                 {% endif %}
 
                 <div class="row g-4">
+                    <div class="col-12 mb-2">
+                        <div class="p-3 bg-light rounded-3 border border-primary border-opacity-25">
+                            <h6 class="text-primary fw-bold mb-3" style="color: #0f172a !important;">
+                                <i class="bi bi-globe me-2"></i>Public Marketplace Visibility
+                            </h6>
+                            <div class="row g-3">
+                                <div class="col-md-6 d-flex align-items-center">
+                                    <div class="form-check form-switch fs-5">
+                                        {{ form.is_published }}
+                                        <label class="form-check-label fw-bold small text-uppercase text-dark ms-2" for="{{ form.is_published.id_for_label }}">
+                                            Publish to Discovery Hub
+                                        </label>
+                                    </div>
+                                    <div class="form-text small ms-3 mt-0">Turn off to keep gear internal.</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small text-uppercase text-muted">Search Location</label>
+                                    {{ form.search_location }}
+                                    <div class="form-text small">City/region for the Global Search Engine.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <h6 class="text-primary fw-bold border-bottom pb-2" style="color: #0f172a !important;">Basic Details</h6>
+                    </div>
+
                     <div class="col-md-8">
                         <label class="form-label fw-bold small text-uppercase text-muted">Item Name</label>
                         {{ form.name }}
@@ -106,23 +138,33 @@
                         {{ form.description }}
                     </div>
 
-                    <div class="col-12">
-                        <label class="form-label fw-bold small text-uppercase text-muted">Item Photo</label>
+                    <div class="col-12 mt-4">
+                        <h6 class="text-primary fw-bold border-bottom pb-2" style="color: #0f172a !important;">Media & Showroom</h6>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-uppercase text-muted">Primary Cover Photo</label>
                         {{ form.image }}
-                        <div class="form-text">Upload a clear JPG or PNG image (Max 5MB).</div>
+                        <div class="form-text small">Main thumbnail displayed in searches (Max 5MB).</div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-uppercase text-muted">Showroom Gallery <span class="badge bg-secondary ms-1">New</span></label>
+                        {{ form.gallery_images }}
+                        <div class="form-text small text-primary">Hold CTRL/CMD to select multiple images. These appear on your public listing.</div>
                     </div>
                 </div>
 
-                <div class="mt-5 pt-3 border-top d-flex justify-content-between align-items-center">
-                    <span class="text-muted small">
-                        {% if user.userprofile.plan_tier == 'FREE' %}
+                <div class="mt-5 pt-4 border-top d-flex flex-column flex-md-row justify-content-between align-items-center">
+                    <span class="text-muted small mb-3 mb-md-0">
+                        {% if user.userprofile.plan|upper == 'FREE' %}
                             <i class="bi bi-circle-fill text-success me-1" style="font-size: 8px;"></i> Free Plan Active
                         {% else %}
                             <i class="bi bi-star-fill text-warning me-1"></i> Pro Features Enabled
                         {% endif %}
                     </span>
-                    <button type="submit" class="btn btn-primary fw-bold px-5 py-2 rounded-pill shadow-sm hover-lift" style="background-color: #0f172a; border-color: #0f172a;">
-                        <i class="bi bi-plus-lg me-2"></i> Save Item
+                    <button type="submit" class="btn btn-primary fw-bold px-5 py-3 rounded-pill shadow-sm hover-lift text-white w-100 w-md-auto" style="background-color: #0f172a; border-color: #0f172a;">
+                        <i class="bi bi-save2-fill me-2"></i> Save to Gear Locker
                     </button>
                 </div>
             </form>
@@ -160,7 +202,7 @@
 </script>
 
 <style>
-    .hover-lift:hover { transform: translateY(-2px); transition: transform 0.2s; }
+    .hover-lift:hover { transform: translateY(-2px); transition: transform 0.2s; box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; }
     textarea { width: 100%; border: 1px solid #dee2e6; border-radius: 0.375rem; padding: 0.5rem; }
     
     /* Ensure form controls match the theme */

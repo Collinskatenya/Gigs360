@@ -1,175 +1,546 @@
 {% extends 'core/dashboard_base.html' %}
 {% load static %}
+{% load core_extras %}
 
-{% block title %}Account Settings | Gigs360{% endblock %}
+{% block title %}Command Vault | Gigs360{% endblock %}
 
 {% block content %}
-<div class="container-fluid px-4 py-4">
+<div class="container-xl px-4 mt-4">
     
-    <h2 class="fw-bold text-dark mb-4">Account Settings</h2>
-    
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm rounded-3 mb-4" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        {% endfor %}
-    {% endif %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-dark mb-1">Command Vault</h2>
+            <p class="text-muted">Manage your personal profile, business operations, and security settings.</p>
+        </div>
+        {% if profile.is_verified %}
+            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-2 shadow-sm">
+                <i class="bi bi-patch-check-fill me-1"></i> Verified Account
+            </span>
+        {% else %}
+            <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 rounded-pill px-3 py-2 shadow-sm">
+                <i class="bi bi-shield-exclamation me-1"></i> Pending Verification
+            </span>
+        {% endif %}
+    </div>
 
-    <div class="row g-4">
-        
-        <div class="col-xl-4">
-            <div class="card border-0 shadow-sm rounded-4 h-100">
-                <div class="card-header bg-transparent fw-bold py-3 border-bottom">Profile Picture</div>
-                <div class="card-body text-center d-flex flex-column align-items-center justify-content-center">
-                    
-                    <div class="position-relative mb-3">
-                        {% if user.userprofile.profile_picture %}
-                            <img class="img-account-profile rounded-circle shadow-sm border border-3 border-light" 
-                                 src="{{ user.userprofile.profile_picture.url }}" 
-                                 alt="Profile" 
-                                 style="width: 160px; height: 160px; object-fit: cover;">
-                        {% else %}
-                            <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-sm border border-3 border-light" 
-                                 style="width: 160px; height: 160px; font-size: 3.5rem; background-color: #0f172a;">
-                                {{ user.username|make_list|first|upper }}
-                            </div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="small font-italic text-muted mb-4">JPG or PNG no larger than 5MB</div>
-                    
-                    <div class="w-100 px-4">
-                        <span class="text-muted small d-block mb-2 text-uppercase fw-bold">Current Role</span>
-                        
-                        {% if user.is_superuser %}
-                            <span class="badge bg-danger fs-6 px-3 py-2 rounded-pill w-100">System Owner</span>
-                        
-                        {% elif user.is_staff %}
-                            <span class="badge bg-dark fs-6 px-3 py-2 rounded-pill w-100">
-                                <i class="bi bi-shield-lock-fill me-1"></i> 
-                                {{ user.userprofile.get_staff_role_display|default:"Staff Member" }}
-                            </span>
-                            <div class="small text-muted mt-2">ID: {{ user.userprofile.employee_id|default:"-" }}</div>
-                        
-                        {% else %}
-                            {% if user.userprofile.role == 'VENDOR' %}
-                                <span class="badge bg-primary fs-6 px-3 py-2 rounded-pill w-100" style="background-color: #0f172a !important;">Vendor</span>
-                            {% elif user.userprofile.role == 'AGENCY' %}
-                                <span class="badge bg-success fs-6 px-3 py-2 rounded-pill w-100">Agency</span>
-                            {% else %}
-                                <span class="badge bg-info text-dark fs-6 px-3 py-2 rounded-pill w-100">Freelancer</span>
-                            {% endif %}
-                            
-                            <div class="mt-3">
-                                <span class="badge border text-dark fw-normal px-3 py-1 bg-light rounded-pill">
-                                    {{ user.userprofile.get_plan_tier_display|default:"Free" }} Plan
-                                </span>
-                            </div>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="card-header bg-white border-bottom p-0">
+            <nav class="nav nav-pills nav-justified p-2 tab-bar-modern" id="settingsTab" role="tablist">
+                <button class="nav-link active rounded-pill fw-bold" id="personal-tab" data-bs-toggle="tab" data-bs-target="#personal" type="button" role="tab"><i class="bi bi-person-circle me-2"></i>Personal Profile</button>
+                <button class="nav-link rounded-pill fw-bold" id="business-tab" data-bs-toggle="tab" data-bs-target="#business" type="button" role="tab"><i class="bi bi-briefcase-fill me-2"></i>Business Ops</button>
+                <button class="nav-link rounded-pill fw-bold" id="identity-tab" data-bs-toggle="tab" data-bs-target="#identity" type="button" role="tab"><i class="bi bi-shield-lock-fill me-2"></i>Legal Identity</button>
+                <button class="nav-link rounded-pill fw-bold" id="finance-tab" data-bs-toggle="tab" data-bs-target="#finance" type="button" role="tab"><i class="bi bi-credit-card-fill me-2"></i>Financial Payouts</button>
+            </nav>
         </div>
 
-        <div class="col-xl-8">
-            <div class="card border-0 shadow-sm rounded-4 h-100">
-                <div class="card-header bg-transparent fw-bold py-3 border-bottom">Account Details</div>
-                <div class="card-body p-4">
-                    
-                    <form method="POST" enctype="multipart/form-data">
+        <div class="card-body p-4 p-md-5 bg-light">
+            <div class="tab-content" id="settingsTabContent">
+                
+                <div class="tab-pane fade show active" id="personal" role="tabpanel">
+                    <div class="d-flex justify-content-between align-items-start mb-4">
+                        <div>
+                            <h5 class="fw-bold text-dark mb-1">Personal Information</h5>
+                            <p class="text-muted small mb-0">Your basic biographical details and public bio.</p>
+                        </div>
+                        <button class="btn btn-outline-dark rounded-pill px-4 fw-bold shadow-sm hover-lift" onclick="toggleEditMode('personal')">
+                            <i class="bi bi-pencil-square me-2"></i> Edit Profile
+                        </button>
+                    </div>
+
+                    <div id="personal-view-mode" class="view-mode-container">
+                        <div class="row g-4">
+                             <div class="col-md-3 text-center">
+                                <div class="position-relative d-inline-block">
+                                    {% if profile.profile_picture %}
+                                        <img src="{{ profile.profile_picture.url }}" class="rounded-circle border shadow-sm object-fit-cover" style="width: 150px; height: 150px;">
+                                    {% else %}
+                                        <div class="rounded-circle bg-white border shadow-sm d-flex align-items-center justify-content-center text-muted display-4 fw-bold mx-auto" style="width: 150px; height: 150px;">
+                                            {{ user.first_name|first|upper }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-9">
+                                <div class="bg-white p-4 rounded-4 shadow-sm border">
+                                    <div class="row mb-3">
+                                        <div class="col-sm-4 fw-bold text-muted small text-uppercase">Full Name</div>
+                                        <div class="col-sm-8 fw-bold">{{ user.first_name }} {{ profile.middle_name|default:"" }} {{ user.last_name }}</div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-sm-4 fw-bold text-muted small text-uppercase">Email</div>
+                                        <div class="col-sm-8">{{ user.email }} <i class="bi bi-lock-fill text-muted ms-1" title="Cannot be changed"></i></div>
+                                    </div>
+                                     <div class="row mb-3">
+                                        <div class="col-sm-4 fw-bold text-muted small text-uppercase">Phone</div>
+                                        <div class="col-sm-8">{{ profile.phone_number|mask_phone|default:'-' }}</div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-sm-4 fw-bold text-muted small text-uppercase">Date of Birth</div>
+                                        <div class="col-sm-8">{{ profile.dob|date:"M d, Y"|default:'-' }}</div>
+                                    </div>
+                                     <div class="row mb-0">
+                                        <div class="col-sm-4 fw-bold text-muted small text-uppercase">Bio</div>
+                                        <div class="col-sm-8 fst-italic text-muted">{{ profile.bio|default:'No bio provided.'|linebreaks }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form method="POST" enctype="multipart/form-data" id="personal-edit-mode" class="edit-mode-form d-none">
                         {% csrf_token %}
+                        <div class="bg-white p-4 p-md-5 rounded-4 shadow-sm border">
+                            
+                            <div class="text-center mb-5">
+                                <div class="position-relative d-inline-block mb-3">
+                                    {% if profile.profile_picture %}
+                                        <img src="{{ profile.profile_picture.url }}" id="profile-pic-preview" class="rounded-circle border shadow-sm object-fit-cover" style="width: 150px; height: 150px;">
+                                    {% else %}
+                                        <div id="profile-pic-placeholder" class="rounded-circle bg-light border shadow-sm d-flex align-items-center justify-content-center text-muted display-4 fw-bold" style="width: 150px; height: 150px;">
+                                            <i class="bi bi-camera"></i>
+                                        </div>
+                                        <img src="" id="profile-pic-preview" class="rounded-circle border shadow-sm object-fit-cover d-none" style="width: 150px; height: 150px;">
+                                    {% endif %}
+                                    {{ demo_form.profile_picture }}
+                                </div>
+                                <div>
+                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold me-2" onclick="document.getElementById('id_profile_picture_input').click();">
+                                        <i class="bi bi-upload me-1"></i> Change Photo
+                                    </button>
+                                </div>
+                                 <small class="text-muted d-block mt-2">Recommended: Square JPG/PNG, max 2MB.</small>
+                            </div>
 
-                        {% if form.errors %}
-                            <div class="alert alert-danger alert-dismissible fade show rounded-3" role="alert">
-                                <h6 class="alert-heading fw-bold mb-2"><i class="bi bi-exclamation-triangle-fill"></i> Please fix the errors:</h6>
-                                <ul class="mb-0 small ps-3">
-                                    {% for field, errors in form.errors.items %}
-                                        {% for error in errors %}
-                                            <li><strong>{{ field|title }}:</strong> {{ error }}</li>
-                                        {% endfor %}
-                                    {% endfor %}
-                                </ul>
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold text-muted">First Name *</label>
+                                    {{ base_form.first_name }}
+                                </div>
+                                 <div class="col-md-4">
+                                    <label class="form-label small fw-bold text-muted">Middle Name (Optional)</label>
+                                    {{ demo_form.middle_name }}
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold text-muted">Last Name *</label>
+                                    {{ base_form.last_name }}
+                                </div>
                             </div>
-                        {% endif %}
 
-                        <h6 class="text-primary mb-3 text-uppercase small fw-bold" style="color: #0f172a !important;">User Information</h6>
-                        <div class="row gx-3 mb-3">
-                            <div class="col-md-6">
-                                <label class="small mb-1 fw-bold text-muted">First Name</label>
-                                {{ form.first_name }}
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold text-muted">Email Address</label>
+                                {{ base_form.email }}
+                                <div class="form-text"><i class="bi bi-lock-fill me-1"></i>Used for login and secure notifications. Cannot be changed.</div>
                             </div>
-                            <div class="col-md-6">
-                                <label class="small mb-1 fw-bold text-muted">Last Name</label>
-                                {{ form.last_name }}
-                            </div>
-                        </div>
-                        <div class="row gx-3 mb-3">
-                            <div class="col-md-6">
-                                <label class="small mb-1 fw-bold text-muted">Phone Number</label>
-                                {{ form.phone_number }}
-                            </div>
-                            <div class="col-md-6">
-                                <label class="small mb-1 fw-bold text-muted">Change Picture</label>
-                                {{ form.profile_picture }}
-                            </div>
-                        </div>
 
-                        <hr class="my-4 opacity-10">
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-muted">Phone Number</label>
+                                    {{ demo_form.phone_number }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-muted">Date of Birth (18+)</label>
+                                    {{ demo_form.dob }}
+                                    <div class="form-text text-danger">{{ demo_form.dob.errors }}</div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label class="form-label small fw-bold text-muted">Gender</label>
+                                {{ demo_form.gender }}
+                            </div>
 
-                        {% if not user.is_staff %}
-                        <h6 class="text-primary mb-3 text-uppercase small fw-bold" style="color: #0f172a !important;">Business Info</h6>
-                        <div class="row gx-3 mb-3">
-                            <div class="col-md-6">
-                                <label class="small mb-1 fw-bold text-muted">Business Name</label>
-                                {{ form.business_name }}
+                            <div class="mb-4">
+                                <label class="form-label small fw-bold text-muted">Public Bio</label>
+                                {{ demo_form.bio }}
+                                <div class="form-text">A brief description visible on your public profile and gear listings.</div>
                             </div>
-                            <div class="col-md-6">
-                                <label class="small mb-1 fw-bold text-muted">Category</label>
-                                {{ form.business_type }}
+                            
+                            <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                                <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" onclick="toggleEditMode('personal')">Cancel</button>
+                                <button type="submit" name="submit_personal" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" style="background-color: #0f172a; border: none;">Save Personal Info</button>
                             </div>
-                        </div>
-                        <div class="mb-3">
-                             <label class="small mb-1 fw-bold text-muted">Number of Employees</label>
-                             {{ form.number_of_employees }}
-                        </div>
-
-                        <hr class="my-4 opacity-10">
-
-                        <h6 class="text-primary mb-3 text-uppercase small fw-bold" style="color: #0f172a !important;">Payment & Banking</h6>
-                        <div class="row gx-3 mb-3">
-                            <div class="col-md-4">
-                                <label class="small mb-1 fw-bold text-muted">Bank Name</label>
-                                {{ form.bank_name }}
-                            </div>
-                            <div class="col-md-4">
-                                <label class="small mb-1 fw-bold text-muted">Account No.</label>
-                                {{ form.account_number }}
-                            </div>
-                            <div class="col-md-4">
-                                <label class="small mb-1 fw-bold text-muted">M-Pesa No.</label>
-                                {{ form.mpesa_number }}
-                            </div>
-                        </div>
-                        {% endif %}
-
-                        <div class="d-grid gap-2 mt-5">
-                            <button class="btn fw-bold rounded-pill py-2 shadow-sm hover-lift text-white" type="submit" style="background-color: #0f172a; border-color: #0f172a;">
-                                Save Changes
-                            </button>
                         </div>
                     </form>
                 </div>
+
+                <div class="tab-pane fade" id="business" role="tabpanel">
+                     <div class="d-flex justify-content-between align-items-start mb-4">
+                        <div>
+                            <h5 class="fw-bold text-dark mb-1">Professional Profile</h5>
+                            <p class="text-muted small mb-0">Define your role and branding on Gigs360.</p>
+                        </div>
+                         <button class="btn btn-outline-dark rounded-pill px-4 fw-bold shadow-sm hover-lift" onclick="toggleEditMode('business')">
+                            <i class="bi bi-pencil-square me-2"></i> Edit Operations
+                        </button>
+                    </div>
+
+                     <div id="business-view-mode" class="view-mode-container">
+                         <div class="row g-4">
+                             <div class="col-md-3 text-center">
+                                 <div class="bg-white p-3 rounded-4 border shadow-sm d-inline-block">
+                                    {% if profile.company_logo %}
+                                        <img src="{{ profile.company_logo.url }}" class="img-fluid object-fit-contain" style="max-height: 100px;">
+                                    {% else %}
+                                        <div class="text-muted p-4">
+                                            <i class="bi bi-building display-6 opacity-25"></i>
+                                            <p class="small mb-0 mt-2">No Logo</p>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                             <div class="col-md-9">
+                                 <div class="bg-white p-4 rounded-4 shadow-sm border">
+                                     <div class="row mb-3">
+                                        <div class="col-sm-4 fw-bold text-muted small text-uppercase">Business Name</div>
+                                        <div class="col-sm-8 fw-bold">{{ profile.business_name|default:'-' }}</div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-sm-4 fw-bold text-muted small text-uppercase">Category</div>
+                                        <div class="col-sm-8">{{ profile.get_business_category_display|default:'-' }}</div>
+                                    </div>
+                                      <div class="row mb-3">
+                                        <div class="col-sm-4 fw-bold text-muted small text-uppercase">Team Size</div>
+                                        <div class="col-sm-8">{{ profile.get_employee_count_display|default:'-' }}</div>
+                                    </div>
+                                    <div class="row mb-0">
+                                        <div class="col-sm-4 fw-bold text-muted small text-uppercase">Office Phone</div>
+                                        <div class="col-sm-8">{{ profile.office_number|mask_phone|default:'-' }}</div>
+                                    </div>
+                                 </div>
+                            </div>
+                         </div>
+                    </div>
+                    
+                     <form method="POST" enctype="multipart/form-data" id="business-edit-mode" class="edit-mode-form d-none">
+                        {% csrf_token %}
+                        <div class="bg-white p-4 p-md-5 rounded-4 shadow-sm border">
+                            
+                             <div class="mb-5 p-4 bg-light rounded-4 border border-dashed text-center">
+                                <h6 class="fw-bold text-dark mb-3">Company Branding</h6>
+                                <div class="d-flex justify-content-center align-items-center gap-4">
+                                     <div class="bg-white p-2 rounded-3 border shadow-sm">
+                                        {% if profile.company_logo %}
+                                            <img src="{{ profile.company_logo.url }}" id="company-logo-preview" class="img-fluid object-fit-contain" style="max-height: 60px;">
+                                        {% else %}
+                                             <img src="" id="company-logo-preview" class="img-fluid object-fit-contain d-none" style="max-height: 60px;">
+                                            <span id="company-logo-placeholder" class="text-muted small fst-italic">No logo uploaded</span>
+                                        {% endif %}
+                                     </div>
+                                     <div>
+                                         {{ business_form.company_logo }}
+                                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold mb-2" onclick="document.getElementById('id_company_logo_input').click();">
+                                            <i class="bi bi-upload me-1"></i> Upload Logo
+                                        </button>
+                                     </div>
+                                </div>
+                            </div>
+
+                            <h6 class="fw-bold text-dark mb-3">Business Details</h6>
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-muted">Business / Studio Name</label>
+                                    {{ business_form.business_name }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-muted">Primary Category</label>
+                                    {{ business_form.business_category }}
+                                </div>
+                            </div>
+                            
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-muted">Current City</label>
+                                    {{ business_form.current_city }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-muted">County of Residence</label>
+                                    {{ business_form.county_of_residence }}
+                                </div>
+                            </div>
+
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-muted">Team Size</label>
+                                    {{ business_form.employee_count }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-muted">Office Phone</label>
+                                    {{ business_form.office_number }}
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label class="form-label small fw-bold text-muted">Invoice Brand Color</label>
+                                <div class="d-flex align-items-center">
+                                    {{ business_form.invoice_color_theme }}
+                                    <span class="ms-3 small text-muted">Used on automated client receipts.</span>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                                <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" onclick="toggleEditMode('business')">Cancel</button>
+                                <button type="submit" name="submit_business" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" style="background-color: #0f172a; border: none;">Save Operations Info</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="tab-pane fade" id="identity" role="tabpanel">
+                     <div class="d-flex justify-content-between align-items-start mb-4">
+                        <div>
+                            <h5 class="fw-bold text-dark mb-1">KYC & Compliance</h5>
+                            <p class="text-muted small mb-0">Required for platform verification and secure transactions.</p>
+                        </div>
+                         <button class="btn btn-outline-dark rounded-pill px-4 fw-bold shadow-sm hover-lift" onclick="toggleEditMode('identity')">
+                            <i class="bi bi-pencil-square me-2"></i> Update Details
+                        </button>
+                    </div>
+
+                     <div id="identity-view-mode" class="view-mode-container">
+                         <div class="alert alert-info border-0 bg-info bg-opacity-10 text-info fw-bold mb-4 rounded-4 d-flex align-items-center">
+                            <i class="bi bi-shield-lock-fill fs-4 me-3"></i>
+                            <div>
+                                Data in this section is encrypted and used strictly for identity verification according to our privacy policy.
+                            </div>
+                        </div>
+                        <div class="bg-white p-4 rounded-4 shadow-sm border">
+                            <div class="row mb-3">
+                                <div class="col-sm-4 fw-bold text-muted small text-uppercase">National ID / Passport</div>
+                                <div class="col-sm-8 fw-bold font-monospace">{{ profile.id_number|mask_account|default:'-' }}</div>
+                            </div>
+                            <div class="row mb-0">
+                                <div class="col-sm-4 fw-bold text-muted small text-uppercase">KRA PIN</div>
+                                <div class="col-sm-8 fw-bold font-monospace">{{ profile.kra_pin|mask_account|default:'-' }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                     <form method="POST" id="identity-edit-mode" class="edit-mode-form d-none">
+                        {% csrf_token %}
+                        <div class="bg-white p-4 p-md-5 rounded-4 shadow-sm border position-relative overflow-hidden">
+                            <div class="position-absolute top-50 start-50 translate-middle text-muted opacity-10 display-1 fw-bold" style="z-index: 0; pointer-events: none;">CONFIDENTIAL</div>
+                            
+                            <div class="position-relative" style="z-index: 1;">
+                                {% if profile.is_identity_locked %}
+                                    <div class="alert alert-success d-flex align-items-center rounded-3 mb-4">
+                                        <i class="bi bi-shield-lock-fill fs-3 me-3"></i>
+                                        <div>
+                                            <h6 class="fw-bold mb-1">Identity Locked & Verified</h6>
+                                            <p class="mb-0 small">Your legal details have been verified by the system. To prevent fraud, these fields cannot be edited directly.</p>
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <div class="alert alert-warning d-flex align-items-center rounded-3 mb-4">
+                                        <i class="bi bi-exclamation-triangle-fill fs-3 me-3"></i>
+                                        <div>
+                                            <h6 class="fw-bold mb-1">Action Required</h6>
+                                            <p class="mb-0 small">Enter your exact legal details below. Once verified, these fields will be permanently locked.</p>
+                                        </div>
+                                    </div>
+                                {% endif %}
+
+                                <div class="mb-4">
+                                    <label class="form-label small fw-bold text-muted">National ID / Passport Number *</label>
+                                    {{ identity_form.id_number }}
+                                </div>
+                                <div class="mb-4">
+                                    <label class="form-label small fw-bold text-muted">KRA PIN Number *</label>
+                                    {{ identity_form.kra_pin }}
+                                </div>
+
+                                {% if not profile.is_identity_locked %}
+                                <hr class="my-4">
+                                <div class="mb-4 bg-light p-3 rounded-3 border border-warning">
+                                    <label class="form-label fw-bold text-dark"><i class="bi bi-shield-lock me-2"></i>Security Check</label>
+                                    {{ identity_form.current_password }}
+                                    <div class="form-text text-danger fw-bold">{{ identity_form.current_password.errors }}</div>
+                                </div>
+                                {% endif %}
+
+                                <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                                    <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" onclick="toggleEditMode('identity')">Cancel</button>
+                                    <button type="submit" name="submit_identity" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" style="background-color: #0f172a; border: none;" {% if profile.is_identity_locked %}disabled{% endif %}>Submit for Verification</button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="tab-pane fade" id="finance" role="tabpanel">
+                     <div class="d-flex justify-content-between align-items-start mb-4">
+                        <div>
+                            <h5 class="fw-bold text-dark mb-1">Banking Information</h5>
+                            <p class="text-muted small mb-0">Where we send your earnings from gigs and rentals.</p>
+                        </div>
+                         <button class="btn btn-outline-dark rounded-pill px-4 fw-bold shadow-sm hover-lift" onclick="toggleEditMode('finance')">
+                            <i class="bi bi-pencil-square me-2"></i> Manage Payouts
+                        </button>
+                    </div>
+
+                    <div id="finance-view-mode" class="view-mode-container">
+                         <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="bg-white p-4 rounded-4 shadow-sm border h-100 border-success border-opacity-25" style="background: linear-gradient(to bottom right, #ffffff, #f0fdf4);">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <h6 class="fw-bold text-success mb-0"><i class="bi bi-phone-fill me-2"></i>M-Pesa Payouts</h6>
+                                    </div>
+                                    <p class="text-muted small text-uppercase fw-bold mb-1">Registered Number</p>
+                                    <h5 class="fw-bold text-dark font-monospace">{{ profile.mpesa_number|mask_phone|default:'Not configured' }}</h5>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="bg-white p-4 rounded-4 shadow-sm border h-100">
+                                     <div class="d-flex align-items-center mb-3">
+                                        <i class="bi bi-bank fs-4 text-primary me-3"></i>
+                                        <h6 class="fw-bold text-dark mb-0">Bank Transfer</h6>
+                                    </div>
+                                     <p class="text-muted small text-uppercase fw-bold mb-1">Bank Name</p>
+                                     <h6 class="fw-bold text-dark mb-3">{{ profile.bank_name|default:'-' }}</h6>
+                                     <p class="text-muted small text-uppercase fw-bold mb-1">Account Number</p>
+                                     <h5 class="fw-bold text-dark font-monospace">{{ profile.account_number|mask_account|default:'Not configured' }}</h5>
+                                </div>
+                            </div>
+                         </div>
+                    </div>
+
+                    <form method="POST" id="finance-edit-mode" class="edit-mode-form d-none">
+                        {% csrf_token %}
+                        <div class="bg-white p-4 p-md-5 rounded-4 shadow-sm border">
+                            
+                            <div class="row g-4 mb-4">
+                                <div class="col-md-6">
+                                     <div class="p-4 bg-light rounded-4 border h-100">
+                                        <h6 class="fw-bold text-dark mb-3">M-Pesa Details</h6>
+                                        <label class="form-label small fw-bold text-muted">Registered Mobile Number</label>
+                                        {{ finance_form.mpesa_number }}
+                                     </div>
+                                </div>
+                                <div class="col-md-6">
+                                     <div class="p-4 bg-light rounded-4 border h-100">
+                                        <h6 class="fw-bold text-dark mb-3">Bank Details</h6>
+                                        <div class="mb-3">
+                                             <label class="form-label small fw-bold text-muted">Bank Name</label>
+                                            {{ finance_form.bank_name }}
+                                            <div class="form-text text-danger">{{ finance_form.bank_name.errors }}</div>
+                                        </div>
+                                        <div>
+                                             <label class="form-label small fw-bold text-muted">Account Number</label>
+                                            {{ finance_form.account_number }}
+                                        </div>
+                                     </div>
+                                </div>
+                            </div>
+
+                            <hr class="my-4">
+                            <div class="mb-4 bg-light p-3 rounded-3 border border-warning">
+                                <label class="form-label fw-bold text-dark"><i class="bi bi-shield-lock me-2"></i>Security Check</label>
+                                {{ finance_form.current_password }}
+                                <div class="form-text text-danger fw-bold">{{ finance_form.current_password.errors }}</div>
+                            </div>
+
+                            <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                                <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" onclick="toggleEditMode('finance')">Cancel</button>
+                                <button type="submit" name="submit_finance" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" style="background-color: #0f172a; border: none;">Update Financials</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
             </div>
         </div>
     </div>
 </div>
 
+<script>
+    function toggleEditMode(tabName) {
+        const viewMode = document.getElementById(`${tabName}-view-mode`);
+        const editMode = document.getElementById(`${tabName}-edit-mode`);
+        const editBtn = document.querySelector(`button[onclick="toggleEditMode('${tabName}')"]`);
+
+        if (viewMode.classList.contains('d-none')) {
+            viewMode.classList.remove('d-none');
+            editMode.classList.add('d-none');
+            editBtn.classList.remove('d-none'); 
+        } else {
+            viewMode.classList.add('d-none');
+            editMode.classList.remove('d-none');
+            editBtn.classList.add('d-none'); 
+        }
+    }
+
+    const profileInput = document.getElementById('id_profile_picture_input');
+    const profilePreview = document.getElementById('profile-pic-preview');
+    const profilePlaceholder = document.getElementById('profile-pic-placeholder');
+
+    if (profileInput) {
+        profileInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    profilePreview.src = e.target.result;
+                    profilePreview.classList.remove('d-none');
+                    if (profilePlaceholder) profilePlaceholder.classList.add('d-none');
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+
+    const logoInput = document.getElementById('id_company_logo_input');
+    const logoPreview = document.getElementById('company-logo-preview');
+    const logoPlaceholder = document.getElementById('company-logo-placeholder');
+
+    if (logoInput) {
+        logoInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    logoPreview.src = e.target.result;
+                    logoPreview.classList.remove('d-none');
+                    if (logoPlaceholder) logoPlaceholder.classList.add('d-none');
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+
+    // 🚨 SMART TAB RETENTION: Auto-open tab based on URL hash
+    document.addEventListener("DOMContentLoaded", function() {
+        let hash = window.location.hash;
+        if (hash) {
+            let triggerEl = document.querySelector(`button[data-bs-target="${hash}"]`);
+            if (triggerEl) {
+                bootstrap.Tab.getOrCreateInstance(triggerEl).show();
+            }
+        }
+    });
+</script>
+
 <style>
-    .hover-lift:hover { transform: translateY(-2px); transition: 0.2s; box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; }
-    /* Ensure form controls match brand on focus */
-    .form-control:focus, .form-select:focus { border-color: #0f172a; box-shadow: 0 0 0 0.25rem rgba(15, 23, 42, 0.1); }
+    .tab-bar-modern .nav-link {
+        color: #6c757d;
+        transition: all 0.2s ease;
+        border-radius: 50rem !important;
+        padding: 0.75rem 1.5rem;
+        margin: 0.25rem;
+    }
+    .tab-bar-modern .nav-link:hover {
+        background-color: rgba(0,0,0,0.03);
+        color: #0f172a;
+    }
+    .tab-bar-modern .nav-link.active {
+        background-color: #0f172a !important;
+        color: white !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+    .hover-lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .hover-lift:hover { transform: translateY(-3px); box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15) !important; }
+    
+    /* 🚨 Clean up password fields visually */
+    input[type="password"] {
+        letter-spacing: 0.2em;
+    }
 </style>
 {% endblock %}

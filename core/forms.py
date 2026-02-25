@@ -1,7 +1,9 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
+from django.core.validators import RegexValidator
 from .models import UserProfile
+from datetime import date, timedelta
 
 User = get_user_model()
 
@@ -49,7 +51,6 @@ class SignUpForm(UserCreationForm):
         if commit:
             user.save()
             # 2. Update the Linked Profile (Created by Signal)
-            # We must use getattr because the signal creates it instantly
             if hasattr(user, 'userprofile'):
                 profile = user.userprofile
                 role = self.cleaned_data.get('role')
@@ -72,52 +73,154 @@ class SignUpForm(UserCreationForm):
 
 
 # ==========================================
-# 2. SETTINGS FORMS (Split for Security)
+# 2. COMMAND VAULT FORMS (Segregated for UI & Security)
 # ==========================================
 
-class UserUpdateForm(forms.ModelForm):
-    """Updates Login Details (Name, Email)"""
-    email = forms.EmailField(widget=forms.EmailInput(attrs={'class': 'form-control'}))
-    first_name = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}))
-    last_name = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}))
+class UserBaseUpdateForm(forms.ModelForm):
+    """Updates Core Login Details (Name, Email)"""
+    email = forms.CharField(
+        disabled=True, 
+        widget=forms.EmailInput(attrs={'class': 'form-control bg-light text-muted', 'readonly': 'readonly'})
+    )
+    first_name = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'First Name'}))
+    last_name = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Last Name'}))
 
     class Meta:
         model = User
         fields = ['first_name', 'last_name', 'email']
 
 
-class UserProfileForm(forms.ModelForm):
-    """
-    Updates Business Data (KYC, Banking, Logos).
-    Connects to the UserProfile model.
-    """
-    # Custom Date Picker
+class ProfileDemographicsForm(forms.ModelForm):
+    """Tab 1: Personal Demographics"""
+    
+    # 🚨 INNOVATION: Clean Custom Image Widget (Hides messy default button)
+    profile_picture = forms.ImageField(
+        required=False,
+        widget=forms.FileInput(attrs={'class': 'd-none', 'id': 'id_profile_picture_input'}),
+        label="Profile Photo"
+    )
+
+    # 🚨 INNOVATION: HTML5 Calendar locked to 18+ years ago
     dob = forms.DateField(
         required=False, 
-        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+        widget=forms.DateInput(attrs={
+            'type': 'date', 
+            'class': 'form-control',
+            'max': (date.today() - timedelta(days=18*365.25)).strftime('%Y-%m-%d')
+        }),
         label="Date of Birth"
-    )
-    # Custom Color Picker
-    invoice_color_theme = forms.CharField(
-        required=False,
-        widget=forms.TextInput(attrs={'type': 'color', 'class': 'form-control form-control-color', 'title': 'Choose your brand color'}),
-        label="Invoice Brand Color"
     )
 
     class Meta:
         model = UserProfile
         fields = [
-            'profile_picture', 'company_logo', 
-            'phone_number', 'bio',
-            'business_name', 'business_category',
-            'kra_pin', 'id_number', 'dob',
-            'bank_name', 'account_number', 'mpesa_number',
-            'invoice_color_theme'
+            'profile_picture', 'middle_name', 'gender', 
+            'phone_number', 'dob', 'bio'
         ]
-        
+        widgets = {
+            'gender': forms.Select(attrs={'class': 'form-select'}),
+            'bio': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Tell clients about yourself...'}),
+            'middle_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Middle Name (Optional)'}),
+            'phone_number': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+    def clean_dob(self):
+        # 🚨 SECURITY: Backend execution to ensure users cannot bypass the HTML calendar lock
+        dob = self.cleaned_data.get('dob')
+        if dob:
+            age = (date.today() - dob).days / 365.25
+            if age < 18:
+                raise forms.ValidationError("You must be at least 18 years old to register on Gigs360.")
+        return dob
+
+
+class BusinessOperationsForm(forms.ModelForm):
+    """Tab 2: The MIS Engine (Location, Scale, Category)"""
+    
+    # 🚨 INNOVATION: Clean Custom Image Widget
+    company_logo = forms.ImageField(
+        required=False,
+        widget=forms.FileInput(attrs={'class': 'd-none', 'id': 'id_company_logo_input'}),
+        label="Company Logo"
+    )
+
+    invoice_color_theme = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={'type': 'color', 'class': 'form-control form-control-color'}),
+        label="Default Brand Color"
+    )
+
+    class Meta:
+        model = UserProfile
+        fields = [
+            'company_logo', 'business_name', 'business_category',
+            'current_city', 'county_of_residence', 'office_number', 
+            'employee_count', 'invoice_color_theme'
+        ]
+        widgets = {
+            'business_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'business_category': forms.Select(attrs={'class': 'form-select'}),
+            'current_city': forms.TextInput(attrs={'class': 'form-control'}),
+            'county_of_residence': forms.TextInput(attrs={'class': 'form-control'}),
+            'office_number': forms.TextInput(attrs={'class': 'form-control'}),
+            'employee_count': forms.Select(attrs={'class': 'form-select'}),
+        }
+
+
+class LegalIdentityForm(forms.ModelForm):
+    """Tab 3: The Zero-Upload KYC Vault with Auto-Lock Logic"""
+    
+    # 🚨 SECURITY: Add Password Confirmation Field
+    current_password = forms.CharField(
+        label="Confirm Password to Save",
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Enter current password'}),
+        help_text="Required to update sensitive legal details."
+    )
+
+    class Meta:
+        model = UserProfile
+        fields = ['id_number', 'kra_pin']
+        widgets = {
+            'id_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. 12345678'}),
+            'kra_pin': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. A000000000Z'}),
+        }
+
     def __init__(self, *args, **kwargs):
-        super(UserProfileForm, self).__init__(*args, **kwargs)
-        # Apply bootstrap style to all standard inputs
-        for field in self.fields:
-            if 'class' not in self.fields[field].widget.attrs:
-                self.fields[field].widget.attrs.update({'class': 'form-control'})
+        super().__init__(*args, **kwargs)
+        # 🚨 THE INNOVATION: The Identity Lock Protocol
+        if self.instance and self.instance.is_identity_locked:
+            self.fields['id_number'].disabled = True
+            self.fields['id_number'].widget.attrs.update({'class': 'form-control bg-light text-muted', 'readonly': 'readonly'})
+            self.fields['id_number'].help_text = "🔒 Verified and Locked."
+            
+            self.fields['kra_pin'].disabled = True
+            self.fields['kra_pin'].widget.attrs.update({'class': 'form-control bg-light text-muted', 'readonly': 'readonly'})
+            self.fields['kra_pin'].help_text = "🔒 Verified and Locked."
+            
+            self.fields['current_password'].required = False # Password not required if fields are already locked
+
+
+class FinancialPayoutForm(forms.ModelForm):
+    """Tab 4: Financial Routing"""
+    
+    # 🚨 SECURITY: Add Password Confirmation Field
+    current_password = forms.CharField(
+        label="Confirm Password to Save",
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Enter current password'}),
+        help_text="Required to update financial routing."
+    )
+
+    # 🚨 INNOVATION: Restricts Bank Name to Letters and Spaces ONLY
+    bank_name = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. KCB Bank or Equity'}),
+        validators=[RegexValidator(r'^[a-zA-Z\s]*$', message="Bank name must only contain letters.")]
+    )
+
+    class Meta:
+        model = UserProfile
+        fields = ['bank_name', 'account_number', 'mpesa_number']
+        widgets = {
+            'account_number': forms.TextInput(attrs={'class': 'form-control'}),
+            'mpesa_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Till or Phone Number'}),
+        }

@@ -12,10 +12,9 @@ import json
 from .forms import EventForm, DocumentForm, LineItemFormSet
 from .models import Event, EventItem, Document
 from inventory.models import InventoryItem 
-from core.models import Notification 
+from core.models import Notification, UserProfile
 
-# UTILS
-# Ensure you have created this utility function in events/utils.py
+# UTILS (We will create this next)
 from .utils import render_to_pdf
 
 # --- CONFIGURATION ---
@@ -45,34 +44,29 @@ def event_dashboard(request):
     # --- INVENTORY STATS & LIMITS ---
     inventory_count = InventoryItem.objects.filter(owner=request.user).count()
     
-    # Get user plan (Safely)
     try:
-        user_plan = request.user.userprofile.plan_tier.upper()
-    except:
+        profile = request.user.userprofile
+        user_plan = profile.plan.upper()
+    except UserProfile.DoesNotExist:
         user_plan = 'FREE'
     
-    # Get limit from settings.py
     limits = getattr(settings, 'INVENTORY_LIMITS', {'FREE': 15, 'PRO': 100, 'ENTERPRISE': float('inf')})
     limit = limits.get(user_plan, 15)
     
-    # Calculate Progress Bar Width
+    # Calculate Progress Bar
     if limit == float('inf'):
         limit_display = "Unlimited"
-        # Soft Goal Logic (1000 items) for visual progress
-        progress_width = (inventory_count / 1000) * 100
+        progress_width = (inventory_count / 1000) * 100 
     else:
         limit_display = limit
-        if limit > 0:
-            progress_width = (inventory_count / limit) * 100
-        else:
-            progress_width = 100
+        progress_width = (inventory_count / limit) * 100 if limit > 0 else 100
 
     return render(request, 'events/dashboard.html', {
         'upcoming': upcoming,
         'past': past,
         'inventory_count': inventory_count,
         'inventory_limit': limit_display,
-        'progress_width': min(progress_width, 100), # Cap at 100%
+        'progress_width': min(progress_width, 100),
     })
 
 @login_required
@@ -115,9 +109,6 @@ def check_gear_availability(request):
 
 @login_required
 def create_event(request):
-    """
-    Creates an event. Handles 'No Gear Selected' gracefully.
-    """
     if request.method == 'POST':
         form = EventForm(request.POST, user=request.user)
         
@@ -126,7 +117,7 @@ def create_event(request):
             end_date = form.cleaned_data['end_time']
             selected_items = form.cleaned_data.get('items', []) 
             
-            # --- SMART CHECK: ONLY RUN IF ITEMS ARE SELECTED ---
+            # --- SMART CHECK ---
             if selected_items:
                 overlapping_events = Event.objects.filter(
                     user=request.user,
@@ -174,13 +165,10 @@ def create_event(request):
 
 @login_required
 def update_event(request, pk):
-    """
-    Handles Event updates with Safe Redirection.
-    """
     try:
         event = Event.objects.get(pk=pk, user=request.user)
     except Event.DoesNotExist:
-        messages.warning(request, "⚠️ That event could not be found (it may have been deleted).")
+        messages.warning(request, "⚠️ That event could not be found.")
         return redirect(DASHBOARD_URL_NAME)
 
     if request.method == 'POST':
@@ -241,9 +229,6 @@ def update_event(request, pk):
 @login_required
 @require_POST
 def delete_event(request, pk):
-    """
-    Deletes an event and frees up gear.
-    """
     event = get_object_or_404(Event, pk=pk, user=request.user)
     title = event.title
     event.delete()
@@ -251,29 +236,24 @@ def delete_event(request, pk):
     Notification.objects.create(
         user=request.user,
         title="Event Cancelled",
-        message=f"Event '{title}' was cancelled. Gear has been returned to inventory.",
+        message=f"Event '{title}' was cancelled. Gear returned to inventory.",
         notification_type='warning'
     )
 
-    messages.success(request, f"Event '{title}' has been cancelled and deleted.")
+    messages.success(request, f"Event '{title}' deleted.")
     return redirect('events:event_dashboard')
 
 @login_required
 def event_report(request, pk):
-    """
-    Read-Only Audit Report.
-    """
     try:
         event = Event.objects.get(pk=pk, user=request.user)
     except Event.DoesNotExist:
-        messages.warning(request, "⚠️ Report unavailable. The event was not found.")
+        messages.warning(request, "⚠️ Event not found.")
         return redirect(DASHBOARD_URL_NAME)
 
     manifest_items = event.manifest.select_related('item').all()
-    
     total_gear_value = sum(record.item.daily_rate or 0 for record in manifest_items)
-    duration = (event.end_time - event.start_time).days
-    if duration < 1: duration = 1
+    duration = max((event.end_time - event.start_time).days, 1)
     
     context = {
         'event': event,
@@ -292,12 +272,12 @@ def event_report(request, pk):
 @login_required
 def create_document(request, event_id):
     """
-    Frontend view: Generates Quotes/Invoices for a specific Event.
+    Generates Quotes/Invoices for a specific Event.
     """
     try:
         event = Event.objects.get(pk=event_id, user=request.user)
     except Event.DoesNotExist:
-        messages.warning(request, "⚠️ Cannot create document. Event not found.")
+        messages.warning(request, "⚠️ Event not found.")
         return redirect(DASHBOARD_URL_NAME)
 
     inventory_qs = InventoryItem.objects.filter(owner=request.user).values('name', 'daily_rate', 'description')
@@ -314,26 +294,34 @@ def create_document(request, event_id):
             doc.user = request.user
             doc.save() 
 
-            # 2. Bind Formset
+            # 2. CAPTURE BRAND COLOR
+            brand_color = form.cleaned_data.get('brand_color')
+            if brand_color:
+                profile = request.user.userprofile
+                profile.invoice_color_theme = brand_color
+                profile.save()
+
+            # 3. Bind Formset
             formset.instance = doc
             formset.save() 
 
-            # 3. Calculate Totals
+            # 4. Calculate Totals
             total = sum(item.total_price for item in doc.items.all())
             doc.subtotal = total
             doc.total_amount = total
             doc.save()
 
             messages.success(request, f"{doc.get_doc_type_display()} created successfully!")
-            # FIX: Ensure 'generate_pdf' is the correct URL name in events/urls.py
-            return redirect('events:generate_pdf', pk=doc.pk)
+            return redirect('events:document_list')
     else:
+        # Pre-fill data
         initial_data = {
             'client_name': event.client_name,
             'client_phone': event.client_contact,
             'client_email': getattr(event, 'client_email', ''),
             'issue_date': timezone.now().date(),
             'due_date': timezone.now().date() + timezone.timedelta(days=7),
+            'brand_color': request.user.userprofile.invoice_color_theme or '#0f172a'
         }
         
         formset_initial = []
@@ -351,7 +339,7 @@ def create_document(request, event_id):
         formset = LineItemFormSet(initial=formset_initial)
         formset.extra = 0 if formset_initial else 1
 
-    return render(request, 'events/create_quote.html', { # FIX: Use correct template name
+    return render(request, 'events/create_quote.html', {
         'form': form,
         'formset': formset,
         'event': event,
@@ -360,9 +348,6 @@ def create_document(request, event_id):
 
 @login_required
 def document_list(request):
-    """
-    The 'Filing Cabinet'.
-    """
     documents = Document.objects.filter(user=request.user).order_by('-created_at')
     context = {'documents': documents}
     return render(request, 'events/document_list.html', context)
@@ -375,15 +360,17 @@ def generate_document_pdf(request, pk):
     try:
         doc = Document.objects.get(pk=pk, user=request.user)
     except (Document.DoesNotExist, ValueError):
-        messages.warning(request, "⚠️ That document is unavailable or has been deleted.")
+        messages.warning(request, "⚠️ Document not found.")
         return redirect('events:document_list')
     
     context = {
         'doc': doc,
         'items': doc.items.all(),
         'user': request.user,
+        'profile': request.user.userprofile, # CRITICAL FOR TRACEABILITY
         'company_name': "Gigs360 Creative Services", 
         'company_email': request.user.email,
+        'brand_color': request.user.userprofile.invoice_color_theme or '#0f172a'
     }
     
     pdf = render_to_pdf('events/invoice_pdf.html', context)
@@ -404,9 +391,6 @@ def generate_document_pdf(request, pk):
 @login_required
 @require_POST 
 def delete_document(request, pk):
-    """
-    Safely deletes a document.
-    """
     doc = get_object_or_404(Document, pk=pk, user=request.user)
     
     if str(doc.status).upper() != 'DRAFT':

@@ -10,60 +10,89 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     
-    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=10">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=11">
+    <style>
+        .hover-lift:hover { transform: translateY(-3px); transition: 0.2s; box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; }
+        .hover-scale:hover { transform: scale(1.1); transition: transform 0.2s; }
+        .notification-text { transition: color 0.3s ease; }
+        .user-profile-btn { background: transparent; border: none; text-align: left; padding: 0; width: 100%; display: flex; align-items: center; cursor: pointer; }
+    </style>
 </head>
 <body>
 
 <div id="wrapper">
     
-    <div id="sidebar-wrapper">
-        <div class="sidebar-heading">
+    <div id="sidebar-wrapper" class="d-flex flex-column h-100">
+        
+        <div class="sidebar-heading py-4 text-center border-bottom border-secondary border-opacity-25 mb-2 fs-4 fw-bold text-white">
             <i class="bi bi-lightning-charge-fill text-warning me-2"></i> Gigs360
         </div>
         
-        <div class="list-group list-group-flush mt-2">
+        <div class="list-group list-group-flush mt-2 flex-grow-1 overflow-auto">
             <a href="{% url 'dashboard' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
                 <i class="bi bi-speedometer2"></i> Dashboard
             </a>
             
-            <div class="menu-label">My Business</div>
+            <div class="menu-label mt-3">My Business</div>
             
-            <a href="{% url 'inventory:inventory_list' %}" class="list-group-item list-group-item-action {% if 'inventory' in request.path %}active{% endif %}">
+            <a href="{% url 'inventory:inventory_list' %}" class="list-group-item list-group-item-action {% if 'inventory' in request.path and 'rapid' not in request.path %}active{% endif %}">
                 <i class="bi bi-box-seam"></i> Gear Locker
+            </a>
+            
+            <a href="{% url 'inventory:rapid_scan' %}" class="list-group-item list-group-item-action {% if 'rapid-scan' in request.path %}active{% endif %}">
+                <i class="bi bi-qr-code-scan"></i> Rapid Scanner
             </a>
             
             <a href="{% url 'events:event_dashboard' %}" class="list-group-item list-group-item-action {% if 'events' in request.path %}active{% endif %}">
                 <i class="bi bi-calendar-event"></i> Event Ops
             </a>
 
-            <div class="menu-label">Account</div>
+            <div class="menu-label mt-3">Account & Support</div>
             
             <a href="{% url 'settings' %}" class="list-group-item list-group-item-action {% if 'settings' in request.path %}active{% endif %}">
                 <i class="bi bi-gear"></i> Settings
             </a>
-            
-            {% if user.is_staff %}
-            <a href="{% url 'staff_dashboard' %}" class="list-group-item list-group-item-action text-warning">
-                <i class="bi bi-shield-lock"></i> Staff Panel
+
+            <a href="{% url 'support_history' %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center {% if 'support' in request.path %}active{% endif %}">
+                <div><i class="bi bi-chat-dots"></i> Help & Messages</div>
+                {% if notif_count > 0 %}
+                <span class="badge bg-danger rounded-pill" id="sidebar-msg-badge">{{ notif_count }}</span>
+                {% endif %}
             </a>
-            {% endif %}
         </div>
 
-        <div class="sidebar-footer">
-            <div class="dropdown">
+        <div class="sidebar-footer border-top border-secondary border-opacity-25 p-3">
+            <div class="dropdown w-100">
                 <button class="user-profile-btn" type="button" data-bs-toggle="dropdown">
-                    <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center fw-bold text-white" style="width: 32px; height: 32px;">
-                        {{ user.username|make_list|first|upper }}
+                    <div class="position-relative flex-shrink-0">
+                        {% if user.userprofile.company_logo %}
+                            <img src="{{ user.userprofile.company_logo.url }}" class="rounded-circle object-fit-contain border border-2 border-secondary bg-white p-1" style="width: 42px; height: 42px;">
+                        {% elif user.userprofile.profile_picture %}
+                            <img src="{{ user.userprofile.profile_picture.url }}" class="rounded-circle object-fit-cover border border-2 border-secondary" style="width: 42px; height: 42px;">
+                        {% else %}
+                            <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center fw-bold text-white" style="width: 42px; height: 42px;">
+                                {{ user.username|make_list|first|upper }}
+                            </div>
+                        {% endif %}
+                        <span class="position-absolute bottom-0 end-0 p-1 bg-success border border-dark rounded-circle" style="margin-bottom: 2px; margin-right: 2px;"></span>
                     </div>
-                    <div class="text-truncate fw-bold ms-2" style="max-width: 120px;">{{ user.username }}</div>
+                    
+                    <div class="ms-3 overflow-hidden text-start">
+                        <div class="text-truncate fw-bold text-white" style="font-size: 0.9rem;">
+                            {{ user.userprofile.business_name|default:user.username }}
+                        </div>
+                        <div class="text-truncate text-secondary" style="font-size: 0.75rem;">
+                            {{ user.userprofile.bio|default:"Complete profile" }}
+                        </div>
+                    </div>
                 </button>
-                <ul class="dropdown-menu dropdown-menu-dark shadow">
-                    <li><a class="dropdown-item" href="{% url 'settings' %}">Profile</a></li>
+                <ul class="dropdown-menu dropdown-menu-dark shadow w-100 mb-2">
+                    <li><a class="dropdown-item" href="{% url 'settings' %}"><i class="bi bi-person me-2"></i>My Profile</a></li>
                     <li><hr class="dropdown-divider"></li>
                     <li>
                         <form action="{% url 'logout' %}" method="post">
                             {% csrf_token %}
-                            <button class="dropdown-item text-danger">Sign out</button>
+                            <button class="dropdown-item text-danger"><i class="bi bi-box-arrow-right me-2"></i>Sign out</button>
                         </form>
                     </li>
                 </ul>
@@ -72,16 +101,17 @@
     </div>
 
     <div id="page-content-wrapper">
-        
         <nav class="topbar">
             <button class="btn btn-link text-white d-md-none me-3" id="sidebarToggle">
                 <i class="bi bi-list fs-4"></i>
             </button>
-            <h5 class="mb-0 fw-bold text-white d-none d-lg-block">Dashboard</h5>
+            <h5 class="mb-0 fw-bold text-white d-none d-lg-block">
+                {% block header_title %}Dashboard{% endblock %}
+            </h5>
             
             <div class="ms-auto d-flex align-items-center gap-3">
                 {% if user.userprofile.is_verified %}
-                <span class="badge bg-success bg-opacity-25 text-white border border-light px-3 py-2 rounded-pill">
+                <span class="badge bg-success bg-opacity-25 text-white border border-light px-3 py-2 rounded-pill d-none d-md-inline-block">
                     <i class="bi bi-check-circle-fill me-1"></i> Verified
                 </span>
                 {% endif %}
@@ -90,18 +120,35 @@
                     <button class="btn btn-light position-relative rounded-circle p-2" data-bs-toggle="dropdown">
                         <i class="bi bi-bell fs-5"></i>
                         {% if notif_count > 0 %}
-                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="top-notif-badge">
                             {{ notif_count }}
                         </span>
                         {% endif %}
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 p-2" style="width: 300px;">
-                        <li><h6 class="dropdown-header">Notifications</h6></li>
-                        {% for notif in notifications %}
-                            <li><a class="dropdown-item rounded small py-2" href="#">{{ notif.title }}</a></li>
-                        {% empty %}
-                            <li class="text-center text-muted small py-3">No new notifications</li>
-                        {% endfor %}
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 p-0" style="width: 320px; overflow: hidden; z-index: 1050;">
+                        <li class="bg-light p-3 d-flex justify-content-between align-items-center border-bottom">
+                            <h6 class="mb-0 fw-bold text-dark">Notifications</h6>
+                        </li>
+                        <div style="max-height: 300px; overflow-y: auto;">
+                            {% for notif in notifications %}
+                                <li>
+                                    <a class="dropdown-item py-3 border-bottom notif-item {% if not notif.is_read %}bg-light bg-opacity-50{% endif %}" 
+                                       href="#" data-notif-id="{{ notif.id }}">
+                                        <div class="d-flex align-items-start">
+                                            <i class="bi bi-info-circle-fill text-primary mt-1 me-2"></i>
+                                            <div style="white-space: normal;">
+                                                <div class="small {% if not notif.is_read %}fw-bold text-dark{% else %}text-muted{% endif %} notification-text">
+                                                    {{ notif.title }}
+                                                </div>
+                                                <div class="text-muted" style="font-size: 0.7rem;">{{ notif.created_at|timesince }} ago</div>
+                                            </div>
+                                        </div>
+                                    </a>
+                                </li>
+                            {% empty %}
+                                <li class="text-center text-muted small py-4">You're all caught up!</li>
+                            {% endfor %}
+                        </div>
                     </ul>
                 </div>
             </div>
@@ -121,7 +168,6 @@
         </div>
     </div>
 </div>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     document.getElementById('sidebarToggle').addEventListener('click', function() {

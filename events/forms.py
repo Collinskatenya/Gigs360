@@ -1,21 +1,21 @@
 from django import forms
 from django.db.models import Q
-from django.utils import timezone  # <--- CRITICAL IMPORT FOR TIME LOGIC
+from django.utils import timezone
 from django.forms import inlineformset_factory
 from .models import Event, Document, LineItem
-from inventory.models import InventoryItem 
+from inventory.models import InventoryItem
 
 # ==========================================
-# 1. EVENT PLANNING FORM (Refined)
+# 1. EVENT PLANNING FORM
 # ==========================================
 
 class EventForm(forms.ModelForm):
-    # ROBUSTNESS: Start with empty queryset to optimize page load speed.
+    # Virtual field for display only. Saving is handled in the view.
     items = forms.ModelMultipleChoiceField(
         queryset=InventoryItem.objects.none(), 
         widget=forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input'}),
         required=False, 
-        label="Select Equipment (Optional - Can be added later)"
+        label="Select Equipment"
     )
 
     class Meta:
@@ -24,7 +24,7 @@ class EventForm(forms.ModelForm):
             'title', 'event_type', 'start_time', 'end_time', 'location', 
             'description', 'client_name', 'client_contact', 'client_email',
             'staff_in_charge', 'transport_cost', 'labor_cost', 'miscellaneous_cost',
-            'items', 'is_completed'
+            'is_completed'
         ]
         
         widgets = {
@@ -45,44 +45,38 @@ class EventForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
-        # Safely extract user to filter their specific inventory
         user = kwargs.pop('user', None) 
         super(EventForm, self).__init__(*args, **kwargs)
 
         if user:
-            # --- INTELLIGENT INVENTORY FILTER ---
-            # 1. Show items owned by user
-            # 2. Exclude broken items (LOST/DAMAGED)
+            # 1. Filter Inventory: Show User's items + Exclude Broken/Lost
             query = Q(owner=user) & ~Q(status__in=['LOST', 'DAMAGED'])
             
-            # ROBUSTNESS: If editing an event, ensure currently booked items remain 
-            # visible in the list, even if they were marked DAMAGED after booking.
+            # 2. Logic: If editing, include items that are currently assigned to this event
+            # (even if they were marked DAMAGED *after* the event started, we still want to see them here)
             if self.instance.pk:
-                # We access the ManyToMany field directly
-                current_items = self.instance.items.all() 
-                if current_items.exists():
-                     query = query | Q(id__in=current_items.values_list('id', flat=True))
+                # FIX: Use 'manifest' related_name, not 'items'
+                current_item_ids = self.instance.manifest.values_list('item__id', flat=True)
+                if current_item_ids:
+                    query = query | Q(id__in=current_item_ids)
             
-            # Apply the filter to the form field
             self.fields['items'].queryset = InventoryItem.objects.filter(query).distinct()
             
-            # Pre-check boxes if editing
+            # 3. Pre-select checkboxes if editing
             if self.instance.pk:
-                self.fields['items'].initial = self.instance.items.all()
+                self.fields['items'].initial = self.instance.manifest.values_list('item', flat=True)
 
-    # --- TASK 1: FIX TIME TRAVEL BUG ---
     def clean(self):
         cleaned_data = super().clean()
         start_time = cleaned_data.get("start_time")
         end_time = cleaned_data.get("end_time")
 
         if start_time and end_time:
-            # 1. LOGIC CHECK: End before Start?
+            # End before Start
             if end_time <= start_time:
                 self.add_error('end_time', "End time must be after the start time.")
 
-            # 2. REALITY CHECK: Booking in the past?
-            # We allow a small 15-minute buffer for 'just now' bookings to prevent frustration
+            # Past booking check (with 15 min buffer)
             cutoff = timezone.now() - timezone.timedelta(minutes=15)
             if start_time < cutoff:
                 self.add_error('start_time', "You cannot book an event in the past.")
@@ -91,10 +85,17 @@ class EventForm(forms.ModelForm):
 
 
 # ==========================================
-# 2. INVOICING & QUOTE FORMS (Polished)
+# 2. DOCUMENT (QUOTE/INVOICE) FORM
 # ==========================================
 
 class DocumentForm(forms.ModelForm):
+    # Brand Color Picker
+    brand_color = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={'type': 'color', 'class': 'form-control form-control-color', 'title': 'Choose PDF Color'}),
+        label="Document Theme"
+    )
+
     class Meta:
         model = Document
         fields = ['doc_type', 'client_name', 'client_email', 'client_phone', 'issue_date', 'due_date', 'terms', 'notes']
@@ -109,15 +110,19 @@ class DocumentForm(forms.ModelForm):
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Bank Details, M-Pesa, etc.'}),
         }
 
-# Formset for adding multiple items dynamically
+
+# ==========================================
+# 3. LINE ITEM FORMSET
+# ==========================================
+
 LineItemFormSet = inlineformset_factory(
     Document, LineItem,
     fields=('description', 'details', 'quantity', 'unit_price'),
     extra=1,
     can_delete=True,
     widgets={
-        'description': forms.TextInput(attrs={'class': 'form-control fw-bold', 'placeholder': 'Item / Package Name'}),
-        'details': forms.Textarea(attrs={'class': 'form-control', 'rows': 1, 'placeholder': 'Details (e.g. 2 Cameras...)'}),
+        'description': forms.TextInput(attrs={'class': 'form-control fw-bold item-search', 'placeholder': 'Item / Package Name'}),
+        'details': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Specs/Notes'}),
         'quantity': forms.NumberInput(attrs={'class': 'form-control text-center', 'min': 1}),
         'unit_price': forms.NumberInput(attrs={'class': 'form-control text-end', 'placeholder': '0.00'}),
     }

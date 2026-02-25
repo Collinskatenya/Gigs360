@@ -3,149 +3,6 @@
 
 {% block title %}My Documents | Gigs360{% endblock %}
 
-{% block dashboard_content %}
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h3 class="fw-bold" style="color: #003366;">Invoices & Quotes</h3>
-            <p class="text-muted small">Manage your paperwork and get paid.</p>
-        </div>
-        <a href="{% url 'events:event_dashboard' %}" class="btn btn-outline-primary rounded-pill">
-            <i class="bi bi-plus-lg"></i> New Quote via Event
-        </a>
-    </div>
-
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show shadow-sm mb-4" role="alert">
-                {% if 'success' in message.tags %}
-                    <i class="bi bi-check-circle-fill me-2"></i>
-                {% elif 'error' in message.tags %}
-                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                {% endif %}
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        {% endfor %}
-    {% endif %}
-
-    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="bg-light small text-uppercase text-muted fw-bold">
-                    <tr>
-                        <th class="ps-4">Document</th>
-                        <th>Client</th>
-                        <th>Event</th>
-                        <th>Amount</th>
-                        <th>Status</th>
-                        <th class="text-end pe-4">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for doc in documents %}
-                    <tr>
-                        <td class="ps-4">
-                            <div class="fw-bold text-dark">{{ doc.doc_number }}</div>
-                            <div class="small text-muted">{{ doc.get_doc_type_display }} • {{ doc.created_at|date:"M d" }}</div>
-                        </td>
-
-                        <td>
-                            <div class="fw-bold text-dark">{{ doc.client_name }}</div>
-                            <div class="small text-muted">{{ doc.client_phone }}</div>
-                        </td>
-
-                        <td>
-                            {% if doc.event %}
-                                <a href="{% url 'events:update_event' doc.event.id %}" class="text-decoration-none fw-semibold">
-                                    {{ doc.event.title }}
-                                </a>
-                            {% else %}
-                                <span class="text-muted fst-italic">General</span>
-                            {% endif %}
-                        </td>
-
-                        <td class="fw-bold" style="color: #003366;">
-                            KES {{ doc.total_amount|floatformat:2 }}
-                        </td>
-
-                        <td>
-                            {% if doc.status|upper == 'PAID' %}
-                                <span class="badge bg-success-subtle text-success border border-success px-3 rounded-pill">Paid</span>
-                            {% elif doc.status|upper == 'DRAFT' %}
-                                <span class="badge bg-secondary-subtle text-secondary border border-secondary px-3 rounded-pill">Draft</span>
-                            {% elif doc.status|upper == 'SENT' %}
-                                <span class="badge bg-primary-subtle text-primary border border-primary px-3 rounded-pill">Sent</span>
-                            {% else %}
-                                <span class="badge bg-light text-dark border px-3 rounded-pill">{{ doc.get_status_display }}</span>
-                            {% endif %}
-                        </td>
-
-                        <td class="text-end pe-4">
-                            <div class="btn-group shadow-sm" role="group">
-                                <a href="{% url 'events:view_document' doc.id %}" target="_blank" class="btn btn-sm btn-light border" title="Preview">
-                                    <i class="bi bi-eye text-primary"></i>
-                                </a>
-                                
-                                <a href="{% url 'events:generate_pdf' doc.id %}" class="btn btn-sm btn-light border" title="Download">
-                                    <i class="bi bi-download text-dark"></i>
-                                </a>
-
-                                {% if doc.status|upper == 'DRAFT' %}
-                                    <button type="button" class="btn btn-sm btn-light border text-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ doc.id }}" title="Delete">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                {% else %}
-                                    <button class="btn btn-sm btn-light border text-muted" disabled style="cursor: not-allowed;" title="Only Drafts can be deleted">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                {% endif %}
-                            </div>
-
-                            {% if doc.status|upper == 'DRAFT' %}
-                            <div class="modal fade" id="deleteModal{{ doc.id }}" tabindex="-1" aria-hidden="true">
-                                <div class="modal-dialog modal-dialog-centered">
-                                    <div class="modal-content">
-                                        <div class="modal-header bg-danger text-white">
-                                            <h5 class="modal-title fs-6">Delete {{ doc.doc_number }}?</h5>
-                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                                        </div>
-                                        <div class="modal-body text-start">
-                                            <p class="mb-0">Are you sure? This action <strong>cannot be undone</strong>.</p>
-                                        </div>
-                                        <div class="modal-footer py-1">
-                                            <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">Cancel</button>
-                                            
-                                            <form action="{% url 'events:delete_document' doc.id %}" method="POST">
-                                                {% csrf_token %}
-                                                <button type="submit" class="btn btn-sm btn-danger">Yes, Delete</button>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="6" class="text-center py-5">
-                            <div class="text-muted mb-2"><i class="bi bi-file-earmark-text display-4"></i></div>
-                            <h5>No Documents Yet</h5>
-                            <p class="small text-muted">Create a Quote from the Event Operations page to get started.</p>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-{% endblock %}{% extends 'core/dashboard_base.html' %}
-{% load static %}
-
-{% block title %}My Documents | Gigs360{% endblock %}
-
 {% block content %}
 <div class="container-fluid py-4">
     
@@ -162,11 +19,8 @@
     {% if messages %}
         {% for message in messages %}
             <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show shadow-sm mb-4 rounded-3" role="alert">
-                {% if 'success' in message.tags %}
-                    <i class="bi bi-check-circle-fill me-2"></i>
-                {% elif 'error' in message.tags %}
-                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                {% endif %}
+                {% if 'success' in message.tags %}<i class="bi bi-check-circle-fill me-2"></i>{% endif %}
+                {% if 'error' in message.tags %}<i class="bi bi-exclamation-triangle-fill me-2"></i>{% endif %}
                 {{ message }}
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
@@ -230,17 +84,15 @@
                                 <a href="{% url 'events:view_document' doc.id %}" target="_blank" class="btn btn-sm btn-light border" title="Preview">
                                     <i class="bi bi-eye text-primary"></i>
                                 </a>
-                                
-                                <a href="{% url 'events:generate_pdf' doc.id %}" class="btn btn-sm btn-light border" title="Download">
+                                <a href="{% url 'events:generate_pdf' doc.id %}?download=true" class="btn btn-sm btn-light border" title="Download">
                                     <i class="bi bi-download text-dark"></i>
                                 </a>
-
                                 {% if doc.status|upper == 'DRAFT' %}
                                     <button type="button" class="btn btn-sm btn-light border text-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ doc.id }}" title="Delete">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 {% else %}
-                                    <button class="btn btn-sm btn-light border text-muted" disabled style="cursor: not-allowed;" title="Only Drafts can be deleted">
+                                    <button class="btn btn-sm btn-light border text-muted" disabled style="cursor: not-allowed;">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 {% endif %}
@@ -259,7 +111,6 @@
                                         </div>
                                         <div class="modal-footer py-2 bg-light">
                                             <button type="button" class="btn btn-sm btn-light border" data-bs-dismiss="modal">Cancel</button>
-                                            
                                             <form action="{% url 'events:delete_document' doc.id %}" method="POST">
                                                 {% csrf_token %}
                                                 <button type="submit" class="btn btn-sm btn-danger px-3">Yes, Delete</button>

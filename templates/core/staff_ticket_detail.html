@@ -1,0 +1,199 @@
+{% extends 'core/staff_base.html' %}
+{% load static %}
+
+{% block title %}HQ Support Terminal | Gigs360{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-1 text-dark">Thread #{{ ticket.id }}</h3>
+            <p class="text-muted mb-0 small">
+                Client: <strong class="text-dark">{{ ticket.user.username }}</strong>
+                {% if ticket.user.userprofile.is_online %}
+                    <span class="badge bg-success bg-opacity-10 text-success rounded-pill ms-2 border border-success-subtle">
+                        <span class="spinner-grow spinner-grow-sm text-success me-1" style="width: 8px; height: 8px;" role="status"></span>
+                        Online Now
+                    </span>
+                {% else %}
+                    <span class="text-muted ms-2 fst-italic" style="font-size: 0.8rem;">Last seen: {{ ticket.user.userprofile.last_active|timesince }} ago</span>
+                {% endif %}
+                <span class="badge bg-light text-dark border ms-2"><i class="bi bi-tag-fill text-warning me-1"></i>{{ ticket.get_category_display }}</span>
+            </p>
+        </div>
+        <a href="{% url 'staff_dashboard' %}#tickets-tab" class="btn btn-outline-dark rounded-pill px-4 shadow-sm hover-lift">
+            <i class="bi bi-arrow-left me-2"></i>Exit Terminal
+        </a>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-xl-8">
+            <div class="card border-0 shadow-sm rounded-4 d-flex flex-column" style="height: 650px;">
+                <div class="card-header bg-dark text-white border-bottom-0 p-4 rounded-top-4 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0"><i class="bi bi-headset me-2 text-warning"></i>{{ ticket.subject }}</h5>
+                    {% if ticket.status == 'open' %}
+                        <span class="badge bg-danger rounded-pill px-3 shadow-sm">Active Issue</span>
+                    {% else %}
+                        <span class="badge bg-success bg-opacity-25 border border-success text-success rounded-pill px-3">Resolved</span>
+                    {% endif %}
+                </div>
+                
+                <div class="card-body p-4" style="overflow-y: auto; background-color: #f8fafc;" id="adminChatContainer">
+                    {% for msg in ticket.messages.all %}
+                        
+                        {% if msg.is_internal_note %}
+                            <div class="d-flex justify-content-center mb-4">
+                                <div class="bg-warning bg-opacity-10 border border-warning border-opacity-50 text-dark p-2 px-4 rounded-pill shadow-sm small text-center" style="max-width: 80%;">
+                                    <i class="bi bi-eye-slash-fill text-warning me-1"></i> 
+                                    <strong class="text-warning-emphasis">HQ GHOST NOTE (by {{ msg.sender.username }}):</strong> {{ msg.message }}
+                                    <div class="text-muted mt-1" style="font-size: 0.65rem;">{{ msg.created_at|date:"M d, H:i" }}</div>
+                                </div>
+                            </div>
+
+                        {% elif msg.sender != user %}
+                            <div class="d-flex justify-content-start mb-4">
+                                <div class="bg-white text-dark p-3 shadow-sm border" style="max-width: 70%; border-radius: 1rem 1rem 1rem 0;">
+                                    <div class="fw-bold text-dark mb-1 d-flex justify-content-between align-items-center" style="font-size: 0.75rem;">
+                                        <span class="text-primary"><i class="bi bi-person-fill me-1"></i>{{ msg.sender.username }}</span>
+                                    </div>
+                                    <p class="mb-1" style="font-size: 0.95rem;">{{ msg.message }}</p>
+                                    <div class="text-muted text-end mt-1" style="font-size: 0.65rem;">{{ msg.created_at|time:"H:i" }}</div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="d-flex justify-content-end mb-4">
+                                <div class="bg-primary text-white p-3 shadow-sm" style="max-width: 70%; border-radius: 1rem 1rem 0 1rem;">
+                                    <div class="fw-bold text-white-50 mb-1 text-end" style="font-size: 0.7rem;"><i class="bi bi-shield-lock-fill me-1"></i>HQ ({{ msg.sender.username }})</div>
+                                    <p class="mb-1" style="font-size: 0.95rem;">{{ msg.message }}</p>
+                                    <div class="d-flex justify-content-end align-items-center gap-1 mt-1" style="font-size: 0.65rem; opacity: 0.8;">
+                                        <span>{{ msg.created_at|time:"H:i" }}</span>
+                                        {% if msg.is_read %}
+                                            <i class="bi bi-check-all text-white ms-1 fs-6" title="Read {{ msg.read_at|timesince }} ago"></i>
+                                        {% else %}
+                                            <i class="bi bi-check text-white-50 ms-1 fs-6"></i>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                
+                <div class="card-footer bg-white border-top p-3 rounded-bottom-4 z-1">
+                    
+                    {% if ticket.status == 'resolved' %}
+                        <div class="alert alert-warning py-2 px-3 small mb-2 rounded-3 border-0 d-flex align-items-center">
+                            <i class="bi bi-info-circle-fill text-warning me-2 fs-5"></i> 
+                            <div>Ticket is resolved. <strong>Sending a message will automatically reopen it for the user.</strong></div>
+                        </div>
+                    {% else %}
+                        <div class="mb-2 d-flex gap-2 overflow-auto pb-1">
+                            <button class="btn btn-sm btn-outline-secondary rounded-pill quick-reply" data-text="Your gear has been approved and is now live on the marketplace.">Gear Approved</button>
+                            <button class="btn btn-sm btn-outline-secondary rounded-pill quick-reply" data-text="Please update your KRA PIN in your settings so we can verify your account.">Request KYC</button>
+                            <button class="btn btn-sm btn-outline-secondary rounded-pill quick-reply" data-text="We are currently looking into this issue and will update you shortly.">Investigating</button>
+                        </div>
+                    {% endif %}
+                    
+                    <form action="{% url 'staff_ticket_detail' ticket.id %}" method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="reply">
+                        
+                        <div class="form-check form-switch mb-2 ms-2">
+                            <input class="form-check-input" type="checkbox" name="is_internal_note" value="true" id="noteToggle">
+                            <label class="form-check-label small text-muted fw-bold" for="noteToggle">
+                                <i class="bi bi-eye-slash-fill text-warning me-1"></i> Save as Internal HQ Note (Invisible to Client)
+                            </label>
+                        </div>
+
+                        <div class="d-flex align-items-center gap-2">
+                            <input type="text" id="chatInput" name="message" class="form-control form-control-lg bg-light border-0 rounded-pill fs-6" placeholder="{% if ticket.status == 'resolved' %}Type to reopen this ticket...{% else %}Draft HQ Response...{% endif %}" required autocomplete="off">
+                            <button type="submit" id="sendBtn" class="btn btn-dark rounded-circle shadow-sm hover-lift d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                <i class="bi bi-send-fill"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4">
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-4">
+                    <h6 class="fw-bold text-uppercase text-muted mb-3" style="font-size: 0.75rem;"><i class="bi bi-activity me-2"></i>Intelligence Brief</h6>
+                    
+                    <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
+                        <span class="small text-muted">Priority Level</span>
+                        {% if ticket.priority == 'high' %}
+                            <span class="badge bg-danger">Critical</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Standard</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
+                        <span class="small text-muted">Time Created</span>
+                        <span class="fw-bold text-dark small">{{ ticket.created_at|date:"M d, H:i" }}</span>
+                    </div>
+
+                    <div class="d-flex justify-content-between mb-4">
+                        <span class="small text-muted">Last Activity</span>
+                        <span class="fw-bold text-dark small">{{ ticket.last_message_at|timesince }} ago</span>
+                    </div>
+                    
+                    <h6 class="fw-bold text-uppercase text-muted mb-3 mt-4" style="font-size: 0.75rem;"><i class="bi bi-lightning-charge-fill me-2"></i>Resolution Actions</h6>
+                    
+                    {% if ticket.status != 'resolved' %}
+                    <form action="{% url 'staff_ticket_detail' ticket.id %}" method="POST" onsubmit="return confirm('Are you sure you want to close this ticket?');">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="resolve">
+                        <button type="submit" class="btn btn-success w-100 rounded-pill fw-bold hover-lift mb-3 py-2 shadow-sm">
+                            <i class="bi bi-check-circle-fill me-2"></i> Mark as Resolved
+                        </button>
+                    </form>
+                    {% endif %}
+                    
+                    <a href="{% url 'staff_user_manager' %}" class="btn btn-light border w-100 rounded-pill fw-bold hover-lift py-2 text-dark shadow-sm">
+                        <i class="bi bi-person-bounding-box me-2"></i> Client Directory Profile
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Auto-Scroll to bottom
+        var chatBox = document.getElementById("adminChatContainer");
+        if (chatBox) chatBox.scrollTop = chatBox.scrollHeight;
+
+        // Quick Reply logic
+        document.querySelectorAll('.quick-reply').forEach(button => {
+            button.addEventListener('click', function() {
+                document.getElementById('chatInput').value = this.getAttribute('data-text');
+                document.getElementById('chatInput').focus();
+            });
+        });
+
+        // 🚨 UX POLISH: Change button color to Warning if Ghost Note is toggled
+        const noteToggle = document.getElementById('noteToggle');
+        const sendBtn = document.getElementById('sendBtn');
+        const chatInput = document.getElementById('chatInput');
+
+        if(noteToggle && sendBtn && chatInput) {
+            noteToggle.addEventListener('change', function() {
+                if(this.checked) {
+                    sendBtn.classList.remove('btn-dark');
+                    sendBtn.classList.add('btn-warning');
+                    chatInput.placeholder = "Draft internal ghost note...";
+                } else {
+                    sendBtn.classList.remove('btn-warning');
+                    sendBtn.classList.add('btn-dark');
+                    chatInput.placeholder = "Draft HQ Response...";
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

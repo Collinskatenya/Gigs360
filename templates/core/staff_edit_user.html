@@ -1,0 +1,84 @@
+{% extends 'core/staff_base.html' %}
+{% load static %}
+
+{% block title %}Manage User Access | Gigs360 HQ{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1 text-dark">Access Control: {{ target_user.username }}</h2>
+            <p class="text-muted mb-0 small">
+                <i class="bi bi-shield-lock-fill text-danger me-1"></i> Modify employee clearances and platform access.
+            </p>
+        </div>
+        <a href="{% url 'staff_user_manager' %}" class="btn btn-outline-dark rounded-pill px-4 hover-lift">
+            <i class="bi bi-arrow-left me-2"></i>Back to Directory
+        </a>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="fw-bold m-0 text-dark"><i class="bi bi-person-gear me-2"></i>Role Assignments</h6>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="update_roles">
+                        
+                        <div class="form-check form-switch fs-5 mb-4 pb-4 border-bottom">
+                            <input class="form-check-input" type="checkbox" role="switch" id="is_staff" name="is_staff" {% if target_user.is_staff %}checked{% endif %}>
+                            <label class="form-check-label ms-2 fw-bold text-dark" for="is_staff">HQ Command Center Access (Base Staff)</label>
+                            <div class="text-muted small fs-6 ms-2 mt-1">Grants basic login ability to the Enterprise Command Center.</div>
+                        </div>
+
+                        <h6 class="fw-bold text-muted text-uppercase small mb-3">Granular Department Clearances</h6>
+                        
+                        <div class="form-check form-switch mb-4">
+                            <input class="form-check-input" type="checkbox" role="switch" id="role_kyc" name="role_kyc" {% if is_kyc %}checked{% endif %}>
+                            <label class="form-check-label ms-2 fw-bold text-dark" for="role_kyc">Trust & Safety Officer (KYC)</label>
+                            <div class="text-muted small ms-2 mt-1">Allows user to verify KRA PINs, review IDs, and approve vendor accounts.</div>
+                        </div>
+
+                        <div class="form-check form-switch mb-4">
+                            <input class="form-check-input" type="checkbox" role="switch" id="role_support" name="role_support" {% if is_support %}checked{% endif %}>
+                            <label class="form-check-label ms-2 fw-bold text-dark" for="role_support">Operations & Support Agent</label>
+                            <div class="text-muted small ms-2 mt-1">Allows user to read and resolve client support tickets and view the active gigs ledger.</div>
+                        </div>
+
+                        <div class="d-grid mt-5">
+                            <button type="submit" class="btn btn-dark btn-lg rounded-pill fw-bold shadow-sm hover-lift">
+                                <i class="bi bi-save me-2"></i> Apply Security Clearances
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 bg-light">
+                <div class="card-body p-4">
+                    <h6 class="fw-bold text-dark mb-3"><i class="bi bi-info-circle me-2"></i>Security Note</h6>
+                    <p class="small text-muted mb-3">
+                        Assigning <strong>HQ Command Center Access</strong> gives the user access to the staff portal. However, they will only see the specific modules you grant them below.
+                    </p>
+                    <p class="small text-muted mb-0">
+                        <strong>Super Admins</strong> bypass these granular rules and have unconditional access to all modules, including revenue ledgers.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<style>
+    .hover-lift:hover { transform: translateY(-2px); transition: 0.2s; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    .form-switch .form-check-input { width: 3em; height: 1.5em; cursor: pointer; }
+    .form-switch .form-check-input:checked { background-color: #1B2134; border-color: #1B2134; }
+</style>
+{% endblock %}

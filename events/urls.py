@@ -22,16 +22,16 @@ urlpatterns = [
     # 3. DOCUMENT ENGINE
     # ==========================================
     path('documents/', views.document_list, name='document_list'),
-    
-    # Creates a document linked to a specific event
     path('event/<int:event_id>/create-document/', views.create_document, name='create_document'),
 
     # ==========================================
-    # 4. DOCUMENT ACTIONS
+    # 4. DOCUMENT ACTIONS (UUIDs)
     # ==========================================
-    # FIX: Changed <uuid:pk> to <int:pk> to ensure compatibility with standard Django models.
-    # If your Document model explicitly uses UUIDs, you can switch this back.
-    path('document/<int:pk>/pdf/', views.generate_document_pdf, name='generate_pdf'),
-    path('document/<int:pk>/view/', views.generate_document_pdf, name='view_document'), # Re-uses generator for viewing
-    path('document/<int:pk>/delete/', views.delete_document, name='delete_document'),
+    # CRITICAL FIX: Changed name to 'generate_pdf' to perfectly match your HTML template
+    path('document/<uuid:pk>/pdf/', views.generate_document_pdf, name='generate_pdf'),
+    
+    # Required for the "View" button to work
+    path('document/<uuid:pk>/view/', views.generate_document_pdf, name='view_document'), 
+    
+    path('document/<uuid:pk>/delete/', views.delete_document, name='delete_document'),
 ]

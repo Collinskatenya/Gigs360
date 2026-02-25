@@ -1,0 +1,161 @@
+{% extends 'core/dashboard_base.html' %}
+{% block title %}Messages | Gigs360{% endblock %}
+{% block header_title %}Direct Connect{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0 overflow-hidden" style="height: calc(100vh - 80px);">
+    <div class="row g-0 h-100 shadow-sm bg-white m-3 rounded-4 border">
+        
+        <div class="col-md-4 col-lg-4 border-end h-100 d-flex flex-column bg-light">
+            <div class="p-4 border-bottom rounded-top-4">
+                <div class="d-flex bg-white rounded-pill p-1 shadow-sm border">
+                    <a href="?chat={% if active_chat %}{{ active_chat.id }}{% elif tickets %}{{ tickets.first.id }}{% endif %}" class="btn w-50 rounded-pill fw-bold {% if not show_new %}btn-dark{% else %}btn-white text-muted{% endif %}">
+                        <i class="bi bi-inbox me-1"></i> Inbox
+                    </a>
+                    <a href="?new=true" class="btn w-50 rounded-pill fw-bold {% if show_new %}btn-dark{% else %}btn-white text-muted{% endif %}">
+                        <i class="bi bi-pencil-square me-1"></i> New
+                    </a>
+                </div>
+            </div>
+            
+            <div class="list-group list-group-flush overflow-auto flex-grow-1 bg-white">
+                {% for t in tickets %}
+                <a href="?chat={{ t.id }}" class="list-group-item list-group-item-action p-4 border-bottom {% if active_chat and active_chat.id == t.id and not show_new %}bg-primary bg-opacity-10 border-start border-4 border-primary{% endif %}">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="fw-bold text-dark small text-uppercase" style="letter-spacing: 0.5px;">{{ t.get_category_display }}</span>
+                        <small class="text-muted" style="font-size: 0.7rem;">{{ t.last_message_at|timesince }}</small>
+                    </div>
+                    <div class="text-truncate fw-bold text-dark mb-1">{{ t.subject }}</div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="text-truncate small text-muted">Click to view thread...</div>
+                        {% if t.status == 'resolved' %}
+                            <span class="badge bg-success bg-opacity-25 text-success rounded-pill px-2" style="font-size: 0.65rem;">Resolved</span>
+                        {% endif %}
+                    </div>
+                </a>
+                {% empty %}
+                <div class="text-center p-5 text-muted small">No conversations yet.</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="col-md-8 col-lg-8 h-100 d-flex flex-column bg-white position-relative">
+            
+            {% if show_new %}
+                <div class="p-5 d-flex flex-column h-100 overflow-auto" style="background-color: #f8fafc;">
+                    <div class="max-w-md mx-auto w-100" style="max-width: 600px;">
+                        <div class="bg-white p-5 rounded-4 shadow-sm border">
+                            <h4 class="fw-bold text-dark mb-1">Start a New Thread</h4>
+                            <p class="text-muted small mb-4">Send a secure message directly to Gigs360 HQ.</p>
+                            
+                            <form action="{% url 'support_history' %}" method="POST">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="new_ticket">
+                                
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold text-muted">Topic / Category</label>
+                                    <select name="category" class="form-select form-select-lg bg-light border-0" required>
+                                        <option value="technical">Technical Issue / Bug</option>
+                                        <option value="verification">Account Verification</option>
+                                        <option value="billing">Billing & Finance</option>
+                                        <option value="general">General Inquiry</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold text-muted">Subject</label>
+                                    <input type="text" name="subject" class="form-control form-control-lg bg-light border-0" placeholder="E.g., Missing Gear Listing" required>
+                                </div>
+                                <div class="mb-4">
+                                    <label class="form-label small fw-bold text-muted">Your Message</label>
+                                    <textarea name="description" class="form-control bg-light border-0" rows="5" placeholder="Describe how we can help..." required></textarea>
+                                </div>
+                                <div class="text-end">
+                                    <button type="submit" class="btn btn-dark btn-lg rounded-pill px-5 fw-bold hover-lift shadow-sm">Send Message <i class="bi bi-send ms-2"></i></button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+            {% elif active_chat %}
+                <div class="p-3 bg-white border-bottom d-flex align-items-center justify-content-between shadow-sm z-1">
+                    <div class="d-flex align-items-center">
+                        <div class="position-relative me-3">
+                            <div class="rounded-circle bg-dark text-white d-flex align-items-center justify-content-center fw-bold shadow-sm" style="width: 48px; height: 48px;">HQ</div>
+                            <span class="position-absolute bottom-0 end-0 rounded-circle" style="width: 12px; height: 12px; background-color: #28a745; border: 2px solid white; animation: pulse 2s infinite;"></span>
+                        </div>
+                        <div>
+                            <h6 class="mb-0 fw-bold text-dark">{{ active_chat.subject }}</h6>
+                            <small class="text-success fw-bold"><i class="bi bi-shield-check me-1"></i>Official Support Thread</small>
+                        </div>
+                    </div>
+                </div>
+
+                <style>
+                    @keyframes pulse {
+                        0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
+                        70% { box-shadow: 0 0 0 8px rgba(40, 167, 69, 0); }
+                        100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
+                    }
+                </style>
+
+                <div class="flex-grow-1 p-4 overflow-auto d-flex flex-column" id="chatWindow" style="background-color: #f0f2f5;">
+                    {% for msg in active_chat.messages.all %}
+                    {% if not msg.is_internal_note %}
+                    <div class="mb-4 d-flex {% if msg.sender == user %}justify-content-end{% else %}justify-content-start{% endif %}">
+                        <div class="p-3 shadow-sm {% if msg.sender == user %}bg-dark text-white rounded-start-4 rounded-top-4{% else %}bg-white text-dark rounded-end-4 rounded-top-4 border{% endif %}" style="max-width: 75%;">
+                            {% if msg.sender != user %}
+                                <div class="fw-bold text-primary mb-1" style="font-size: 0.7rem;">Gigs360 HQ</div>
+                            {% endif %}
+                            <p class="mb-1" style="font-size: 0.9rem;">{{ msg.message }}</p>
+                            <div class="d-flex align-items-center justify-content-end gap-1 mt-1" style="font-size: 0.65rem; opacity: 0.7;">
+                                <span>{{ msg.created_at|time:"H:i" }}</span>
+                                {% if msg.sender == user %}
+                                    <i class="bi {% if msg.is_read %}bi-check-all text-info{% else %}bi-check text-light{% endif %} fs-6 ms-1"></i>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+
+                <div class="p-3 bg-white border-top z-1">
+                    {% if active_chat.status == 'resolved' %}
+                        <div class="alert alert-warning py-2 px-3 small mb-2 rounded-3 border-0 d-flex align-items-center">
+                            <i class="bi bi-info-circle-fill text-warning me-2 fs-5"></i> 
+                            <div>This thread was marked as resolved. <strong>Sending a reply will automatically reopen it.</strong></div>
+                        </div>
+                    {% endif %}
+                    <form action="{% url 'support_history' %}?chat={{ active_chat.id }}" method="POST" class="d-flex gap-2 align-items-center">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="reply">
+                        <input type="text" name="message" class="form-control form-control-lg rounded-pill border bg-light px-4 fs-6" placeholder="{% if active_chat.status == 'resolved' %}Type to reopen this issue...{% else %}Type your reply...{% endif %}" required autocomplete="off">
+                        <button type="submit" class="btn btn-primary rounded-circle shadow-sm d-flex justify-content-center align-items-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-send-fill fs-5"></i>
+                        </button>
+                    </form>
+                </div>
+            
+            {% else %}
+                <div class="m-auto text-center" style="background-color: #f8fafc; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                    <div class="bg-white rounded-circle d-inline-flex p-4 shadow-sm mb-3">
+                        <i class="bi bi-chat-quote display-4 text-primary"></i>
+                    </div>
+                    <h4 class="fw-bold text-dark">HQ Direct Connect</h4>
+                    <p class="text-muted small">Select a conversation or start a new thread.</p>
+                    <a href="?new=true" class="btn btn-outline-dark rounded-pill px-4 mt-3 shadow-sm hover-lift">Compose Message</a>
+                </div>
+            {% endif %}
+            
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var chatBox = document.getElementById("chatWindow");
+        if (chatBox) chatBox.scrollTop = chatBox.scrollHeight;
+    });
+</script>
+{% endblock %}

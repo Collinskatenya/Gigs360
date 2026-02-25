@@ -1,0 +1,80 @@
+{% extends 'core/staff_base.html' %}
+{% load static %}
+
+{% block title %}Active Gigs Tracker | Gigs360 HQ{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1 text-dark">Active Gigs Tracker</h2>
+            <p class="text-muted mb-0 small">
+                <i class="bi bi-calendar-event-fill text-primary me-1"></i>
+                Total Lifetime Gigs: <strong class="text-dark">{{ total_gigs }}</strong> | 
+                Upcoming/Active: <strong class="text-success">{{ active_gigs }}</strong>
+            </p>
+        </div>
+        <a href="{% url 'staff_dashboard' %}" class="btn btn-outline-dark rounded-pill px-4 hover-lift">
+            <i class="bi bi-arrow-left me-2"></i>Back to Command
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light text-muted small text-uppercase fw-bold">
+                        <tr>
+                            <th class="ps-4 py-3 border-0">Gig Details</th>
+                            <th class="py-3 border-0">Start Date</th>
+                            <th class="py-3 border-0">End Date</th>
+                            <th class="py-3 border-0">Status</th>
+                            <th class="text-end pe-4 py-3 border-0">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for event in all_events %}
+                        <tr>
+                            <td class="ps-4 py-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-primary bg-opacity-10 rounded p-2 me-3 text-primary border border-primary-subtle">
+                                        <i class="bi bi-camera-reels"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold text-dark">{{ event.name|default:"Gig Event" }}</div>
+                                        <div class="small text-muted font-monospace" style="font-size: 0.75rem;">ID: #{{ event.id }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-dark small"><i class="bi bi-clock me-1 text-muted"></i> {{ event.start_time|date:"M d, Y H:i" }}</td>
+                            <td class="text-dark small"><i class="bi bi-clock me-1 text-muted"></i> {{ event.end_time|date:"M d, Y H:i" }}</td>
+                            <td>
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle px-2 py-1">Recorded</span>
+                            </td>
+                            <td class="text-end pe-4">
+                                <button class="btn btn-sm btn-light text-primary border rounded-pill" title="View Details">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5 text-muted">
+                                <i class="bi bi-calendar-x display-4 text-secondary opacity-25"></i>
+                                <p class="mt-3 mb-0">No gigs have been booked on the platform yet.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<style>
+    .hover-lift:hover { transform: translateY(-2px); transition: 0.2s; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+</style>
+{% endblock %}

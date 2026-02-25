@@ -4,40 +4,81 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.db import transaction
+from django.db.models import Q
 from django.conf import settings 
 import json
 from django.utils import timezone
 
 # MODELS & FORMS
-from .models import InventoryItem
+from .models import InventoryItem, Category, ItemImage # 🚨 Added ItemImage and Category
 from .forms import InventoryItemForm
-from core.models import Notification  # Ensure this import works with your structure
+from core.models import Notification
 
-# -------------------------------------------------------------------------
-# 1. GEAR LOCKER MANAGEMENT (With Paywall Logic)
-# -------------------------------------------------------------------------
+# =========================================================================
+# 0. THE DISCOVERY HUB (Phase 3: Public Marketplace)
+# =========================================================================
+
+def marketplace_hub(request):
+    """ 
+    Open-Door Browsing: No login required. TikTok-style public access to view gear.
+    Includes the Global Search Engine (Filters for categories, dates, locations).
+    """
+    # Only show gear that vendors have marked as 'published'
+    items = InventoryItem.objects.filter(is_published=True).select_related('owner', 'category').order_by('-created_at')
+    
+    # Global Search Engine Logic
+    query = request.GET.get('q')
+    location = request.GET.get('location')
+    category_slug = request.GET.get('category')
+
+    if query:
+        items = items.filter(Q(name__icontains=query) | Q(description__icontains=query))
+    if location:
+        items = items.filter(search_location__icontains=location)
+    if category_slug:
+        items = items.filter(category__slug=category_slug)
+
+    context = {
+        'items': items,
+        'categories': Category.objects.all(),
+        'search_query': query,
+        'location_query': location,
+        'title': 'Discovery Hub | Gigs360'
+    }
+    return render(request, 'inventory/marketplace.html', context)
+
+def public_asset_showroom(request, slug):
+    """ 
+    Dynamic Asset Showroom: High-converting public product page. 
+    Uses the SEO Slug for clean URLs.
+    """
+    item = get_object_or_404(InventoryItem, slug=slug, is_published=True)
+    gallery = item.gallery_images.all() # Fetch the new multi-image gallery
+    
+    context = {
+        'item': item,
+        'gallery': gallery,
+        'title': f"Rent {item.name} | Gigs360"
+    }
+    return render(request, 'inventory/asset_showroom.html', context)
+
+
+# =========================================================================
+# 1. GEAR LOCKER MANAGEMENT (Internal Vendor Operations)
+# =========================================================================
 
 # --- HELPER: CHECK LIMITS ---
 def check_inventory_limit(user):
-    """
-    Returns (True, limit) if user can add more items.
-    Returns (False, limit) if user reached their cap.
-    """
-    # 1. Get Current Count
+    """ Returns (True, limit) if user can add more items. """
     current_count = InventoryItem.objects.filter(owner=user).count()
-    
-    # 2. Get User Plan (Safely)
     try:
-        user_plan = user.userprofile.plan_tier.upper() # Use 'plan_tier' based on previous models
+        user_plan = user.userprofile.plan.upper() 
     except AttributeError:
         user_plan = 'FREE'
 
-    # 3. Get Limit from Settings
-    # Define this in settings.py: INVENTORY_LIMITS = {'FREE': 15, 'PRO': 100, 'ENTERPRISE': float('inf')}
     limits = getattr(settings, 'INVENTORY_LIMITS', {'FREE': 15, 'PRO': 100, 'ENTERPRISE': float('inf')})
     limit = limits.get(user_plan, 15)
     
-    # 4. Check Limit
     if limit != float('inf') and current_count >= limit:
         return False, limit
     return True, limit
@@ -46,13 +87,11 @@ def check_inventory_limit(user):
 def inventory_list(request):
     """ Shows all items owned by the user. """
     items = InventoryItem.objects.filter(owner=request.user).order_by('-created_at')
-    
     can_add, limit = check_inventory_limit(request.user)
-    current_count = items.count()
     
     context = {
         'items': items,
-        'current_count': current_count,
+        'current_count': items.count(),
         'limit': limit if limit != float('inf') else "Unlimited"
     }
     return render(request, 'inventory/inventory_list.html', context)
@@ -64,21 +103,14 @@ def add_item(request):
     
     if not can_add:
         try:
-            user_plan = request.user.userprofile.plan_tier.upper()
+            user_plan = request.user.userprofile.plan.upper()
         except:
             user_plan = 'FREE'
             
         next_package = "Pro" if user_plan == 'FREE' else "Enterprise"
-
-        messages.error(
-            request, 
-            f"🔒 Limit Reached: You have hit the {limit} item limit. Upgrade to {next_package} to add more gear."
-        )
-
-        # Auto-Create Notification
+        messages.error(request, f"🔒 Limit Reached: You have hit the {limit} item limit. Upgrade to {next_package} to add more gear.")
         Notification.objects.create(
-            user=request.user,
-            title="Inventory Limit Reached",
+            user=request.user, title="Inventory Limit Reached",
             message=f"Your gear locker is full ({limit} items). Upgrade to {next_package} to continue growing.",
             notification_type='warning'
         )
@@ -91,6 +123,12 @@ def add_item(request):
             item = form.save(commit=False)
             item.owner = request.user
             item.save()
+            
+            # 🚨 INNOVATION: Save multiple gallery images if uploaded
+            if 'gallery_images' in request.FILES:
+                for f in request.FILES.getlist('gallery_images'):
+                    ItemImage.objects.create(item=item, image=f)
+
             messages.success(request, f"{item.name} added to Gear Locker!")
             return redirect('inventory:inventory_list')
     else:
@@ -106,6 +144,12 @@ def update_item(request, pk):
         form = InventoryItemForm(request.POST, request.FILES, instance=item)
         if form.is_valid():
             form.save()
+            
+            # 🚨 INNOVATION: Append new gallery images
+            if 'gallery_images' in request.FILES:
+                for f in request.FILES.getlist('gallery_images'):
+                    ItemImage.objects.create(item=item, image=f)
+                    
             messages.success(request, f"{item.name} updated successfully!")
             return redirect('inventory:inventory_list')
     else:
@@ -115,6 +159,7 @@ def update_item(request, pk):
 
 @login_required
 def item_detail(request, pk):
+    """ INTERNAL detail view for the gear owner. """
     try:
         item = InventoryItem.objects.get(pk=pk, owner=request.user)
     except (InventoryItem.DoesNotExist, ValueError):
@@ -136,53 +181,39 @@ def delete_item(request, pk):
     return redirect('inventory:inventory_list')
 
 
-# -------------------------------------------------------------------------
+# =========================================================================
 # 2. RAPID SCANNER (SECURE & ROBUST)
-# -------------------------------------------------------------------------
+# =========================================================================
 
 @login_required
 def rapid_scan(request):
-    """ Renders the In-App Scanner UI. """
     return render(request, 'inventory/rapid_scan.html')
 
 @login_required
 @require_POST
 def api_process_scan(request):
-    """ 
-    Secure API: Toggles item status (Available <-> Rented).
-    Uses qr_code_id (UUID) to prevent ID guessing.
-    """
+    """ Secure API: Toggles item status (Available <-> Rented). """
     try:
         data = json.loads(request.body)
-        qr_uuid = data.get('qr_uuid') # JS sends 'qr_uuid'
+        qr_uuid = data.get('qr_uuid') 
 
         if not qr_uuid:
             return JsonResponse({'success': False, 'message': 'No QR data received.'})
 
-        # 1. SECURITY: Lookup by UUID AND Owner
-        # Use select_for_update to handle rapid-fire scans gracefully.
         with transaction.atomic():
-            item = InventoryItem.objects.select_for_update().get(
-                qr_code_id=qr_uuid, 
-                owner=request.user
-            )
+            item = InventoryItem.objects.select_for_update().get(qr_code_id=qr_uuid, owner=request.user)
             
-            # 2. TOGGLE LOGIC
             status_upper = str(item.status).upper()
-            
             if status_upper == 'AVAILABLE':
                 item.status = 'RENTED'
                 msg = "Checked Out"
                 new_status = 'RENTED'
             else:
-                # If RENTED, LOST, etc -> Return to Stock
                 item.status = 'AVAILABLE'
                 msg = "Returned to Stock"
                 new_status = 'AVAILABLE'
             
             item.last_scanned_at = timezone.now()
-            # If you have a 'last_scanned_by' field, set it here:
-            # item.last_scanned_by = request.user 
             item.save()
 
             return JsonResponse({
@@ -194,31 +225,23 @@ def api_process_scan(request):
             })
 
     except InventoryItem.DoesNotExist:
-        return JsonResponse({
-            'success': False, 
-            'message': "Item not found or you are not the owner."
-        })
+        return JsonResponse({'success': False, 'message': "Item not found or you are not the owner."})
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)})
 
 # --- PUBLIC LOST & FOUND VIEW ---
 
 def public_item_verify(request, qr_uuid):
-    """
-    Public page for strangers who scan the QR code.
-    """
+    """ Public page for strangers who scan the QR code. """
     item = get_object_or_404(InventoryItem, qr_code_id=qr_uuid)
 
-    # 1. If Owner scans with standard camera -> Redirect to secure management
     if request.user.is_authenticated and item.owner == request.user:
         return redirect('inventory:item_detail', pk=item.id)
 
-    # 2. If Stranger -> Show Lost & Found info
     context = {
         'item': item,
         'item_name': item.name,
         'owner_contact': item.owner.email or "support@gigs360.co.ke", 
         'company_name': "Gigs360 Creative Services",
     }
-    # FIX: Renamed from public_lost_found.html to verify_asset.html
     return render(request, 'inventory/verify_asset.html', context)

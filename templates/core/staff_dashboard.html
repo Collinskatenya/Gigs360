@@ -1,4 +1,4 @@
-{% extends 'core/dashboard_base.html' %}
+{% extends 'core/staff_base.html' %}
 {% load static %}
 {% load humanize %}
 
@@ -14,11 +14,6 @@
                 <i class="bi bi-shield-lock-fill text-warning me-1"></i>
                 System Version 1.0.8 | Logged in as <strong class="text-dark">{{ user.username }}</strong>
             </p>
-        </div>
-        <div class="d-flex gap-2">
-            <a href="/admin/" target="_blank" class="btn btn-dark shadow-sm rounded-pill px-4 hover-lift" style="background-color: #0f172a; border-color: #0f172a;">
-                <i class="bi bi-database-fill-gear me-2"></i>Django Admin
-            </a>
         </div>
     </div>
 
@@ -41,8 +36,9 @@
         </div>
         {% endif %}
         
+        {% if user.is_superuser or 'KYC Officer' in user_groups %}
         <div class="col-xl-3 col-md-6">
-            <div class="card h-100 border-0 shadow-sm rounded-4" style="border-left: 5px solid #0f172a !important;">
+            <a href="{% url 'staff_user_manager' %}" class="card h-100 border-0 shadow-sm rounded-4 text-decoration-none hover-lift" style="border-left: 5px solid #0f172a !important;">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <small class="text-uppercase fw-bold text-muted">Total Users</small>
@@ -53,11 +49,13 @@
                     <h2 class="fw-bold mb-0 text-dark">{{ total_users }}</h2>
                     <div class="small mt-2 text-muted">Freelancers & Agencies</div>
                 </div>
-            </div>
+            </a>
         </div>
+        {% endif %}
 
+        {% if user.is_superuser or 'Support Agent' in user_groups %}
         <div class="col-xl-3 col-md-6">
-            <div class="card h-100 border-0 shadow-sm rounded-4" style="border-left: 5px solid #0d6efd !important;">
+            <a href="{% url 'staff_gigs_tracker' %}" class="card h-100 border-0 shadow-sm rounded-4 text-decoration-none hover-lift" style="border-left: 5px solid #0d6efd !important;">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <small class="text-uppercase fw-bold text-muted">Active Gigs</small>
@@ -68,11 +66,12 @@
                     <h2 class="fw-bold mb-0 text-dark">{{ active_events }}</h2>
                     <div class="small mt-2 text-muted">Happening Now</div>
                 </div>
-            </div>
+            </a>
         </div>
+        {% endif %}
 
         <div class="col-xl-3 col-md-6">
-            <div class="card h-100 border-0 shadow-sm rounded-4" style="border-left: 5px solid #d9a60e !important;">
+            <a href="#work-queue" class="card h-100 border-0 shadow-sm rounded-4 text-decoration-none hover-lift" style="border-left: 5px solid #d9a60e !important;">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <small class="text-uppercase fw-bold text-muted">Action Items</small>
@@ -83,14 +82,15 @@
                     <h2 class="fw-bold mb-0 text-dark">{{ pending_count|add:support_count }}</h2>
                     <div class="small mt-2 text-muted">Pending Reviews</div>
                 </div>
-            </div>
+            </a>
         </div>
     </div>
 
     <h5 class="fw-bold text-dark mb-3">Management Consoles</h5>
     <div class="row g-3 mb-5">
+        {% if user.is_superuser or 'KYC Officer' in user_groups %}
         <div class="col-md-3">
-            <a href="#" class="card h-100 border-0 shadow-sm text-decoration-none hover-lift rounded-4">
+            <a href="{% url 'staff_user_manager' %}" class="card h-100 border-0 shadow-sm text-decoration-none hover-lift rounded-4">
                 <div class="card-body d-flex align-items-center">
                     <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-3 me-3">
                         <i class="bi bi-people fs-4"></i>
@@ -102,8 +102,10 @@
                 </div>
             </a>
         </div>
+        {% endif %}
+        
         <div class="col-md-3">
-            <a href="#" class="card h-100 border-0 shadow-sm text-decoration-none hover-lift rounded-4">
+            <a href="{% url 'staff_master_inventory' %}" class="card h-100 border-0 shadow-sm text-decoration-none hover-lift rounded-4">
                 <div class="card-body d-flex align-items-center">
                     <div class="bg-success bg-opacity-10 text-success rounded-circle p-3 me-3">
                         <i class="bi bi-box-seam fs-4"></i>
@@ -115,6 +117,8 @@
                 </div>
             </a>
         </div>
+        
+        {% if user.is_superuser %}
         <div class="col-md-3">
             <a href="#" class="card h-100 border-0 shadow-sm text-decoration-none hover-lift rounded-4">
                 <div class="card-body d-flex align-items-center">
@@ -128,8 +132,9 @@
                 </div>
             </a>
         </div>
+
         <div class="col-md-3">
-            <a href="#" class="card h-100 border-0 shadow-sm text-decoration-none hover-lift rounded-4">
+            <a href="{% url 'staff_security_logs' %}" class="card h-100 border-0 shadow-sm text-decoration-none hover-lift rounded-4">
                 <div class="card-body d-flex align-items-center">
                     <div class="bg-danger bg-opacity-10 text-danger rounded-circle p-3 me-3">
                         <i class="bi bi-shield-x fs-4"></i>
@@ -141,9 +146,10 @@
                 </div>
             </a>
         </div>
+        {% endif %}
     </div>
 
-    <div class="row g-4">
+    <div class="row g-4" id="work-queue">
         
         <div class="col-lg-8">
             <div class="card border-0 shadow-sm rounded-4 h-100">
@@ -151,17 +157,26 @@
                     <h6 class="fw-bold m-0 text-dark"><i class="bi bi-inbox-fill me-2"></i>Work Queue</h6>
                     
                     <ul class="nav nav-pills card-header-pills" role="tablist">
+                        {% if user.is_superuser or 'KYC Officer' in user_groups %}
                         <li class="nav-item">
                             <a class="nav-link active py-1 px-3 small rounded-pill" data-bs-toggle="tab" href="#kyc-tab">KYC ({{ pending_count }})</a>
                         </li>
+                        {% endif %}
+                        
+                        {% if user.is_superuser or 'Support Agent' in user_groups %}
                         <li class="nav-item">
-                            <a class="nav-link py-1 px-3 small rounded-pill" data-bs-toggle="tab" href="#tickets-tab">Support ({{ support_count }})</a>
+                            <a class="nav-link {% if not user.is_superuser and 'KYC Officer' not in user_groups %}active{% endif %} py-1 px-3 small rounded-pill" data-bs-toggle="tab" href="#tickets-tab">Active ({{ support_count }})</a>
                         </li>
+                        <li class="nav-item ms-1">
+                            <a class="nav-link py-1 px-3 small rounded-pill bg-light text-muted" data-bs-toggle="tab" href="#resolved-tab"><i class="bi bi-archive-fill me-1"></i>Resolved</a>
+                        </li>
+                        {% endif %}
                     </ul>
                 </div>
 
                 <div class="card-body p-0 tab-content">
                     
+                    {% if user.is_superuser or 'KYC Officer' in user_groups %}
                     <div class="tab-pane fade show active" id="kyc-tab">
                         <div class="table-responsive">
                             <table class="table table-hover align-middle mb-0">
@@ -174,21 +189,21 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for user in pending_users %}
+                                    {% for pending_user in pending_users %}
                                     <tr>
                                         <td class="ps-4">
                                             <div class="d-flex align-items-center">
                                                 <div class="bg-light rounded-circle p-2 me-3 text-dark"><i class="bi bi-building"></i></div>
                                                 <div>
-                                                    <div class="fw-bold text-dark">{{ user.username }}</div>
-                                                    <div class="small text-muted">{{ user.email }}</div>
+                                                    <div class="fw-bold text-dark">{{ pending_user.username }}</div>
+                                                    <div class="small text-muted">{{ pending_user.email }}</div>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td class="font-monospace text-dark small">{{ user.userprofile.kra_pin }}</td>
+                                        <td class="font-monospace text-dark small">{{ pending_user.userprofile.kra_pin }}</td>
                                         <td><span class="badge bg-warning bg-opacity-10 text-warning border border-warning-subtle">Pending</span></td>
                                         <td class="text-end pe-4">
-                                            <a href="{% url 'verify_user' user.id %}" class="btn btn-sm btn-dark px-3 rounded-pill">
+                                            <a href="{% url 'verify_user' pending_user.id %}" class="btn btn-sm btn-dark px-3 rounded-pill">
                                                 Verify
                                             </a>
                                         </td>
@@ -203,8 +218,10 @@
                             </table>
                         </div>
                     </div>
+                    {% endif %}
 
-                    <div class="tab-pane fade" id="tickets-tab">
+                    {% if user.is_superuser or 'Support Agent' in user_groups %}
+                    <div class="tab-pane fade {% if not user.is_superuser and 'KYC Officer' not in user_groups %}show active{% endif %}" id="tickets-tab">
                         <div class="table-responsive">
                             <table class="table table-hover align-middle mb-0">
                                 <thead class="bg-light text-muted small text-uppercase fw-bold">
@@ -225,7 +242,12 @@
                                                 <span class="badge bg-info bg-opacity-10 text-info border border-info-subtle">Normal</span>
                                             {% endif %}
                                         </td>
-                                        <td class="text-end pe-4"><button class="btn btn-sm btn-outline-dark rounded-pill">Resolve</button></td>
+                                        
+                                        <td class="text-end pe-4">
+                                            <a href="{% url 'staff_ticket_detail' ticket.id %}" class="btn btn-sm btn-dark rounded-pill px-3 shadow-sm">
+                                                <i class="bi bi-chat-dots me-1"></i> Open Chat
+                                            </a>
+                                        </td>
                                     </tr>
                                     {% empty %}
                                     <tr><td colspan="4" class="text-center py-5 text-muted">No open tickets.</td></tr>
@@ -235,10 +257,41 @@
                         </div>
                     </div>
 
+                    <div class="tab-pane fade" id="resolved-tab">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="bg-light text-muted small text-uppercase fw-bold">
+                                    <tr><th class="ps-4 border-0">Subject</th><th class="border-0">User</th><th class="border-0">Closed</th><th class="text-end pe-4 border-0">Action</th></tr>
+                                </thead>
+                                <tbody>
+                                    {% for ticket in resolved_queue %}
+                                    <tr>
+                                        <td class="ps-4">
+                                            <div class="fw-bold text-dark text-decoration-line-through opacity-75">{{ ticket.subject }}</div>
+                                            <small class="text-muted">{{ ticket.get_category_display }}</small>
+                                        </td>
+                                        <td>{{ ticket.user.username }}</td>
+                                        <td><small class="text-muted">{{ ticket.last_message_at|timesince }} ago</small></td>
+                                        <td class="text-end pe-4">
+                                            <a href="{% url 'staff_ticket_detail' ticket.id %}" class="btn btn-sm btn-light border rounded-pill px-3 shadow-sm text-dark hover-lift">
+                                                <i class="bi bi-eye me-1"></i> Review
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr><td colspan="4" class="text-center py-5 text-muted">No resolved tickets yet.</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+
                 </div>
             </div>
         </div>
 
+        {% if user.is_superuser %}
         <div class="col-lg-4">
             <div class="card border-0 shadow-sm rounded-4 h-100">
                 <div class="card-header bg-white py-3 border-bottom">
@@ -264,6 +317,7 @@
                 </div>
             </div>
         </div>
+        {% endif %}
 
     </div>
 </div>

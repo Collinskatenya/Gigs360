@@ -1,0 +1,155 @@
+{% extends 'core/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    
+    <div class="bg-dark text-white py-5 px-4 text-center position-relative" style="background-color: #0f172a !important; overflow: hidden;">
+        <div class="position-absolute top-0 start-0 w-100 h-100" style="background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.15), transparent 40%); pointer-events: none;"></div>
+        
+        <div class="position-relative z-index-1 max-w-75 mx-auto" style="max-width: 800px;">
+            <h1 class="fw-bold display-5 mb-3 text-white">Find the Perfect Gear.</h1>
+            <p class="lead text-white-50 mb-5">Browse thousands of cameras, sound systems, and event assets from verified vendors across Kenya.</p>
+            
+            <form method="GET" action="{% url 'inventory:marketplace_hub' %}" class="bg-white p-2 rounded-pill shadow-lg d-flex flex-column flex-md-row gap-2">
+                
+                <div class="input-group input-group-lg border-0 bg-transparent flex-grow-1">
+                    <span class="input-group-text bg-transparent border-0 text-muted ps-4"><i class="bi bi-search"></i></span>
+                    <input type="text" name="q" value="{{ search_query|default:'' }}" class="form-control border-0 shadow-none bg-transparent fs-6" placeholder="What are you looking for? (e.g. Sony A7S III)">
+                </div>
+                
+                <div class="d-none d-md-block border-end my-2"></div>
+                
+                <div class="input-group input-group-lg border-0 bg-transparent" style="max-width: 250px;">
+                    <span class="input-group-text bg-transparent border-0 text-muted"><i class="bi bi-geo-alt-fill"></i></span>
+                    <input type="text" name="location" value="{{ location_query|default:'' }}" class="form-control border-0 shadow-none bg-transparent fs-6" placeholder="City (e.g. Nairobi)">
+                </div>
+
+                <div class="d-none d-md-block border-end my-2"></div>
+
+                <div class="input-group input-group-lg border-0 bg-transparent" style="max-width: 200px;">
+                    <select name="category" class="form-select border-0 shadow-none bg-transparent fs-6 text-muted">
+                        <option value="">All Categories</option>
+                        {% for cat in categories %}
+                            <option value="{{ cat.slug }}" {% if request.GET.category == cat.slug %}selected{% endif %}>{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" style="background-color: #3b82f6; border: none;">
+                    Search
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="container-fluid px-4 py-5">
+        
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="fw-bold text-dark mb-0">
+                {% if search_query or location_query or request.GET.category %}
+                    Search Results <span class="badge bg-secondary ms-2 fs-6 rounded-pill">{{ items.count }} found</span>
+                {% else %}
+                    Featured Gear
+                {% endif %}
+            </h4>
+            
+            {% if search_query or location_query or request.GET.category %}
+                <a href="{% url 'inventory:marketplace_hub' %}" class="btn btn-sm btn-outline-danger rounded-pill fw-bold px-3">
+                    <i class="bi bi-x-circle me-1"></i> Clear Filters
+                </a>
+            {% endif %}
+        </div>
+
+        {% if items %}
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 g-4">
+                {% for item in items %}
+                    <div class="col">
+                        <a href="{% url 'inventory:public_asset_showroom' item.slug %}" class="text-decoration-none">
+                            <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden hover-lift card-product">
+                                <div class="position-relative bg-light" style="aspect-ratio: 4/3;">
+                                    {% if item.image %}
+                                        <img src="{{ item.image.url }}" class="w-100 h-100 object-fit-cover" alt="{{ item.name }}">
+                                    {% else %}
+                                        <div class="w-100 h-100 d-flex flex-column align-items-center justify-content-center text-muted">
+                                            <i class="bi {{ item.category.icon|default:'bi-camera' }} display-4 opacity-50"></i>
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <div class="position-absolute top-0 start-0 m-3">
+                                        <span class="badge bg-dark bg-opacity-75 backdrop-blur rounded-pill border border-light border-opacity-25 px-3 py-2 shadow-sm">
+                                            {{ item.category.name }}
+                                        </span>
+                                    </div>
+                                    
+                                    {% if item.search_location %}
+                                    <div class="position-absolute bottom-0 start-0 m-3">
+                                        <span class="badge bg-white text-dark rounded-pill px-3 py-2 shadow-sm fw-bold">
+                                            <i class="bi bi-geo-alt-fill text-danger me-1"></i> {{ item.search_location }}
+                                        </span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="card-body p-4 d-flex flex-column">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h5 class="card-title fw-bold text-dark mb-0 text-truncate pe-2" style="max-width: 80%;">{{ item.name }}</h5>
+                                        {% if item.owner.userprofile.is_verified %}
+                                            <i class="bi bi-patch-check-fill text-success fs-5" title="Verified Vendor"></i>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <p class="small text-muted mb-3 text-truncate">
+                                        By {{ item.owner.userprofile.business_name|default:item.owner.username }}
+                                    </p>
+                                    
+                                    <div class="mt-auto d-flex justify-content-between align-items-end pt-3 border-top">
+                                        <div>
+                                            <span class="text-muted small d-block" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Daily Rate</span>
+                                            {% if item.daily_rate %}
+                                                <span class="fs-5 fw-bold text-dark">KES {{ item.daily_rate|floatformat:0 }}</span>
+                                            {% else %}
+                                                <span class="fs-5 fw-bold text-success">Contact</span>
+                                            {% endif %}
+                                        </div>
+                                        <span class="btn btn-sm btn-dark rounded-pill px-3 fw-bold">View</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="py-5 text-center">
+                <div class="d-inline-flex align-items-center justify-content-center bg-light rounded-circle mb-4" style="width: 100px; height: 100px;">
+                    <i class="bi bi-search display-4 text-muted"></i>
+                </div>
+                <h4 class="fw-bold text-dark">No gear found</h4>
+                <p class="text-muted mx-auto" style="max-width: 400px;">We couldn't find any items matching your search criteria. Try adjusting your filters or location.</p>
+                <a href="{% url 'inventory:marketplace_hub' %}" class="btn btn-primary rounded-pill px-4 mt-2" style="background-color: #0f172a; border-color: #0f172a;">
+                    Browse All Gear
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    /* Premium UI Effects */
+    .hover-lift { transition: transform 0.25s cubic-bezier(0.1, 0.7, 0.1, 1), box-shadow 0.25s cubic-bezier(0.1, 0.7, 0.1, 1); }
+    .hover-lift:hover { transform: translateY(-5px); box-shadow: 0 1rem 3rem rgba(0,0,0,.15)!important; }
+    .backdrop-blur { backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+    
+    /* Search Form Responsiveness */
+    .form-control:focus, .form-select:focus { box-shadow: none; outline: none; }
+    
+    @media (max-width: 768px) {
+        .rounded-pill { border-radius: 1rem !important; }
+        .input-group { border-bottom: 1px solid #e2e8f0; padding-bottom: 0.5rem; }
+        .input-group:last-of-type { border-bottom: none; }
+    }
+</style>
+{% endblock %}

@@ -1,14 +1,27 @@
 from django import forms
 from .models import InventoryItem
 
+# 🚨 DJANGO 5.x FIX: Custom widget explicitly allowing multiple files
+class MultipleFileInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
+
 class InventoryItemForm(forms.ModelForm):
+    # 🚨 Using the custom Django 5 widget here
+    gallery_images = forms.FileField(
+        widget=MultipleFileInput(attrs={'multiple': True, 'class': 'form-control'}),
+        required=False,
+        label="Showroom Gallery (Optional)",
+        help_text="Upload up to 5 additional angles for the public marketplace."
+    )
+
     class Meta:
         model = InventoryItem
         fields = [
             'name', 'category', 'tracking_type', 'quantity', 
             'daily_rate', 'replacement_value', 
-            'serial_number', 'asset_tag', 'color', 'weight', # New Traceability Fields
-            'condition', 'description', 'image'
+            'serial_number', 'asset_tag', 'color', 'weight',
+            'condition', 'description', 'image',
+            'is_published', 'search_location'
         ]
         
         widgets = {
@@ -17,7 +30,7 @@ class InventoryItemForm(forms.ModelForm):
             'tracking_type': forms.Select(attrs={'class': 'form-select'}),
             'quantity': forms.NumberInput(attrs={'class': 'form-control'}),
             
-            # Financials (Updated placeholders to show they are optional)
+            # Financials
             'daily_rate': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'KES (Optional)'}),
             'replacement_value': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Insurance Value (Optional)'}),
             
@@ -30,4 +43,8 @@ class InventoryItemForm(forms.ModelForm):
             
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Notes on condition or specs...'}),
             'image': forms.FileInput(attrs={'class': 'form-control'}),
+
+            # Marketplace Hub Toggles
+            'is_published': forms.CheckboxInput(attrs={'class': 'form-check-input', 'role': 'switch'}),
+            'search_location': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Nairobi, Nakuru'}),
         }
