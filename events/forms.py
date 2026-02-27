@@ -24,7 +24,7 @@ class EventForm(forms.ModelForm):
             'title', 'event_type', 'start_time', 'end_time', 'location', 
             'description', 'client_name', 'client_contact', 'client_email',
             'staff_in_charge', 'transport_cost', 'labor_cost', 'miscellaneous_cost',
-            'is_completed'
+            'status', 'is_completed' # 🚨 PHASE 4 INJECTION: Added 'status'
         ]
         
         widgets = {
@@ -41,6 +41,7 @@ class EventForm(forms.ModelForm):
             'transport_cost': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0.00'}),
             'labor_cost': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0.00'}),
             'miscellaneous_cost': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0.00'}),
+            'status': forms.Select(attrs={'class': 'form-select fw-bold text-primary'}), # 🚨 PHASE 4 UI
             'is_completed': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
@@ -53,9 +54,7 @@ class EventForm(forms.ModelForm):
             query = Q(owner=user) & ~Q(status__in=['LOST', 'DAMAGED'])
             
             # 2. Logic: If editing, include items that are currently assigned to this event
-            # (even if they were marked DAMAGED *after* the event started, we still want to see them here)
             if self.instance.pk:
-                # FIX: Use 'manifest' related_name, not 'items'
                 current_item_ids = self.instance.manifest.values_list('item__id', flat=True)
                 if current_item_ids:
                     query = query | Q(id__in=current_item_ids)
@@ -78,7 +77,8 @@ class EventForm(forms.ModelForm):
 
             # Past booking check (with 15 min buffer)
             cutoff = timezone.now() - timezone.timedelta(minutes=15)
-            if start_time < cutoff:
+            # Only trigger past booking error if it's a NEW event being created
+            if not self.instance.pk and start_time < cutoff:
                 self.add_error('start_time', "You cannot book an event in the past.")
 
         return cleaned_data

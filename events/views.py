@@ -6,6 +6,7 @@ from django.http import JsonResponse, HttpResponse
 from django.utils.dateparse import parse_datetime
 from django.views.decorators.http import require_POST
 from django.conf import settings 
+from django.db.models import Q  # 🚨 Added for complex calendar queries
 import json 
 
 # FORMS & MODELS
@@ -14,7 +15,7 @@ from .models import Event, EventItem, Document
 from inventory.models import InventoryItem 
 from core.models import Notification, UserProfile
 
-# UTILS (We will create this next)
+# UTILS
 from .utils import render_to_pdf
 
 # --- CONFIGURATION ---
@@ -28,18 +29,19 @@ DASHBOARD_URL_NAME = 'events:event_dashboard'
 def event_dashboard(request):
     """
     Displays the Event Operations Dashboard.
+    🚨 PHASE 4 UPGRADE: Now filters out CANCELLED events from the active timeline.
     """
     now = timezone.now()
     
     upcoming = Event.objects.filter(
         user=request.user, 
         end_time__gte=now
-    ).prefetch_related('manifest__item').order_by('start_time')
+    ).exclude(status='CANCELLED').prefetch_related('manifest__item').order_by('start_time')
     
     past = Event.objects.filter(
         user=request.user, 
         end_time__lt=now
-    ).order_by('-end_time')
+    ).exclude(status='CANCELLED').order_by('-end_time')
     
     # --- INVENTORY STATS & LIMITS ---
     inventory_count = InventoryItem.objects.filter(owner=request.user).count()
@@ -73,6 +75,7 @@ def event_dashboard(request):
 def check_gear_availability(request):
     """
     API Endpoint for Smart Availability check.
+    🚨 PHASE 4 UPGRADE: True mathematical overlap prevention. Considers Gig Status!
     """
     start_str = request.GET.get('start')
     end_str = request.GET.get('end')
@@ -84,16 +87,20 @@ def check_gear_availability(request):
         new_start = parse_datetime(start_str)
         new_end = parse_datetime(end_str)
 
+        # 1. Find overlapping time windows, IGNORING cancelled gigs
         conflicting_events = Event.objects.filter(
             user=request.user,
-            start_time__lt=new_end,
-            end_time__gt=new_start
-        )
+            start_time__lt=new_end, # Math: Start A < End B
+            end_time__gt=new_start  # Math: End A > Start B
+        ).exclude(status='CANCELLED')
 
+        # 2. Find gear inside those gigs that is actually locked
         booked_item_ids = EventItem.objects.filter(
-            event__in=conflicting_events
+            event__in=conflicting_events,
+            status__in=['APPROVED', 'DISPATCHED'] # Only block if vendor actually approved it
         ).values_list('item_id', flat=True)
 
+        # 3. Return what is left
         available_items = InventoryItem.objects.filter(
             owner=request.user
         ).exclude(
@@ -117,42 +124,48 @@ def create_event(request):
             end_date = form.cleaned_data['end_time']
             selected_items = form.cleaned_data.get('items', []) 
             
-            # --- SMART CHECK ---
+            # --- 🚨 PHASE 4: THE SAAS CART CHECK ---
             if selected_items:
                 overlapping_events = Event.objects.filter(
                     user=request.user,
-                    start_time__lte=end_date,
-                    end_time__gte=start_date
-                )
+                    start_time__lt=end_date,
+                    end_time__gt=start_date
+                ).exclude(status='CANCELLED')
                 
                 conflict_items = EventItem.objects.filter(
                     event__in=overlapping_events,
-                    item__in=selected_items
+                    item__in=selected_items,
+                    status__in=['APPROVED', 'DISPATCHED']
                 ).select_related('item')
                 
                 if conflict_items.exists():
                     names = ", ".join([r.item.name for r in conflict_items])
-                    messages.error(request, f"❌ Booking Failed: The following items are already booked: {names}")
+                    messages.error(request, f"❌ Booking Failed: The following items are already booked for these dates: {names}")
                     return render(request, 'events/create_event.html', {
                         'form': form,
-                        'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY 
+                        'google_maps_api_key': getattr(settings, 'GOOGLE_MAPS_API_KEY', '')
                     })
 
+            # Save the Anchor (Event)
             event = form.save(commit=False)
             event.user = request.user
             event.updated_by = request.user
+            # Automatically set to APPROVED since the Vendor is creating their own gig
+            event.status = 'APPROVED' 
             event.save()
             
+            # Save the Line Items (Gear)
             if selected_items:
                 for item in selected_items:
                     EventItem.objects.create(
                         event=event, 
                         item=item,
                         handled_by=request.user, 
+                        status='APPROVED', # Activates the double-booking lock
                         condition_return='GOOD' 
                     )
             
-            messages.success(request, f"Event '{event.title}' created successfully!")
+            messages.success(request, f"Gig '{event.title}' created and calendar locked!")
             return redirect(DASHBOARD_URL_NAME)
             
     else:
@@ -160,7 +173,7 @@ def create_event(request):
 
     return render(request, 'events/create_event.html', {
         'form': form,
-        'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY 
+        'google_maps_api_key': getattr(settings, 'GOOGLE_MAPS_API_KEY', '') 
     })
 
 @login_required
@@ -168,7 +181,7 @@ def update_event(request, pk):
     try:
         event = Event.objects.get(pk=pk, user=request.user)
     except Event.DoesNotExist:
-        messages.warning(request, "⚠️ That event could not be found.")
+        messages.warning(request, "⚠️ That gig could not be found.")
         return redirect(DASHBOARD_URL_NAME)
 
     if request.method == 'POST':
@@ -182,22 +195,23 @@ def update_event(request, pk):
             if new_items:
                 overlapping_events = Event.objects.filter(
                     user=request.user,
-                    start_time__lte=new_end,
-                    end_time__gte=new_start
-                ).exclude(id=event.id)
+                    start_time__lt=new_end,
+                    end_time__gt=new_start
+                ).exclude(id=event.id).exclude(status='CANCELLED')
                 
                 conflict_items = EventItem.objects.filter(
                     event__in=overlapping_events,
-                    item__in=new_items
+                    item__in=new_items,
+                    status__in=['APPROVED', 'DISPATCHED']
                 )
                 
                 if conflict_items.exists():
                     names = ", ".join([r.item.name for r in conflict_items])
-                    messages.error(request, f"❌ Update Failed: Conflict with items: {names}")
+                    messages.error(request, f"❌ Update Failed: Time conflict with items: {names}")
                     return render(request, 'events/create_event.html', {
                         'form': form, 
-                        'title': 'Edit Event',
-                        'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY
+                        'title': 'Edit Gig Ops',
+                        'google_maps_api_key': getattr(settings, 'GOOGLE_MAPS_API_KEY', '')
                     })
 
             event_obj = form.save()
@@ -209,38 +223,52 @@ def update_event(request, pk):
             items_to_add = new_item_ids - current_manifest_ids
             for item_id in items_to_add:
                 item_obj = next(i for i in new_items if i.id == item_id)
-                EventItem.objects.create(event=event, item=item_obj, handled_by=request.user)
+                EventItem.objects.create(event=event, item=item_obj, handled_by=request.user, status='APPROVED')
 
             items_to_remove = current_manifest_ids - new_item_ids
             if items_to_remove:
+                # Instead of deleting, we could mark them 'REJECTED', but deletion is fine for Vendor self-management.
                 EventItem.objects.filter(event=event, item_id__in=items_to_remove).delete()
 
-            messages.success(request, "Event updated successfully!")
+            messages.success(request, "Gig parameters updated successfully!")
             return redirect(DASHBOARD_URL_NAME)
     else:
         form = EventForm(instance=event, user=request.user)
 
     return render(request, 'events/create_event.html', {
         'form': form, 
-        'title': 'Edit Event',
-        'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY
+        'title': 'Edit Gig Ops',
+        'google_maps_api_key': getattr(settings, 'GOOGLE_MAPS_API_KEY', '')
     })
 
 @login_required
 @require_POST
 def delete_event(request, pk):
+    """
+    🚨 PHASE 4 UPGRADE: Safe Deletion Protocol.
+    Do not delete historical data; soft-cancel it instead if it has financial weight.
+    """
     event = get_object_or_404(Event, pk=pk, user=request.user)
     title = event.title
-    event.delete()
     
-    Notification.objects.create(
-        user=request.user,
-        title="Event Cancelled",
-        message=f"Event '{title}' was cancelled. Gear returned to inventory.",
-        notification_type='warning'
-    )
+    # If the gig has generated invoices or is already completed, Soft Cancel it to preserve the ledger.
+    if event.status in ['COMPLETED', 'ACTIVE'] or event.documents.exists():
+        event.status = 'CANCELLED'
+        event.save()
+        # Release the gear back to the calendar
+        event.manifest.update(status='REJECTED')
+        
+        Notification.objects.create(
+            user=request.user, title="Gig Cancelled",
+            message=f"Gig '{title}' was cancelled. The accounting ledger was preserved and gear was released.",
+            notification_type='warning'
+        )
+        messages.success(request, f"Gig '{title}' safely cancelled.")
+    else:
+        # Hard delete is fine for drafts or mistakes
+        event.delete()
+        messages.success(request, f"Draft Gig '{title}' deleted permanently.")
 
-    messages.success(request, f"Event '{title}' deleted.")
     return redirect('events:event_dashboard')
 
 @login_required
@@ -248,12 +276,15 @@ def event_report(request, pk):
     try:
         event = Event.objects.get(pk=pk, user=request.user)
     except Event.DoesNotExist:
-        messages.warning(request, "⚠️ Event not found.")
+        messages.warning(request, "⚠️ Gig not found.")
         return redirect(DASHBOARD_URL_NAME)
 
     manifest_items = event.manifest.select_related('item').all()
-    total_gear_value = sum(record.item.daily_rate or 0 for record in manifest_items)
-    duration = max((event.end_time - event.start_time).days, 1)
+    # 🚨 PHASE 4: Use the locked_daily_rate for accurate historical reporting
+    total_gear_value = sum(record.locked_daily_rate for record in manifest_items)
+    
+    # Correct duration calculation
+    duration = (event.end_time.date() - event.start_time.date()).days + 1
     
     context = {
         'event': event,
@@ -329,10 +360,11 @@ def create_document(request, event_id):
             manifest_items = event.manifest.all()
             for record in manifest_items:
                 formset_initial.append({
-                    'description': record.item.name,
-                    'details': record.item.description[:100] if record.item.description else "", 
+                    'description': record.item.name if record.item else record.item_name_snapshot,
+                    'details': record.item.description[:100] if record.item and record.item.description else "", 
                     'quantity': 1,
-                    'unit_price': record.item.daily_rate or 0,
+                    # 🚨 PHASE 4: Pull from the locked rate, not the current inventory rate!
+                    'unit_price': record.locked_daily_rate,
                 })
                 
         form = DocumentForm(initial=initial_data)

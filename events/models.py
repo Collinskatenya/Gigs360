@@ -2,6 +2,8 @@ from django.db import models
 from django.conf import settings
 from django.utils.http import urlencode
 from django.utils import timezone
+from django.core.exceptions import ValidationError
+from django.utils.translation import gettext_lazy as _
 import uuid
 import math
 
@@ -22,6 +24,16 @@ class Event(models.Model):
         ('OTHER', 'Other'),
     ]
 
+    # 🚨 PHASE 4: Status Workflow Injected
+    STATUS_CHOICES = [
+        ('DRAFT', 'Draft (Planning)'),
+        ('REQUESTED', 'Requested (Awaiting Approval)'),
+        ('APPROVED', 'Approved (Ready)'),
+        ('ACTIVE', 'Active (In Progress)'),
+        ('COMPLETED', 'Completed'),
+        ('CANCELLED', 'Cancelled'),
+    ]
+
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='events')
     title = models.CharField(max_length=200, help_text="e.g. Katenya & Faith Wedding")
     event_type = models.CharField(max_length=50, choices=EVENT_TYPES, default='OTHER')
@@ -30,6 +42,10 @@ class Event(models.Model):
     location = models.CharField(max_length=200)
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
+    
+    # Workflow & Tracking
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='DRAFT')
+    is_completed = models.BooleanField(default=False) # Preserved existing feature
     
     client_name = models.CharField(max_length=100, blank=True)
     client_contact = models.CharField(max_length=50, blank=True)
@@ -40,7 +56,6 @@ class Event(models.Model):
     labor_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     miscellaneous_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
-    is_completed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     updated_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='event_edits')
@@ -69,9 +84,23 @@ class Event(models.Model):
 
 class EventItem(models.Model):
     """The 'Manifest' - Tracks equipment assigned to an event."""
+    
+    # 🚨 PHASE 4: Granular Asset Status
+    ITEM_STATUS_CHOICES = [
+        ('PENDING', 'Pending Approval'),
+        ('APPROVED', 'Approved by Vendor'),
+        ('REJECTED', 'Rejected / Unavailable'),
+        ('DISPATCHED', 'Scanned Out (Active)'),
+        ('RETURNED', 'Scanned In (Completed)'),
+    ]
+    
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='manifest')
     item = models.ForeignKey('inventory.InventoryItem', on_delete=models.SET_NULL, null=True, blank=True) 
     item_name_snapshot = models.CharField(max_length=200, blank=True)
+    
+    # 🚨 PHASE 4: Financial Locking
+    locked_daily_rate = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    status = models.CharField(max_length=20, choices=ITEM_STATUS_CHOICES, default='PENDING')
 
     scanned_out_at = models.DateTimeField(null=True, blank=True)
     scanned_in_at = models.DateTimeField(null=True, blank=True)
@@ -81,9 +110,42 @@ class EventItem(models.Model):
     condition_return = models.CharField(max_length=20, default='GOOD', choices=CONDITION_CHOICES)
 
     def save(self, *args, **kwargs):
+        # Capture Snapshot Name
         if self.item and not self.item_name_snapshot:
             self.item_name_snapshot = self.item.name
+            
+        # Capture Financial Snapshot (Price Locking)
+        if not self.pk and self.item and hasattr(self.item, 'daily_rate'):
+            self.locked_daily_rate = self.item.daily_rate
+            
         super().save(*args, **kwargs)
+
+    # 🚨 PHASE 4: THE ANTI-DOUBLE-BOOKING PROTOCOL
+    def clean(self):
+        super().clean()
+        if hasattr(self, 'event') and self.event and self.item and self.status in ['APPROVED', 'DISPATCHED']:
+            # Check calendar timeline for mathematical overlaps
+            overlapping_bookings = EventItem.objects.filter(
+                item=self.item,
+                status__in=['APPROVED', 'DISPATCHED'],
+                event__start_time__lt=self.event.end_time,
+                event__end_time__gt=self.event.start_time
+            ).exclude(pk=self.pk)
+
+            if overlapping_bookings.exists():
+                raise ValidationError(
+                    _("CRITICAL OVERLAP: This gear is already booked or active for another gig during this specific time window.")
+                )
+
+    @property
+    def total_cost(self):
+        """Calculates item cost based on event duration and locked rate"""
+        if self.event.start_time and self.event.end_time:
+            delta = self.event.end_time - self.event.start_time
+            # Count parts of days as a full rental day
+            days = max(1, math.ceil(delta.total_seconds() / 86400))
+            return self.locked_daily_rate * days
+        return 0
 
     def __str__(self):
         name = self.item.name if self.item else f"{self.item_name_snapshot} (Deleted)"

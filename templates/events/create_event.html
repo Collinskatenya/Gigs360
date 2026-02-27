@@ -170,27 +170,40 @@
 
                 <div class="card border-0 shadow-sm rounded-4 mb-5">
                     <div class="card-body p-4">
-                        <h6 class="text-uppercase text-muted fw-bold small mb-3 border-bottom pb-2">Financials & Notes</h6>
+                        <h6 class="text-uppercase text-muted fw-bold small mb-3 border-bottom pb-2">Logistics & Workflow</h6>
                         <div class="row g-3">
                             <div class="col-12">
                                 <label class="form-label small fw-bold text-muted">Internal Notes / Description</label>
                                 {{ form.description }}
                             </div>
-                            <div class="col-md-4">
+                            
+                            <div class="col-md-12 mt-4">
+                                <div class="p-3 bg-primary bg-opacity-10 border border-primary border-opacity-25 rounded-3 d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <label class="form-label small fw-bold text-primary mb-1">Gig Status</label>
+                                        <p class="small text-muted mb-0">Updating this to 'Approved' or 'Active' will mathematically lock the gear to prevent double bookings.</p>
+                                    </div>
+                                    <div style="width: 250px;">
+                                        {{ form.status }}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4 mt-4">
                                 <label class="form-label small fw-bold text-muted">Transport</label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-white text-muted">KES</span>
                                     {{ form.transport_cost }}
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-4 mt-4">
                                 <label class="form-label small fw-bold text-muted">Labor</label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-white text-muted">KES</span>
                                     {{ form.labor_cost }}
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-4 mt-4">
                                 <label class="form-label small fw-bold text-muted">Misc</label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-white text-muted">KES</span>
@@ -202,7 +215,7 @@
                         {% if form.instance.pk %}
                         <div class="form-check form-switch mt-4 p-3 bg-light rounded border">
                             {{ form.is_completed }}
-                            <label class="form-check-label fw-bold ms-2" for="id_is_completed">Mark Gig as Completed</label>
+                            <label class="form-check-label fw-bold ms-2" for="id_is_completed">Archive & Mark Gig as Completed</label>
                         </div>
                         {% endif %}
                     </div>
@@ -233,7 +246,7 @@
             </div>
             <div class="modal-body">
                 <p class="mb-0">Are you sure you want to cancel <strong>{{ form.instance.title }}</strong>?</p>
-                <p class="small text-muted mt-2 mb-0">This will remove the event and <strong>immediately release all booked gear</strong> back to the inventory.</p>
+                <p class="small text-muted mt-2 mb-0">This will soft-cancel the event and <strong>immediately release all booked gear</strong> back to your inventory calendar.</p>
             </div>
             <div class="modal-footer bg-light">
                 <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Keep Event</button>
@@ -252,10 +265,9 @@
 // --- 1. GOOGLE MAPS AUTOCOMPLETE ---
 function initAutocomplete() {
     const locationInput = document.getElementById('id_location'); 
-    // Safety check to prevent console errors if API key is missing
     if (locationInput && window.google && window.google.maps) {
         const options = {
-            componentRestrictions: { country: ["ke", "ug", "tz", "rw"] }, // Focus on East Africa
+            componentRestrictions: { country: ["ke", "ug", "tz", "rw"] }, 
             fields: ["formatted_address", "geometry", "name"],
             strictBounds: false,
         };
@@ -349,7 +361,6 @@ document.addEventListener('DOMContentLoaded', function() {
         statusBadge.className = 'badge bg-warning text-dark rounded-pill';
         statusBadge.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Checking...';
 
-        // Use current event ID for exclusion (if editing)
         let currentEventId = '';
         {% if form.instance.pk %}
         currentEventId = '{{ form.instance.pk }}';
@@ -377,13 +388,11 @@ document.addEventListener('DOMContentLoaded', function() {
                             indicator.innerHTML = '<i class="bi bi-check-circle-fill text-success"></i>';
                         } else {
                             // Conflict
-                            // If user already selected it (editing), keep it enabled but warn
                             if (!checkbox.checked) {
                                 label.classList.add('bg-danger-subtle', 'opacity-50');
                                 checkbox.disabled = true;
                                 indicator.innerHTML = '<small class="text-danger fw-bold ms-2">Booked</small>';
                             } else {
-                                // Conflict but currently selected (Double Booking Warning)
                                 indicator.innerHTML = '<small class="text-warning fw-bold ms-2">Conflict!</small>';
                             }
                         }
@@ -405,7 +414,6 @@ document.addEventListener('DOMContentLoaded', function() {
         startInput.addEventListener('change', checkAvailability);
         endInput.addEventListener('change', checkAvailability);
         
-        // Run once on load for edit mode
         if(startInput.value && endInput.value) {
             calculateDuration();
         }
@@ -422,7 +430,6 @@ document.addEventListener('DOMContentLoaded', function() {
         width: 1.2em; height: 1.2em; margin-top: 0; cursor: pointer;
     }
     
-    /* Make the bottom bar sticky */
     body { padding-bottom: 80px; }
 </style>
 {% endblock %}
