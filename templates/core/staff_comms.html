@@ -1,0 +1,278 @@
+{% extends 'core/staff_base.html' %}
+{% load static %}
+
+{% block title %}Comms Module | Gigs360 HQ{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <a href="{% url 'staff_dashboard' %}" class="text-decoration-none text-muted mb-2 d-inline-block small fw-bold hover-lift">
+                <i class="bi bi-arrow-left me-1"></i> Back to Command Center
+            </a>
+            <h2 class="fw-bold mb-1 text-dark">
+                <i class="bi bi-broadcast text-warning me-2"></i>Comms Module
+            </h2>
+            <p class="text-muted mb-0 small">Deploy platform-wide broadcasts or target specific individuals by Email/KRA PIN.</p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="fw-bold m-0 text-dark"><i class="bi bi-send-fill text-primary me-2"></i>New Payload</h6>
+                </div>
+                <div class="card-body p-4">
+                    <form action="{% url 'staff_comms_module' %}" method="POST" id="comms-form">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label class="form-label fw-bold small text-muted text-uppercase">Target Segment</label>
+                            <select name="target_role" id="target_role" class="form-select bg-light border-0 rounded-3 py-2 fw-medium text-dark shadow-sm" required>
+                                <option value="ALL">🌐 All Users (Global Broadcast)</option>
+                                <option value="VENDOR">🏢 Vendors & Agencies Only</option>
+                                <option value="FREELANCER">📸 Freelance Professionals Only</option>
+                                <option value="CLIENT">🛒 Standard Clients Only</option>
+                                <option value="INDIVIDUAL" class="fw-bold text-primary">🎯 Specific Individuals (Search)</option>
+                            </select>
+                        </div>
+
+                        <div id="individual-search-ui" class="mb-4 p-3 bg-white border border-primary-subtle rounded-4 shadow-sm" style="display: none; position: relative;">
+                            <label class="form-label fw-bold small text-primary text-uppercase"><i class="bi bi-search me-1"></i> Search Target Profile</label>
+                            <div class="input-group mb-2 shadow-sm rounded-3 overflow-hidden">
+                                <span class="input-group-text bg-light border-0"><i class="bi bi-envelope-at text-muted"></i></span>
+                                <input type="text" id="live-search-input" class="form-control bg-light border-0" placeholder="Type Email or KRA PIN..." autocomplete="off">
+                            </div>
+                            
+                            <div id="search-results-box" class="list-group position-absolute w-100 shadow-lg border-0" style="display:none; z-index: 1000; max-height: 250px; overflow-y: auto; top: 85px; left: 0;">
+                                </div>
+
+                            <label class="form-label fw-bold small text-muted text-uppercase mt-3">Selected Targets <span id="target-count" class="badge bg-primary rounded-pill ms-1">0</span></label>
+                            <div id="selected-targets-container" class="d-flex flex-wrap gap-2 p-2 border rounded-3 bg-light min-vh-25">
+                                <span class="text-muted small fst-italic w-100 text-center py-2" id="empty-target-msg">No individuals targeted yet.</span>
+                                </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-muted text-uppercase">Broadcast Title</label>
+                            <input type="text" name="title" class="form-control bg-light border-0 rounded-3 py-2 shadow-sm" placeholder="e.g., Account Verification Required" required>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold small text-muted text-uppercase">Message Payload</label>
+                            <textarea name="message_content" class="form-control bg-light border-0 rounded-3 shadow-sm" rows="5" placeholder="Type your message here. Make it impactful..." required></textarea>
+                        </div>
+
+                        <div class="form-check form-switch mb-4 p-3 bg-light rounded-3 border">
+                            <input class="form-check-input ms-1" type="checkbox" role="switch" id="is_sent" name="is_sent" style="transform: scale(1.2);">
+                            <label class="form-check-label fw-bold text-danger ms-3" for="is_sent">
+                                <i class="bi bi-fire me-1"></i> ARM WEAPON (Send Immediately)
+                            </label>
+                            <div class="small text-muted ms-3 mt-1" style="font-size: 0.75rem;">If unchecked, this saves as a Draft. If checked, it fires instantly to the targets.</div>
+                        </div>
+
+                        <button type="submit" id="submit-btn" class="btn w-100 fw-bold py-3 text-white rounded-pill shadow-sm hover-lift" style="background-color: #0f172a;">
+                            Execute Launch Sequence <i class="bi bi-rocket-takeoff ms-1"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold m-0 text-dark"><i class="bi bi-clock-history text-secondary me-2"></i>Broadcast History</h6>
+                    <span class="badge bg-light text-dark border">{{ broadcast_history.count }} Logs</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" style="table-layout: fixed; width: 100%;">
+                            <thead class="bg-light text-muted small text-uppercase fw-bold">
+                                <tr>
+                                    <th class="ps-4 border-0 py-3" style="width: 40%;">Campaign</th>
+                                    <th class="border-0" style="width: 30%;">Audience</th>
+                                    <th class="border-0" style="width: 15%;">Status</th>
+                                    <th class="text-end pe-4 border-0" style="width: 15%; white-space: nowrap;">Date / Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for msg in broadcast_history %}
+                                <tr>
+                                    <td class="ps-4 py-3">
+                                        <div class="fw-bold text-dark text-truncate">{{ msg.title }}</div>
+                                        <div class="small text-muted text-truncate" title="{{ msg.message_content }}">
+                                            {{ msg.message_content }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary bg-opacity-10 text-dark border border-secondary-subtle text-truncate d-inline-block" style="max-width: 100%;">
+                                            <i class="bi bi-bullseye me-1 opacity-50"></i> {{ msg.get_target_role_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if msg.is_sent %}
+                                            <span class="badge bg-success bg-opacity-10 text-success border border-success-subtle px-2 py-1">
+                                                <i class="bi bi-check-all"></i> Sent
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-warning bg-opacity-10 text-warning border border-warning-subtle px-2 py-1">
+                                                <i class="bi bi-pencil-square"></i> Draft
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end pe-4 align-middle" style="white-space: nowrap;">
+                                        <div class="fw-bold text-dark small">{{ msg.created_at|date:"M d, Y" }}</div>
+                                        <div class="text-muted" style="font-size: 0.7rem;"><i class="bi bi-clock me-1"></i>{{ msg.created_at|time:"H:i" }}</div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-5 text-muted">
+                                        <i class="bi bi-mailbox display-4 opacity-25 d-block mb-3"></i>
+                                        No broadcasts have been logged yet.<br>
+                                        <small>Your history will appear here.</small>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hover-lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .hover-lift:hover { transform: translateY(-2px); text-decoration: none; }
+    .form-control:focus, .form-select:focus { box-shadow: none; border: 1px solid #0d6efd !important; }
+    textarea { resize: none; }
+    .target-pill { animation: fadeIn 0.3s ease-in-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const roleSelect = document.getElementById('target_role');
+        const searchUI = document.getElementById('individual-search-ui');
+        const searchInput = document.getElementById('live-search-input');
+        const resultsBox = document.getElementById('search-results-box');
+        const selectedContainer = document.getElementById('selected-targets-container');
+        const emptyMsg = document.getElementById('empty-target-msg');
+        const targetCount = document.getElementById('target-count');
+        const submitBtn = document.getElementById('submit-btn');
+        let selectedIds = new Set();
+
+        // 1. Toggle Search UI
+        roleSelect.addEventListener('change', function() {
+            if (this.value === 'INDIVIDUAL') {
+                searchUI.style.display = 'block';
+                checkValidation();
+            } else {
+                searchUI.style.display = 'none';
+                submitBtn.disabled = false;
+            }
+        });
+
+        // 2. Prevent Submission if Individual is selected but no one is added
+        function checkValidation() {
+            if (roleSelect.value === 'INDIVIDUAL' && selectedIds.size === 0) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Select at least 1 Target';
+            } else {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Execute Launch Sequence <i class="bi bi-rocket-takeoff ms-1"></i>';
+            }
+        }
+
+        // 3. Live AJAX Search
+        searchInput.addEventListener('input', function() {
+            const query = this.value.trim();
+            if (query.length < 3) {
+                resultsBox.style.display = 'none';
+                return;
+            }
+
+            fetch(`{% url 'search_users_ajax' %}?q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    resultsBox.innerHTML = '';
+                    if (data.users.length > 0) {
+                        data.users.forEach(u => {
+                            // Don't show if already selected
+                            if(selectedIds.has(u.id.toString())) return; 
+
+                            const item = document.createElement('a');
+                            item.href = "#";
+                            item.className = "list-group-item list-group-item-action py-3 px-3 border-bottom";
+                            item.innerHTML = `
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="fw-bold text-dark mb-1"><i class="bi bi-person-fill text-primary me-1"></i>${u.email}</div>
+                                        <small class="text-muted border rounded-pill px-2 py-1"><i class="bi bi-upc-scan me-1"></i>${u.kra}</small>
+                                    </div>
+                                    <span class="btn btn-sm btn-outline-primary rounded-pill">Add <i class="bi bi-plus"></i></span>
+                                </div>
+                            `;
+                            
+                            // Add click event to item
+                            item.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                addUserPill(u.id, u.email);
+                                searchInput.value = '';
+                                resultsBox.style.display = 'none';
+                            });
+                            
+                            resultsBox.appendChild(item);
+                        });
+                        resultsBox.style.display = 'block';
+                    } else {
+                        resultsBox.innerHTML = '<div class="list-group-item text-muted text-center py-3">No matching profiles found.</div>';
+                        resultsBox.style.display = 'block';
+                    }
+                });
+        });
+
+        // 4. Create UI Pill
+        function addUserPill(id, email) {
+            if (selectedIds.has(id.toString())) return;
+            selectedIds.add(id.toString());
+            
+            if (emptyMsg) emptyMsg.style.display = 'none';
+
+            const pill = document.createElement('div');
+            pill.className = "target-pill bg-white border border-primary text-dark px-3 py-2 rounded-pill shadow-sm d-flex align-items-center";
+            pill.innerHTML = `
+                <i class="bi bi-check-circle-fill text-success me-2"></i> 
+                <span class="fw-medium me-3">${email}</span>
+                <input type="hidden" name="selected_users" value="${id}">
+                <button type="button" class="btn-close btn-close-sm" aria-label="Remove"></button>
+            `;
+
+            // Remove logic
+            pill.querySelector('.btn-close').addEventListener('click', function() {
+                pill.remove();
+                selectedIds.delete(id.toString());
+                targetCount.innerText = selectedIds.size;
+                if (selectedIds.size === 0) emptyMsg.style.display = 'block';
+                checkValidation();
+            });
+
+            selectedContainer.appendChild(pill);
+            targetCount.innerText = selectedIds.size;
+            checkValidation();
+        }
+
+        // Hide results if clicking outside
+        document.addEventListener('click', function(e) {
+            if (!searchInput.contains(e.target) && !resultsBox.contains(e.target)) {
+                resultsBox.style.display = 'none';
+            }
+        });
+    });
+</script>
+{% endblock %}

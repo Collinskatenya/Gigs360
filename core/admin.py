@@ -1,8 +1,14 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth import get_user_model
-# FIX: Added SupportTicket and TicketMessage to imports
-from .models import UserProfile, SecurityLog, Notification, HolidayMessage, SupportTicket, TicketMessage
+from django.db.models import Q
+
+# 🚨 PHASE 6: Added SystemConfiguration and updated imports
+from .models import (
+    UserProfile, SecurityLog, Notification, HolidayMessage, 
+    SupportTicket, TicketMessage, SystemConfiguration
+)
+from inventory.models import InventoryItem  # Needed for safe category querying
 
 User = get_user_model()
 
@@ -33,7 +39,7 @@ class UserProfileInline(admin.StackedInline):
 # ==========================================
 # 2. CUSTOM USER ADMIN
 # ==========================================
-class UserAdmin(BaseUserAdmin):
+class CustomUserAdmin(BaseUserAdmin):
     inlines = (UserProfileInline,)
     list_display = ('username', 'email', 'get_role', 'get_plan', 'is_active', 'date_joined')
     list_select_related = ('userprofile',)
@@ -50,8 +56,9 @@ class UserAdmin(BaseUserAdmin):
         return instance.userprofile.plan if hasattr(instance, 'userprofile') else "N/A"
     get_plan.short_description = 'Plan'
 
+
 # ==========================================
-# 3. SECURITY LOG
+# 3. SECURITY & SYSTEM CONFIGURATION
 # ==========================================
 @admin.register(SecurityLog)
 class SecurityLogAdmin(admin.ModelAdmin):
@@ -64,33 +71,18 @@ class SecurityLogAdmin(admin.ModelAdmin):
     def has_change_permission(self, request, obj=None):
         return False
 
-# ==========================================
-# 4. HOLIDAY MESSAGES
-# ==========================================
-@admin.register(HolidayMessage)
-class HolidayMessageAdmin(admin.ModelAdmin):
-    list_display = ['title', 'send_date', 'is_sent']
-    list_filter = ['is_sent', 'send_date']
-    actions = ['send_bulk_sms']
+@admin.register(SystemConfiguration)
+class SystemConfigurationAdmin(admin.ModelAdmin):
+    list_display = ('__str__', 'platform_commission_rate', 'defcon_3_freeze_signups', 'defcon_2_freeze_marketplace')
 
-    @admin.action(description='Send SMS to all Users')
-    def send_bulk_sms(self, request, queryset):
-        count = 0
-        for msg in queryset:
-            if not msg.is_sent:
-                msg.is_sent = True
-                msg.save()
-                count += 1
-        self.message_user(request, f"Queued {count} messages for sending.")
 
 # ==========================================
-# 5. HELPDESK ADMIN (New)
+# 4. HELPDESK ADMIN
 # ==========================================
-
 class TicketMessageInline(admin.TabularInline):
     model = TicketMessage
     extra = 0
-    readonly_fields = ('sender', 'created_at')
+    readonly_fields = ('sender', 'created_at', 'is_internal_note')
     can_delete = False
 
 @admin.register(SupportTicket)
@@ -98,8 +90,89 @@ class SupportTicketAdmin(admin.ModelAdmin):
     list_display = ('subject', 'user', 'category', 'priority', 'status', 'created_at')
     list_filter = ('status', 'priority', 'category')
     search_fields = ('subject', 'description', 'user__username', 'user__email')
-    inlines = [TicketMessageInline] # View chat history inside the ticket
+    inlines = [TicketMessageInline] 
     readonly_fields = ('created_at',)
+
+
+# ==========================================
+# 5. MILLION-USER COMMS ENGINE (PHASE 6)
+# ==========================================
+@admin.register(HolidayMessage)
+class HolidayMessageAdmin(admin.ModelAdmin):
+    list_display = ('title', 'send_date', 'target_role', 'is_sent', 'is_birthday_automation')
+    list_filter = ('is_sent', 'target_role', 'is_birthday_automation')
+    search_fields = ('title', 'message_content')
+    
+    # 🚨 MILLION-USER UI OPTIMIZATION
+    filter_horizontal = ('target_categories',)
+    raw_id_fields = ('manual_recipients',)
+    
+    fieldsets = (
+        ('Broadcast Content', {
+            'fields': ('title', 'message_content', 'send_date', 'is_sent')
+        }),
+        ('Smart Targeting (The Algorithm)', {
+            'fields': ('target_role', 'target_categories'),
+            'description': 'Select your audience. E.g., Target "Freelancers" who own "Drones".'
+        }),
+        ('Manual Overrides & Automations', {
+            'fields': ('manual_recipients', 'is_birthday_automation'),
+            'classes': ('collapse',),
+            'description': 'Use this for single-user VIP messages or setting up the Birthday bot.'
+        }),
+    )
+
+    # 🚨 THE INTERCEPT ENGINE (Generates Notifications on Save)
+    def save_model(self, request, obj, form, change):
+        # Save the object first so ManyToMany fields (categories) are locked in.
+        super().save_model(request, obj, form, change)
+        
+        # If the admin manually checks "Is Sent", trigger the broadcast algorithm!
+        if obj.is_sent and 'is_sent' in form.changed_data:
+            target_users = obj.manual_recipients.all()
+            
+            # Rule-Based Segmenting (If no manual users specified)
+            if not target_users.exists():
+                query = Q(is_active=True)
+                
+                # Filter by Role
+                if obj.target_role == 'VENDOR':
+                    query &= Q(userprofile__is_vendor=True)
+                elif obj.target_role == 'FREELANCER':
+                    query &= Q(userprofile__is_freelancer=True)
+                elif obj.target_role == 'CLIENT':
+                    query &= Q(userprofile__is_vendor=False, userprofile__is_freelancer=False)
+                    
+                # Filter by Gear Category (Safe Query Method)
+                if obj.target_categories.exists():
+                    # Find owners of gear in these specific categories
+                    owner_ids = InventoryItem.objects.filter(
+                        category__in=obj.target_categories.all()
+                    ).values_list('owner_id', flat=True).distinct()
+                    
+                    query &= Q(id__in=owner_ids)
+                
+                # Execute query
+                target_users = User.objects.filter(query).distinct()
+
+            # Bulk Generate the Notifications
+            notifications = []
+            for target_user in target_users:
+                notifications.append(
+                    Notification(
+                        user=target_user,
+                        title=obj.title,
+                        message=obj.message_content,
+                        notification_type="info"
+                    )
+                )
+            
+            if notifications:
+                Notification.objects.bulk_create(notifications)
+                self.message_user(request, f"🚀 Broadcast Successfully Sent to {len(notifications)} users!")
+            else:
+                self.message_user(request, "⚠️ No active users matched your targeting criteria.", level='WARNING')
+
 
 # ==========================================
 # 6. REGISTER EVERYTHING
@@ -111,5 +184,5 @@ try:
 except admin.sites.NotRegistered:
     pass
 
-admin.site.register(User, UserAdmin)
+admin.site.register(User, CustomUserAdmin)
 admin.site.register(Notification)

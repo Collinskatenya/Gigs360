@@ -36,7 +36,8 @@ urlpatterns = [
     # 3. NOTIFICATION SYSTEM
     # ==========================================
     path('notifications/read/<int:pk>/', views.mark_notification_read, name='mark_notification_read'),
-    path('notifications/read-all/', views.mark_all_notifications_read, name='mark_all_read'),
+    # 🚨 FIX: Matched the name to the template tag exactly
+    path('notifications/read-all/', views.mark_all_notifications_read, name='mark_all_notifications_read'),
 
     # ==========================================
     # 4. ENTERPRISE GOVERNANCE (STAFF)
@@ -62,4 +63,11 @@ urlpatterns = [
     # 5. HELPDESK & SUPPORT
     # ==========================================
     path('ticket/create/', views.create_ticket, name='create_ticket'),
+
+    # ==========================================
+    # 6. HQ VAULT (THE INNOVATIVE FIX)
+    # ==========================================
+    path('staff/comms/', views.staff_comms_module, name='staff_comms_module'),
+    path('staff/comms/search-users/', views.search_users_ajax, name='search_users_ajax'), # 🚨 ADDED: Live Search Endpoint
+    path('staff/settings/', views.staff_settings, name='staff_settings'),
 ]

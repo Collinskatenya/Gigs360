@@ -139,13 +139,47 @@ class Notification(TimeStampedModel):
         return f"{self.title} - {self.user.username}"
 
 class HolidayMessage(TimeStampedModel):
-    title = models.CharField(max_length=100)
+    # 🚨 PHASE 6: Role-Based Smart Segments (Updated for Individual Targeting)
+    ROLE_TARGETS = [
+        ('ALL', 'All Users (Global Broadcast)'),
+        ('VENDOR', 'Vendors / Agencies Only'),
+        ('FREELANCER', 'Freelance Professionals Only'),
+        ('CLIENT', 'Standard Clients Only'),
+        ('INDIVIDUAL', 'Specific Individuals'), # 🚨 ADDED FOR AJAX LIVE SEARCH
+    ]
+
+    title = models.CharField(max_length=255)
     send_date = models.DateField()
-    message_content = models.TextField(max_length=160)
+    message_content = models.TextField()
+    
+    # --- Advanced Millions-Scale Targeting ---
+    target_role = models.CharField(max_length=20, choices=ROLE_TARGETS, default='ALL')
+    
+    # Target users who own specific gear (Links to your Inventory Categories)
+    target_categories = models.ManyToManyField(
+        'inventory.Category', 
+        blank=True, 
+        help_text="Send only to users who own gear in these categories. (Leave blank for no category filter)"
+    )
+    
+    # Manual override for specific VIP users
+    manual_recipients = models.ManyToManyField(
+        settings.AUTH_USER_MODEL, 
+        blank=True, 
+        related_name="manual_broadcasts",
+        help_text="Search and add specific users by ID/Email. Overrides role targeting."
+    )
+    
+    # Automation Triggers
+    is_birthday_automation = models.BooleanField(
+        default=False, 
+        help_text="If checked, this message acts as a template and sends automatically on a user's birthday."
+    )
+    
     is_sent = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.title} - {self.send_date}"
+        return f"{self.title} - Target: {self.get_target_role_display()}"
 
 
 # ==========================================

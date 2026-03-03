@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{% block title %}Dashboard | Gigs360{% endblock %}</title>
+    <meta name="csrf-token" content="{{ csrf_token }}"> <title>{% block title %}Dashboard | Gigs360{% endblock %}</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
@@ -16,6 +16,20 @@
         .hover-scale:hover { transform: scale(1.1); transition: transform 0.2s; }
         .notification-text { transition: color 0.3s ease; }
         .user-profile-btn { background: transparent; border: none; text-align: left; padding: 0; width: 100%; display: flex; align-items: center; cursor: pointer; }
+        
+        /* 🚨 INNOVATION: Unread Pulse Animation */
+        .unread-indicator {
+            width: 8px; height: 8px;
+            box-shadow: 0 0 0 0 rgba(13, 110, 253, 0.7);
+            animation: pulse-blue 2s infinite;
+        }
+        @keyframes pulse-blue {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(13, 110, 253, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(13, 110, 253, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(13, 110, 253, 0); }
+        }
+        .notif-item { transition: background-color 0.3s ease; }
+        .notif-item:hover { background-color: #f8f9fa !important; }
     </style>
 </head>
 <body>
@@ -117,36 +131,70 @@
                 {% endif %}
                 
                 <div class="dropdown">
-                    <button class="btn btn-light position-relative rounded-circle p-2" data-bs-toggle="dropdown">
+                    <button class="btn btn-light position-relative rounded-circle p-2" data-bs-toggle="dropdown" id="notif-dropdown-btn">
                         <i class="bi bi-bell fs-5"></i>
                         {% if notif_count > 0 %}
-                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="top-notif-badge">
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger shadow-sm" id="top-notif-badge">
                             {{ notif_count }}
                         </span>
                         {% endif %}
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 p-0" style="width: 320px; overflow: hidden; z-index: 1050;">
-                        <li class="bg-light p-3 d-flex justify-content-between align-items-center border-bottom">
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 p-0" style="width: 340px; overflow: hidden; z-index: 1050;">
+                        
+                        <div class="bg-light p-3 d-flex justify-content-between align-items-center border-bottom">
                             <h6 class="mb-0 fw-bold text-dark">Notifications</h6>
-                        </li>
-                        <div style="max-height: 300px; overflow-y: auto;">
+                            {% if notif_count > 0 %}
+                            <form action="{% url 'mark_all_notifications_read' %}" method="post" class="m-0">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-link text-primary text-decoration-none p-0 fw-bold" style="font-size: 0.8rem;">
+                                    Mark all read
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+
+                        <div style="max-height: 350px; overflow-y: auto;" id="notif-list-container" data-base-url="{% url 'mark_notification_read' 0 %}">
                             {% for notif in notifications %}
                                 <li>
-                                    <a class="dropdown-item py-3 border-bottom notif-item {% if not notif.is_read %}bg-light bg-opacity-50{% endif %}" 
-                                       href="#" data-notif-id="{{ notif.id }}">
-                                        <div class="d-flex align-items-start">
-                                            <i class="bi bi-info-circle-fill text-primary mt-1 me-2"></i>
-                                            <div style="white-space: normal;">
-                                                <div class="small {% if not notif.is_read %}fw-bold text-dark{% else %}text-muted{% endif %} notification-text">
+                                    <a class="dropdown-item py-3 border-bottom notif-item {% if not notif.is_read %}unread-notif bg-primary bg-opacity-10{% endif %}" 
+                                       href="{{ notif.link|default:'#' }}" data-notif-id="{{ notif.id }}">
+                                        
+                                        <div class="d-flex align-items-start position-relative">
+                                            {% if not notif.is_read %}
+                                                <span class="position-absolute top-0 start-0 translate-middle bg-primary rounded-circle unread-indicator" style="margin-top: 10px; margin-left: 2px;"></span>
+                                            {% endif %}
+                                            
+                                            <div class="flex-shrink-0 mt-1 me-3 ms-2">
+                                                {% if notif.notification_type == 'success' %}
+                                                    <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                                                {% elif notif.notification_type == 'warning' %}
+                                                    <i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i>
+                                                {% elif notif.notification_type == 'danger' %}
+                                                    <i class="bi bi-x-octagon-fill text-danger fs-5"></i>
+                                                {% else %}
+                                                    <i class="bi bi-info-circle-fill text-primary fs-5"></i>
+                                                {% endif %}
+                                            </div>
+
+                                            <div style="white-space: normal; line-height: 1.3; width: 100%;">
+                                                <div class="notification-text {% if not notif.is_read %}fw-bold text-dark{% else %}text-muted{% endif %}" style="font-size: 0.85rem;">
                                                     {{ notif.title }}
                                                 </div>
-                                                <div class="text-muted" style="font-size: 0.7rem;">{{ notif.created_at|timesince }} ago</div>
+                                                <div class="text-secondary mt-1" style="font-size: 0.75rem;">
+                                                    {{ notif.message|truncatechars:65 }}
+                                                </div>
+                                                <div class="text-muted mt-2 d-flex align-items-center" style="font-size: 0.65rem;">
+                                                    <i class="bi bi-clock me-1"></i>{{ notif.created_at|timesince }} ago
+                                                </div>
                                             </div>
                                         </div>
                                     </a>
                                 </li>
                             {% empty %}
-                                <li class="text-center text-muted small py-4">You're all caught up!</li>
+                                <div class="text-center py-5">
+                                    <i class="bi bi-bell-slash fs-1 text-muted opacity-25"></i>
+                                    <p class="text-muted small mt-2 mb-0">You're all caught up!</p>
+                                </div>
                             {% endfor %}
                         </div>
                     </ul>
@@ -168,10 +216,80 @@
         </div>
     </div>
 </div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
     document.getElementById('sidebarToggle').addEventListener('click', function() {
         document.getElementById('wrapper').classList.toggle('toggled');
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const notifContainer = document.getElementById('notif-list-container');
+        const topBadge = document.getElementById('top-notif-badge');
+        const sidebarBadge = document.getElementById('sidebar-msg-badge');
+        
+        if (!notifContainer) return;
+        
+        const baseUrl = notifContainer.getAttribute('data-base-url');
+
+        // Listen for clicks on unread notifications
+        document.querySelectorAll('.unread-notif').forEach(item => {
+            item.addEventListener('click', function(e) {
+                // If the notification doesn't have an explicit link, stop it from scrolling the page to top
+                if (this.getAttribute('href') === '#') {
+                    e.preventDefault();
+                }
+
+                const notifId = this.getAttribute('data-notif-id');
+                const targetUrl = baseUrl.replace('/0/', `/${notifId}/`);
+
+                // Fire background request to mark as read
+                fetch(targetUrl, {
+                    method: 'POST', // Depending on your view, GET or POST might be required. Assuming GET for simple read updates based on standard Django patterns, but if POST, include headers.
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': csrfToken,
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        // 1. Visually unread the item
+                        this.classList.remove('unread-notif', 'bg-primary', 'bg-opacity-10');
+                        
+                        // 2. Remove the pulsing dot
+                        const dot = this.querySelector('.unread-indicator');
+                        if (dot) dot.remove();
+                        
+                        // 3. Unbold the text
+                        const titleText = this.querySelector('.notification-text');
+                        if (titleText) {
+                            titleText.classList.remove('fw-bold', 'text-dark');
+                            titleText.classList.add('text-muted');
+                        }
+
+                        // 4. Safely decrement the counters
+                        if (topBadge) {
+                            let currentCount = parseInt(topBadge.innerText);
+                            if (currentCount > 0) {
+                                currentCount--;
+                                topBadge.innerText = currentCount;
+                                if (sidebarBadge) sidebarBadge.innerText = currentCount;
+                                
+                                // Hide badges if 0
+                                if (currentCount === 0) {
+                                    topBadge.style.display = 'none';
+                                    if (sidebarBadge) sidebarBadge.style.display = 'none';
+                                }
+                            }
+                        }
+                    }
+                })
+                .catch(error => console.error('Error marking notification read:', error));
+            });
+        });
     });
 </script>
 </body>

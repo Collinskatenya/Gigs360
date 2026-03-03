@@ -1,8 +1,10 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}"> 
     <title>{% block title %}Enterprise Command Center{% endblock %} | Gigs360</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -51,7 +53,6 @@
             vertical-align: middle;
         }
         
-        /* Navigation Links */
         .nav-link { 
             color: #A0ABC0; 
             padding: 12px 20px; 
@@ -68,7 +69,6 @@
             border-left: 4px solid var(--gigs-gold);
         }
         
-        /* Section Headings */
         .sidebar-heading { 
             font-size: 0.7rem; 
             text-transform: uppercase; 
@@ -78,14 +78,12 @@
             letter-spacing: 1px;
         }
         
-        /* Main Content Area */
         .main-content { 
             padding: 30px 40px; 
             height: 100vh; 
             overflow-y: auto;
         }
         
-        /* Omni-Search Bar */
         .omni-search {
             background-color: white;
             border: none;
@@ -100,7 +98,6 @@
             outline: none;
         }
 
-        /* Global Messages/Alerts */
         .alert-enterprise {
             border-radius: 8px;
             border-left: 5px solid var(--gigs-gold);
@@ -109,6 +106,18 @@
         
         .hover-lift:hover { transform: translateY(-3px); transition: 0.2s; box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; }
         .notification-text { transition: color 0.3s ease; }
+        .notif-item:hover { background-color: #f8f9fa !important; }
+
+        .unread-indicator {
+            width: 8px; height: 8px;
+            box-shadow: 0 0 0 0 rgba(13, 110, 253, 0.7);
+            animation: pulse-blue 2s infinite;
+        }
+        @keyframes pulse-blue {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(13, 110, 253, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(13, 110, 253, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(13, 110, 253, 0); }
+        }
     </style>
 </head>
 <body>
@@ -122,29 +131,29 @@
                 
                 <ul class="nav flex-column mb-sm-auto mb-0 w-100" id="menu">
                     <li class="nav-item w-100">
-                        <a href="{% url 'staff_dashboard' %}" class="nav-link">
+                        <a href="{% url 'staff_dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'staff_dashboard' %}active{% endif %}">
                             <i class="bi bi-grid-1x2-fill"></i> Global Metrics
                         </a>
                     </li>
                     
-                    {% if request.user.is_superuser or 'KYC Officer' in request.user.groups.all|stringformat:'s' %}
+                    {% if request.user.is_superuser or 'KYC Officer' in user_groups %}
                     <li class="w-100 sidebar-heading">Trust & Safety</li>
                     <li class="nav-item w-100"><a href="{% url 'staff_dashboard' %}#kyc-tab" class="nav-link"><i class="bi bi-person-badge-fill"></i> KYC Queue</a></li>
-                    <li class="nav-item w-100"><a href="{% url 'staff_user_manager' %}" class="nav-link"><i class="bi bi-people-fill"></i> User Directory</a></li>
+                    <li class="nav-item w-100"><a href="{% url 'staff_user_manager' %}" class="nav-link {% if 'user_manager' in request.path %}active{% endif %}"><i class="bi bi-people-fill"></i> User Directory</a></li>
                     {% endif %}
                     
                     <li class="w-100 sidebar-heading">Global Logistics</li>
-                    <li class="nav-item w-100"><a href="{% url 'staff_master_inventory' %}" class="nav-link"><i class="bi bi-boxes"></i> Master Inventory</a></li>
+                    <li class="nav-item w-100"><a href="{% url 'staff_master_inventory' %}" class="nav-link {% if 'master_inventory' in request.path %}active{% endif %}"><i class="bi bi-boxes"></i> Master Inventory</a></li>
 
-                    {% if request.user.is_superuser or 'Support Agent' in request.user.groups.all|stringformat:'s' %}
+                    {% if request.user.is_superuser or 'Support Agent' in user_groups %}
                     <li class="w-100 sidebar-heading">Operations & Support</li>
                     <li class="nav-item w-100"><a href="{% url 'staff_dashboard' %}#tickets-tab" class="nav-link"><i class="bi bi-headset"></i> Support Helpdesk</a></li>
-                    <li class="nav-item w-100"><a href="{% url 'staff_gigs_tracker' %}" class="nav-link"><i class="bi bi-calendar-event-fill"></i> Active Gigs Tracker</a></li>
+                    <li class="nav-item w-100"><a href="{% url 'staff_gigs_tracker' %}" class="nav-link {% if 'gigs_tracker' in request.path %}active{% endif %}"><i class="bi bi-calendar-event-fill"></i> Active Gigs Tracker</a></li>
                     {% endif %}
                     
                     {% if request.user.is_superuser %}
                     <li class="w-100 sidebar-heading">System Security</li>
-                    <li class="nav-item w-100"><a href="{% url 'staff_security_logs' %}" class="nav-link"><i class="bi bi-journal-code"></i> Audit Ledger</a></li>
+                    <li class="nav-item w-100"><a href="{% url 'staff_security_logs' %}" class="nav-link {% if 'security_logs' in request.path %}active{% endif %}"><i class="bi bi-journal-code"></i> Audit Ledger</a></li>
 
                     <li class="w-100 sidebar-heading">Finance (Phase 2)</li>
                     <li class="nav-item w-100"><a href="#" class="nav-link"><i class="bi bi-cash-stack"></i> Transaction Ledger</a></li>
@@ -163,7 +172,7 @@
                         <span class="d-none d-sm-inline mx-1 fw-bold" style="font-size: 0.9rem;">{{ request.user.username|title }}</span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-dark text-small shadow">
-                        <li><a class="dropdown-item" href="{% url 'settings' %}">My Credentials</a></li>
+                        <li><a class="dropdown-item" href="{% url 'staff_settings' %}">My Credentials</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li>
                             <form action="{% url 'logout' %}" method="post" class="d-inline">
@@ -176,13 +185,12 @@
             </div>
 
             <div class="col main-content">
-                
                 <div class="row mb-4 align-items-center">
                     <div class="col-12 col-xl-8 mb-3 mb-xl-0">
-                        <div class="position-relative">
+                        <form action="{% url 'staff_master_inventory' %}" method="GET" class="position-relative">
                             <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-4 text-secondary"></i>
-                            <input type="text" class="form-control form-control-lg omni-search w-100 ps-5" placeholder="Omni-Search: Paste User Email, Asset UUID, or KRA PIN...">
-                        </div>
+                            <input type="text" name="q" class="form-control form-control-lg omni-search w-100 ps-5" placeholder="Omni-Search: Paste User Email, Asset UUID, or KRA PIN...">
+                        </form>
                     </div>
                     <div class="col-12 col-xl-4 text-end">
                         <div class="dropdown d-inline-block">
@@ -194,26 +202,48 @@
                                 </span>
                                 {% endif %}
                             </button>
-                            <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 p-0" style="width: 340px; overflow: hidden; z-index: 1050;">
+                            <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 p-0" style="width: 360px; overflow: hidden; z-index: 1050;">
                                 <li class="bg-light p-3 d-flex justify-content-between align-items-center border-bottom">
                                     <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-shield-lock me-2 text-primary"></i>HQ Alerts</h6>
                                     {% if notif_count > 0 %}
-                                    <a href="{% url 'mark_all_read' %}" class="small text-decoration-none text-primary fw-bold">Mark all read</a>
+                                    <form action="{% url 'mark_all_notifications_read' %}" method="post" class="m-0" id="mark-all-read-form">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-link text-primary text-decoration-none p-0 fw-bold" style="font-size: 0.8rem;">
+                                            Mark all read
+                                        </button>
+                                    </form>
                                     {% endif %}
                                 </li>
-                                <div style="max-height: 350px; overflow-y: auto;">
+                                <div style="max-height: 350px; overflow-y: auto;" id="notif-list-container" data-base-url="{% url 'mark_notification_read' 0 %}">
                                     {% for notif in notifications %}
                                         <li>
-                                            <a class="dropdown-item py-3 border-bottom notif-item {% if not notif.is_read %}bg-light bg-opacity-50{% endif %}" href="#" data-notif-id="{{ notif.id }}">
-                                                <div class="d-flex align-items-start">
-                                                    <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-3 text-primary">
-                                                        <i class="bi bi-info-circle-fill"></i>
+                                            <a class="dropdown-item py-3 border-bottom notif-item {% if not notif.is_read %}unread-notif bg-primary bg-opacity-10{% endif %}" 
+                                               href="{{ notif.link|default:'#' }}" data-notif-id="{{ notif.id }}">
+                                                <div class="d-flex align-items-start position-relative">
+                                                    {% if not notif.is_read %}
+                                                        <span class="position-absolute top-0 start-0 translate-middle bg-primary rounded-circle unread-indicator" style="margin-top: 10px; margin-left: 2px;"></span>
+                                                    {% endif %}
+                                                    <div class="flex-shrink-0 mt-1 me-3 ms-2">
+                                                        {% if notif.notification_type == 'danger' %}
+                                                            <i class="bi bi-x-octagon-fill text-danger fs-5"></i>
+                                                        {% elif notif.notification_type == 'warning' %}
+                                                            <i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i>
+                                                        {% elif notif.notification_type == 'success' %}
+                                                            <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                                                        {% else %}
+                                                            <i class="bi bi-info-circle-fill text-primary fs-5"></i>
+                                                        {% endif %}
                                                     </div>
-                                                    <div style="white-space: normal;">
-                                                        <div class="small {% if not notif.is_read %}fw-bold text-dark{% else %}text-muted{% endif %} notification-text">
+                                                    <div style="white-space: normal; line-height: 1.3; width: 100%;">
+                                                        <div class="notification-text {% if not notif.is_read %}fw-bold text-dark{% else %}text-muted{% endif %}" style="font-size: 0.85rem;">
                                                             {{ notif.title }}
                                                         </div>
-                                                        <div class="text-muted mt-1" style="font-size: 0.7rem;">{{ notif.created_at|timesince }} ago</div>
+                                                        <div class="text-secondary mt-1" style="font-size: 0.75rem;">
+                                                            {{ notif.message|truncatechars:65 }}
+                                                        </div>
+                                                        <div class="text-muted mt-2 d-flex align-items-center" style="font-size: 0.65rem;">
+                                                            <i class="bi bi-clock me-1"></i>{{ notif.created_at|timesince }} ago
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </a>
@@ -245,7 +275,6 @@
 
                 {% block content %}
                 {% endblock %}
-                
             </div>
         </div>
     </div>
@@ -254,43 +283,62 @@
     
     <script>
         document.addEventListener("DOMContentLoaded", function() {
+            // Tab Persistence logic
             if(window.location.hash) {
                 var targetTab = new bootstrap.Tab(document.querySelector('a[href="' + window.location.hash + '"]'))
                 if(targetTab) targetTab.show();
             }
-        });
 
-        // 🚨 NEW: SMART ENGINE (Auto-Drop Notifications for Admin Staff)
-        document.querySelectorAll('.notif-item').forEach(item => {
-            item.addEventListener('click', function(e) {
-                e.preventDefault();
-                let notifId = this.getAttribute('data-notif-id');
-                let textElement = this.querySelector('.notification-text');
-                
-                if (textElement.classList.contains('fw-bold')) {
-                    // Instantly un-bold the text
-                    textElement.classList.remove('fw-bold', 'text-dark');
-                    textElement.classList.add('text-muted');
-                    this.classList.remove('bg-light', 'bg-opacity-50');
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            const notifContainer = document.getElementById('notif-list-container');
+            const topBadge = document.getElementById('hq-notif-badge');
+            
+            if (!notifContainer) return;
+            
+            const baseUrl = notifContainer.getAttribute('data-base-url');
 
-                    // Drop the red badge counter
-                    let topBadge = document.getElementById('hq-notif-badge');
-                    
-                    if (topBadge) {
-                        let newCount = parseInt(topBadge.innerText) - 1;
-                        if (newCount > 0) {
-                            topBadge.innerText = newCount;
-                        } else {
-                            topBadge.style.display = 'none';
-                        }
+            // AJAX: Mark individual notification read
+            document.querySelectorAll('.unread-notif').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    if (this.getAttribute('href') === '#') {
+                        e.preventDefault();
                     }
 
-                    // Silently hit the backend to mark it read
-                    fetch(`/notifications/read/${notifId}/`, {
-                        method: 'GET',
-                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                    });
-                }
+                    const notifId = this.getAttribute('data-notif-id');
+                    const targetUrl = baseUrl.replace('/0/', `/${notifId}/`);
+
+                    fetch(targetUrl, {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRFToken': csrfToken,
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            this.classList.remove('unread-notif', 'bg-primary', 'bg-opacity-10');
+                            const dot = this.querySelector('.unread-indicator');
+                            if (dot) dot.remove();
+                            
+                            const titleText = this.querySelector('.notification-text');
+                            if (titleText) {
+                                titleText.classList.remove('fw-bold', 'text-dark');
+                                titleText.classList.add('text-muted');
+                            }
+
+                            if (topBadge) {
+                                let currentCount = parseInt(topBadge.innerText);
+                                if (currentCount > 1) {
+                                    topBadge.innerText = currentCount - 1;
+                                } else {
+                                    topBadge.style.display = 'none';
+                                }
+                            }
+                        }
+                    })
+                    .catch(error => console.error('HQ Notification Error:', error));
+                });
             });
         });
     </script>

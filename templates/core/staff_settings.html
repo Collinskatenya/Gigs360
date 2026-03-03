@@ -1,0 +1,135 @@
+{% extends 'core/staff_base.html' %}
+{% load static %}
+
+{% block title %}HQ Credentials | Gigs360 HQ{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <a href="{% url 'staff_dashboard' %}" class="text-decoration-none text-muted mb-2 d-inline-block small fw-bold hover-lift">
+                <i class="bi bi-arrow-left me-1"></i> Back to Command Center
+            </a>
+            <h2 class="fw-bold mb-1 text-dark">
+                <i class="bi bi-shield-lock-fill text-warning me-2"></i>HQ Security Vault
+            </h2>
+            <p class="text-muted mb-0 small">Manage your administrative clearances and system credentials.</p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
+                <div class="card-body p-5 text-center position-relative">
+                    <div class="position-absolute top-0 start-0 w-100" style="height: 80px; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);"></div>
+                    
+                    <div class="bg-white border border-4 border-white text-primary rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3 position-relative shadow-sm" style="width: 100px; height: 100px; margin-top: 10px; z-index: 2;">
+                        <i class="bi bi-person-badge fs-1"></i>
+                    </div>
+                    
+                    <h4 class="fw-bold text-dark mb-0">{{ user.username|title }}</h4>
+                    <p class="text-muted mb-4">{{ user.email }}</p>
+                    
+                    <hr class="opacity-25 mb-4">
+                    
+                    <div class="text-start bg-light p-3 rounded-3 border">
+                        <small class="text-uppercase fw-bold text-muted d-block mb-2" style="font-size: 0.7rem; letter-spacing: 0.5px;">Active Security Clearances</small>
+                        
+                        {% if user.is_superuser %}
+                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger-subtle rounded-pill px-3 py-2 d-inline-block mb-2 w-100 text-start">
+                                <i class="bi bi-asterisk me-2"></i> Level 5 (Super Admin)
+                            </span>
+                        {% endif %}
+                        
+                        {% if user.is_staff and not user.is_superuser %}
+                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle rounded-pill px-3 py-2 d-inline-block mb-2 w-100 text-start">
+                                <i class="bi bi-shield-check me-2"></i> Standard HQ Access
+                            </span>
+                        {% endif %}
+
+                        {% for group in user.groups.all %}
+                            <span class="badge bg-dark rounded-pill px-3 py-2 d-inline-block mb-1 w-100 text-start">
+                                <i class="bi bi-tag-fill me-2 text-warning"></i> {{ group.name }}
+                            </span>
+                        {% empty %}
+                            {% if not user.is_superuser %}
+                            <div class="small text-muted fst-italic">No granular roles assigned.</div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="fw-bold m-0 text-dark"><i class="bi bi-key-fill text-primary me-2"></i>Change Master Password</h6>
+                </div>
+                <div class="card-body p-4 p-md-5">
+                    <form method="POST" action="{% url 'staff_settings' %}">
+                        {% csrf_token %}
+                        
+                        <style>
+                            .hq-form p { margin-bottom: 1.5rem; }
+                            .hq-form input { 
+                                display: block;
+                                width: 100%;
+                                background-color: #f8f9fa; 
+                                border: 1px solid #e9ecef; 
+                                border-radius: 8px; 
+                                padding: 12px 15px; 
+                                transition: border-color 0.2s ease;
+                            }
+                            .hq-form input:focus {
+                                border-color: #E5B314;
+                                outline: none;
+                                background-color: #ffffff;
+                            }
+                            .hq-form label { 
+                                font-weight: 700; 
+                                font-size: 0.8rem; 
+                                color: #495057; 
+                                text-transform: uppercase; 
+                                margin-bottom: 8px; 
+                                display: block;
+                                letter-spacing: 0.5px;
+                            }
+                            .hq-form ul { 
+                                list-style: none; 
+                                padding-left: 0; 
+                                font-size: 0.85rem; 
+                                color: #dc3545; 
+                                margin-top: 5px;
+                                font-weight: 500;
+                            }
+                            .hq-form .helptext { 
+                                font-size: 0.75rem; 
+                                color: #6c757d; 
+                                display: block; 
+                                margin-top: 6px; 
+                            }
+                        </style>
+
+                        <div class="hq-form">
+                            {{ form.as_p }}
+                        </div>
+                        
+                        <div class="mt-5 border-top pt-4 text-end">
+                            <button type="submit" class="btn fw-bold px-5 py-3 text-white rounded-pill shadow-sm hover-lift" style="background-color: #0f172a;">
+                                Update Security Key <i class="bi bi-arrow-right-circle ms-2"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hover-lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .hover-lift:hover { transform: translateY(-2px); text-decoration: none; }
+</style>
+{% endblock %}
