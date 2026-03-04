@@ -15,10 +15,15 @@ urlpatterns = [
         next_page='staff_dashboard' 
     ), name='staff_login'),
 
-    # Standard App URLs
-    path('', include('core.urls')),
-    path('inventory/', include('inventory.urls')),
-    path('events/', include('events.urls')),
+    # ==========================================
+    # GIGS360 PLATFORM APPS
+    # ==========================================
+    path('', include('core.urls')),                     # Identity & Landing Pages
+    path('inventory/', include('inventory.urls')),      # Assets & QR Codes
+    path('events/', include('events.urls')),            # Gigs & PDF Invoicing
+    
+    # 💳 STAGE 4 INJECTED: The Fintech Gateway
+    path('finance/', include('finance.urls')),          # Escrow & M-Pesa Webhooks
 ]
 
 # 📁 LOCAL DEVELOPMENT SERVING (Critical for CSS, QR Codes, and PDFs)

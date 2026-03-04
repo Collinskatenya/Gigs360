@@ -34,9 +34,9 @@
                     <tr>
                         <th class="ps-4 py-3">Document</th>
                         <th>Client</th>
-                        <th>Event</th>
                         <th>Amount</th>
-                        <th>Status</th>
+                        <th>Invoice Status</th>
+                        <th>Escrow Lock</th>
                         <th class="text-end pe-4">Actions</th>
                     </tr>
                 </thead>
@@ -51,16 +51,6 @@
                         <td>
                             <div class="fw-bold text-dark">{{ doc.client_name }}</div>
                             <div class="small text-muted">{{ doc.client_phone }}</div>
-                        </td>
-
-                        <td>
-                            {% if doc.event %}
-                                <a href="{% url 'events:update_event' doc.event.id %}" class="text-decoration-none fw-semibold text-primary">
-                                    {{ doc.event.title }}
-                                </a>
-                            {% else %}
-                                <span class="text-muted fst-italic">General</span>
-                            {% endif %}
                         </td>
 
                         <td class="fw-bold text-dark">
@@ -79,7 +69,25 @@
                             {% endif %}
                         </td>
 
+                        <td>
+                            {% if doc.escrow_status == 'LOCKED' %}
+                                <span class="badge" style="background-color: #0F172A; color: #F59E0B;"><i class="bi bi-lock-fill me-1"></i> Funds Locked</span>
+                                <div class="small text-muted mt-1" style="font-size: 0.7rem;">ID: {{ doc.daraja_receipt_number }}</div>
+                            {% elif doc.escrow_status == 'PENDING' %}
+                                <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i> Awaiting M-Pesa Auth</span>
+                            {% else %}
+                                <span class="badge bg-light text-muted border">Not in Vault</span>
+                            {% endif %}
+                        </td>
+
                         <td class="text-end pe-4">
+                            
+                            {% if doc.status|upper != 'PAID' and doc.escrow_status != 'LOCKED' and doc.escrow_status != 'PENDING' %}
+                                <button onclick="triggerSTKPush('{{ doc.id }}', '{{ doc.client_phone }}', '{{ doc.total_amount }}')" class="btn btn-sm fw-bold shadow-sm me-2 hover-lift" style="background-color: #F59E0B; color: #0F172A; border: none;">
+                                    <i class="bi bi-phone-vibrate me-1"></i> Pay via M-Pesa
+                                </button>
+                            {% endif %}
+
                             <div class="btn-group shadow-sm" role="group">
                                 <a href="{% url 'events:view_document' doc.id %}" target="_blank" class="btn btn-sm btn-light border" title="Preview">
                                     <i class="bi bi-eye text-primary"></i>
@@ -141,4 +149,67 @@
     .hover-lift:hover { transform: translateY(-2px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; }
     .btn-outline-primary:hover { background-color: #0f172a; color: white; }
 </style>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    function triggerSTKPush(docId, defaultPhone, amount) {
+        Swal.fire({
+            title: 'Secure Escrow Payment',
+            text: `You are about to lock KES ${amount} into Escrow. Please confirm your M-Pesa number.`,
+            input: 'text',
+            inputValue: defaultPhone,
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonColor: '#F59E0B',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Send STK Push',
+            inputValidator: (value) => {
+                if (!value) { return 'You need to write a phone number!' }
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Show loading state
+                Swal.fire({
+                    title: 'Initiating Secure Connection...',
+                    text: 'Connecting to Safaricom Daraja API',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading() }
+                });
+
+                // Securely Ping Backend via AJAX
+                fetch(`/finance/api/pay/${docId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': '{{ csrf_token }}' // CRITICAL for Django Security
+                    },
+                    body: `phone_number=${encodeURIComponent(result.value)}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire({
+                            title: 'STK Push Sent!',
+                            text: 'Please check your phone and enter your M-Pesa PIN.',
+                            icon: 'success',
+                            confirmButtonColor: '#0F172A',
+                            confirmButtonText: 'Got it!'
+                        }).then(() => {
+                            // Reload page to show "Awaiting Auth" badge
+                            window.location.reload();
+                        });
+                        
+                        // DEV HELPER: Prints the simulate URL in your browser console so you can test it!
+                        console.log(`[DEV MODE] To simulate success, navigate to: /finance/dev/simulate-payment/${data.transaction_id}/`);
+                    } else {
+                        Swal.fire('Transaction Failed', data.error, 'error');
+                    }
+                })
+                .catch(error => {
+                    Swal.fire('Network Error', 'Could not connect to financial gateway.', 'error');
+                });
+            }
+        });
+    }
+</script>
 {% endblock %}
