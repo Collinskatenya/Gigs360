@@ -1,14 +1,14 @@
 from django.db import models
 from django.conf import settings
-from django.utils.http import urlencode
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
+from django.db.models import Sum
 import uuid
 import math
 
 # ==========================================
-# 1. EVENT OPERATIONS
+# 1. EVENT OPERATIONS (Master Blueprint v10.0)
 # ==========================================
 
 class Event(models.Model):
@@ -24,7 +24,6 @@ class Event(models.Model):
         ('OTHER', 'Other'),
     ]
 
-    # 🚨 PHASE 4: Status Workflow Injected
     STATUS_CHOICES = [
         ('DRAFT', 'Draft (Planning)'),
         ('REQUESTED', 'Requested (Awaiting Approval)'),
@@ -34,7 +33,10 @@ class Event(models.Model):
         ('CANCELLED', 'Cancelled'),
     ]
 
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='events')
+    # TRI-ROLE ECOSYSTEM: Linking the actual users
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='vendor_events', help_text="The Vendor/Creator managing the event")
+    client = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='booked_gigs', help_text="The registered Client (from Sticky Cart)")
+    
     title = models.CharField(max_length=200, help_text="e.g. Katenya & Faith Wedding")
     event_type = models.CharField(max_length=50, choices=EVENT_TYPES, default='OTHER')
     description = models.TextField(blank=True)
@@ -43,10 +45,10 @@ class Event(models.Model):
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
     
-    # Workflow & Tracking
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='DRAFT')
-    is_completed = models.BooleanField(default=False) # Preserved existing feature
+    is_completed = models.BooleanField(default=False) 
     
+    # Legacy Fallbacks (Preserved to avoid crashing existing data)
     client_name = models.CharField(max_length=100, blank=True)
     client_contact = models.CharField(max_length=50, blank=True)
     client_email = models.EmailField(max_length=254, blank=True, null=True)
@@ -75,8 +77,15 @@ class Event(models.Model):
         return f"{days} Day{'s' if days != 1 else ''}"
 
     @property
-    def total_expenses(self):
-        return self.transport_cost + self.labor_cost + self.miscellaneous_cost
+    def total_gear_cost(self):
+        """OOP Method: Calculates total cost of all gear locked to this event."""
+        total = sum(item.total_cost for item in self.manifest.all())
+        return total
+
+    @property
+    def grand_total_price(self):
+        """OOP Method: The final mathematical source of truth for the Invoice."""
+        return self.total_gear_cost + self.transport_cost + self.labor_cost + self.miscellaneous_cost
 
     def __str__(self):
         return f"{self.title} ({self.start_time.date()})"
@@ -85,7 +94,6 @@ class Event(models.Model):
 class EventItem(models.Model):
     """The 'Manifest' - Tracks equipment assigned to an event."""
     
-    # 🚨 PHASE 4: Granular Asset Status
     ITEM_STATUS_CHOICES = [
         ('PENDING', 'Pending Approval'),
         ('APPROVED', 'Approved by Vendor'),
@@ -98,7 +106,6 @@ class EventItem(models.Model):
     item = models.ForeignKey('inventory.InventoryItem', on_delete=models.SET_NULL, null=True, blank=True) 
     item_name_snapshot = models.CharField(max_length=200, blank=True)
     
-    # 🚨 PHASE 4: Financial Locking
     locked_daily_rate = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     status = models.CharField(max_length=20, choices=ITEM_STATUS_CHOICES, default='PENDING')
 
@@ -110,21 +117,17 @@ class EventItem(models.Model):
     condition_return = models.CharField(max_length=20, default='GOOD', choices=CONDITION_CHOICES)
 
     def save(self, *args, **kwargs):
-        # Capture Snapshot Name
         if self.item and not self.item_name_snapshot:
             self.item_name_snapshot = self.item.name
             
-        # Capture Financial Snapshot (Price Locking)
         if not self.pk and self.item and hasattr(self.item, 'daily_rate'):
             self.locked_daily_rate = self.item.daily_rate
             
         super().save(*args, **kwargs)
 
-    # 🚨 PHASE 4: THE ANTI-DOUBLE-BOOKING PROTOCOL
     def clean(self):
         super().clean()
         if hasattr(self, 'event') and self.event and self.item and self.status in ['APPROVED', 'DISPATCHED']:
-            # Check calendar timeline for mathematical overlaps
             overlapping_bookings = EventItem.objects.filter(
                 item=self.item,
                 status__in=['APPROVED', 'DISPATCHED'],
@@ -139,10 +142,8 @@ class EventItem(models.Model):
 
     @property
     def total_cost(self):
-        """Calculates item cost based on event duration and locked rate"""
         if self.event.start_time and self.event.end_time:
             delta = self.event.end_time - self.event.start_time
-            # Count parts of days as a full rental day
             days = max(1, math.ceil(delta.total_seconds() / 86400))
             return self.locked_daily_rate * days
         return 0
@@ -153,16 +154,25 @@ class EventItem(models.Model):
 
 
 # ==========================================
-# 2. SMART DOCUMENT ENGINE
+# 2. SMART DOCUMENT & ESCROW ENGINE
 # ==========================================
 
 class Document(models.Model):
     DOC_TYPES = [('QUOTE', 'Quotation'), ('INVOICE', 'Invoice'), ('RECEIPT', 'Receipt')]
     STATUS_CHOICES = [('DRAFT', 'Draft'), ('SENT', 'Sent'), ('PAID', 'Paid'), ('PARTIAL', 'Partial')]
+    
+    # 🚨 STAGE 4: Escrow Tracking Ledger
+    ESCROW_STATUS_CHOICES = [
+        ('NONE', 'Not in Escrow'),
+        ('PENDING', 'Awaiting M-Pesa Auth'),
+        ('LOCKED', 'Locked in Vault'),
+        ('RELEASED', 'Paid to Vendor'),
+        ('DISPUTED', 'In Dispute')
+    ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     event = models.ForeignKey(Event, on_delete=models.SET_NULL, null=True, blank=True, related_name='documents')
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, help_text="Vendor issuing the doc")
     
     doc_type = models.CharField(max_length=10, choices=DOC_TYPES, default='QUOTE')
     doc_number = models.CharField(max_length=50, unique=True, editable=False)
@@ -171,24 +181,27 @@ class Document(models.Model):
     client_email = models.EmailField(blank=True)
     client_phone = models.CharField(max_length=50, blank=True)
     
-    # REQUIRED: Field for admin list_filter and sorting
     created_at = models.DateTimeField(auto_now_add=True)
     issue_date = models.DateField(default=timezone.now)
     due_date = models.DateField(null=True, blank=True)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='DRAFT')
     
+    # Financials
     subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     amount_paid = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     
+    # Stage 4: Fintech Tracking
+    escrow_status = models.CharField(max_length=20, choices=ESCROW_STATUS_CHOICES, default='NONE')
+    daraja_receipt_number = models.CharField(max_length=50, blank=True, help_text="M-Pesa transaction ID")
+    
     notes = models.TextField(blank=True)
-    terms = models.TextField(blank=True, default="1. 70% Deposit required.\n2. Balance due on delivery.")
+    terms = models.TextField(blank=True, default="1. 70% Deposit required.\n2. Balance due on delivery. Protected by Gigs360 Escrow.")
 
     def save(self, *args, **kwargs):
         if not self.doc_number:
-            prefix = self.doc_type[:2] 
+            prefix = self.doc_type[:3].upper() 
             date_str = timezone.now().strftime('%Y%m%d')
-            # Scoped count to current user to prevent cross-user ID leaks
             daily_count = Document.objects.filter(user=self.user, created_at__date=timezone.now().date()).count() + 1
             self.doc_number = f"{prefix}-{date_str}-{daily_count:03d}"
         

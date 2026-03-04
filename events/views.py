@@ -6,7 +6,8 @@ from django.http import JsonResponse, HttpResponse
 from django.utils.dateparse import parse_datetime
 from django.views.decorators.http import require_POST
 from django.conf import settings 
-from django.db.models import Q  # 🚨 Added for complex calendar queries
+from django.db.models import Q  
+from django.db import transaction # 🚨 MASTER BLUEPRINT: Added for ACID Compliance
 import json 
 
 # FORMS & MODELS
@@ -29,7 +30,7 @@ DASHBOARD_URL_NAME = 'events:event_dashboard'
 def event_dashboard(request):
     """
     Displays the Event Operations Dashboard.
-    🚨 PHASE 4 UPGRADE: Now filters out CANCELLED events from the active timeline.
+    Filters out CANCELLED events from the active timeline.
     """
     now = timezone.now()
     
@@ -55,7 +56,6 @@ def event_dashboard(request):
     limits = getattr(settings, 'INVENTORY_LIMITS', {'FREE': 15, 'PRO': 100, 'ENTERPRISE': float('inf')})
     limit = limits.get(user_plan, 15)
     
-    # Calculate Progress Bar
     if limit == float('inf'):
         limit_display = "Unlimited"
         progress_width = (inventory_count / 1000) * 100 
@@ -75,7 +75,7 @@ def event_dashboard(request):
 def check_gear_availability(request):
     """
     API Endpoint for Smart Availability check.
-    🚨 PHASE 4 UPGRADE: True mathematical overlap prevention. Considers Gig Status!
+    Mathematical overlap prevention. Considers Gig Status.
     """
     start_str = request.GET.get('start')
     end_str = request.GET.get('end')
@@ -87,20 +87,17 @@ def check_gear_availability(request):
         new_start = parse_datetime(start_str)
         new_end = parse_datetime(end_str)
 
-        # 1. Find overlapping time windows, IGNORING cancelled gigs
         conflicting_events = Event.objects.filter(
             user=request.user,
-            start_time__lt=new_end, # Math: Start A < End B
-            end_time__gt=new_start  # Math: End A > Start B
+            start_time__lt=new_end, 
+            end_time__gt=new_start  
         ).exclude(status='CANCELLED')
 
-        # 2. Find gear inside those gigs that is actually locked
         booked_item_ids = EventItem.objects.filter(
             event__in=conflicting_events,
-            status__in=['APPROVED', 'DISPATCHED'] # Only block if vendor actually approved it
+            status__in=['APPROVED', 'DISPATCHED'] 
         ).values_list('item_id', flat=True)
 
-        # 3. Return what is left
         available_items = InventoryItem.objects.filter(
             owner=request.user
         ).exclude(
@@ -124,7 +121,6 @@ def create_event(request):
             end_date = form.cleaned_data['end_time']
             selected_items = form.cleaned_data.get('items', []) 
             
-            # --- 🚨 PHASE 4: THE SAAS CART CHECK ---
             if selected_items:
                 overlapping_events = Event.objects.filter(
                     user=request.user,
@@ -146,27 +142,31 @@ def create_event(request):
                         'google_maps_api_key': getattr(settings, 'GOOGLE_MAPS_API_KEY', '')
                     })
 
-            # Save the Anchor (Event)
-            event = form.save(commit=False)
-            event.user = request.user
-            event.updated_by = request.user
-            # Automatically set to APPROVED since the Vendor is creating their own gig
-            event.status = 'APPROVED' 
-            event.save()
-            
-            # Save the Line Items (Gear)
-            if selected_items:
-                for item in selected_items:
-                    EventItem.objects.create(
-                        event=event, 
-                        item=item,
-                        handled_by=request.user, 
-                        status='APPROVED', # Activates the double-booking lock
-                        condition_return='GOOD' 
-                    )
-            
-            messages.success(request, f"Gig '{event.title}' created and calendar locked!")
-            return redirect(DASHBOARD_URL_NAME)
+            # 🚨 ACID COMPLIANCE: Wrap Multi-Table Inserts in Atomic Block
+            try:
+                with transaction.atomic():
+                    event = form.save(commit=False)
+                    event.user = request.user
+                    event.updated_by = request.user
+                    event.status = 'APPROVED' 
+                    event.save()
+                    
+                    if selected_items:
+                        for item in selected_items:
+                            EventItem.objects.create(
+                                event=event, 
+                                item=item,
+                                handled_by=request.user, 
+                                status='APPROVED', 
+                                condition_return='GOOD' 
+                            )
+                
+                messages.success(request, f"Gig '{event.title}' created and calendar locked!")
+                return redirect(DASHBOARD_URL_NAME)
+                
+            except Exception as e:
+                messages.error(request, "Critical Database Error: Booking rolled back to protect inventory integrity.")
+                # Log error here in production
             
     else:
         form = EventForm(user=request.user)
@@ -214,24 +214,29 @@ def update_event(request, pk):
                         'google_maps_api_key': getattr(settings, 'GOOGLE_MAPS_API_KEY', '')
                     })
 
-            event_obj = form.save()
-            
-            # Sync Manifest Items
-            current_manifest_ids = set(EventItem.objects.filter(event=event).values_list('item_id', flat=True))
-            new_item_ids = set(item.id for item in new_items)
-            
-            items_to_add = new_item_ids - current_manifest_ids
-            for item_id in items_to_add:
-                item_obj = next(i for i in new_items if i.id == item_id)
-                EventItem.objects.create(event=event, item=item_obj, handled_by=request.user, status='APPROVED')
+            # 🚨 ACID COMPLIANCE: Atomic Update Block
+            try:
+                with transaction.atomic():
+                    event_obj = form.save()
+                    
+                    current_manifest_ids = set(EventItem.objects.filter(event=event).values_list('item_id', flat=True))
+                    new_item_ids = set(item.id for item in new_items)
+                    
+                    items_to_add = new_item_ids - current_manifest_ids
+                    for item_id in items_to_add:
+                        item_obj = next(i for i in new_items if i.id == item_id)
+                        EventItem.objects.create(event=event, item=item_obj, handled_by=request.user, status='APPROVED')
 
-            items_to_remove = current_manifest_ids - new_item_ids
-            if items_to_remove:
-                # Instead of deleting, we could mark them 'REJECTED', but deletion is fine for Vendor self-management.
-                EventItem.objects.filter(event=event, item_id__in=items_to_remove).delete()
+                    items_to_remove = current_manifest_ids - new_item_ids
+                    if items_to_remove:
+                        EventItem.objects.filter(event=event, item_id__in=items_to_remove).delete()
 
-            messages.success(request, "Gig parameters updated successfully!")
-            return redirect(DASHBOARD_URL_NAME)
+                messages.success(request, "Gig parameters updated successfully!")
+                return redirect(DASHBOARD_URL_NAME)
+                
+            except Exception as e:
+                messages.error(request, "Critical System Error: Gig update aborted to protect calendar math.")
+                
     else:
         form = EventForm(instance=event, user=request.user)
 
@@ -245,29 +250,30 @@ def update_event(request, pk):
 @require_POST
 def delete_event(request, pk):
     """
-    🚨 PHASE 4 UPGRADE: Safe Deletion Protocol.
+    Safe Deletion Protocol.
     Do not delete historical data; soft-cancel it instead if it has financial weight.
     """
     event = get_object_or_404(Event, pk=pk, user=request.user)
     title = event.title
     
-    # If the gig has generated invoices or is already completed, Soft Cancel it to preserve the ledger.
-    if event.status in ['COMPLETED', 'ACTIVE'] or event.documents.exists():
-        event.status = 'CANCELLED'
-        event.save()
-        # Release the gear back to the calendar
-        event.manifest.update(status='REJECTED')
-        
-        Notification.objects.create(
-            user=request.user, title="Gig Cancelled",
-            message=f"Gig '{title}' was cancelled. The accounting ledger was preserved and gear was released.",
-            notification_type='warning'
-        )
-        messages.success(request, f"Gig '{title}' safely cancelled.")
-    else:
-        # Hard delete is fine for drafts or mistakes
-        event.delete()
-        messages.success(request, f"Draft Gig '{title}' deleted permanently.")
+    try:
+        with transaction.atomic():
+            if event.status in ['COMPLETED', 'ACTIVE'] or event.documents.exists():
+                event.status = 'CANCELLED'
+                event.save()
+                event.manifest.update(status='REJECTED')
+                
+                Notification.objects.create(
+                    user=request.user, title="Gig Cancelled",
+                    message=f"Gig '{title}' was cancelled. The accounting ledger was preserved and gear was released.",
+                    notification_type='warning'
+                )
+                messages.success(request, f"Gig '{title}' safely cancelled.")
+            else:
+                event.delete()
+                messages.success(request, f"Draft Gig '{title}' deleted permanently.")
+    except Exception:
+        messages.error(request, "Error terminating gig operations.")
 
     return redirect('events:event_dashboard')
 
@@ -280,10 +286,8 @@ def event_report(request, pk):
         return redirect(DASHBOARD_URL_NAME)
 
     manifest_items = event.manifest.select_related('item').all()
-    # 🚨 PHASE 4: Use the locked_daily_rate for accurate historical reporting
     total_gear_value = sum(record.locked_daily_rate for record in manifest_items)
     
-    # Correct duration calculation
     duration = (event.end_time.date() - event.start_time.date()).days + 1
     
     context = {
@@ -319,40 +323,41 @@ def create_document(request, event_id):
         formset = LineItemFormSet(request.POST)
 
         if form.is_valid() and formset.is_valid():
-            # 1. Save Parent Document
-            doc = form.save(commit=False)
-            doc.event = event
-            doc.user = request.user
-            doc.save() 
+            # 🚨 ACID COMPLIANCE: Master Invoice Logic
+            try:
+                with transaction.atomic():
+                    doc = form.save(commit=False)
+                    doc.event = event
+                    doc.user = request.user
+                    doc.save() 
 
-            # 2. CAPTURE BRAND COLOR
-            brand_color = form.cleaned_data.get('brand_color')
-            if brand_color:
-                profile = request.user.userprofile
-                profile.invoice_color_theme = brand_color
-                profile.save()
+                    brand_color = form.cleaned_data.get('brand_color')
+                    if brand_color:
+                        profile, _ = UserProfile.objects.get_or_create(user=request.user)
+                        profile.invoice_color_theme = brand_color
+                        profile.save()
 
-            # 3. Bind Formset
-            formset.instance = doc
-            formset.save() 
+                    formset.instance = doc
+                    formset.save() 
 
-            # 4. Calculate Totals
-            total = sum(item.total_price for item in doc.items.all())
-            doc.subtotal = total
-            doc.total_amount = total
-            doc.save()
+                    total = sum(item.total_price for item in doc.items.all())
+                    doc.subtotal = total
+                    doc.total_amount = total
+                    doc.save()
 
-            messages.success(request, f"{doc.get_doc_type_display()} created successfully!")
-            return redirect('events:document_list')
+                messages.success(request, f"{doc.get_doc_type_display()} created successfully!")
+                return redirect('events:document_list')
+                
+            except Exception as e:
+                messages.error(request, "Error generating financial document. Transaction rolled back.")
     else:
-        # Pre-fill data
         initial_data = {
             'client_name': event.client_name,
             'client_phone': event.client_contact,
             'client_email': getattr(event, 'client_email', ''),
             'issue_date': timezone.now().date(),
             'due_date': timezone.now().date() + timezone.timedelta(days=7),
-            'brand_color': request.user.userprofile.invoice_color_theme or '#0f172a'
+            'brand_color': request.user.userprofile.invoice_color_theme if hasattr(request.user, 'userprofile') else '#0f172a'
         }
         
         formset_initial = []
@@ -363,7 +368,6 @@ def create_document(request, event_id):
                     'description': record.item.name if record.item else record.item_name_snapshot,
                     'details': record.item.description[:100] if record.item and record.item.description else "", 
                     'quantity': 1,
-                    # 🚨 PHASE 4: Pull from the locked rate, not the current inventory rate!
                     'unit_price': record.locked_daily_rate,
                 })
                 
@@ -387,29 +391,35 @@ def document_list(request):
 @login_required
 def generate_document_pdf(request, pk):
     """
-    Generates a professional PDF.
+    Engine output for generating the PDF Byte String from Document ledgers.
     """
     try:
-        doc = Document.objects.get(pk=pk, user=request.user)
+        doc = Document.objects.prefetch_related('items').get(pk=pk, user=request.user)
     except (Document.DoesNotExist, ValueError):
         messages.warning(request, "⚠️ Document not found.")
         return redirect('events:document_list')
+    
+    # Safely retrieve profile variables
+    user_profile = getattr(request.user, 'userprofile', None)
+    brand_color = user_profile.invoice_color_theme if user_profile and user_profile.invoice_color_theme else '#0F172A'
     
     context = {
         'doc': doc,
         'items': doc.items.all(),
         'user': request.user,
-        'profile': request.user.userprofile, # CRITICAL FOR TRACEABILITY
+        'profile': user_profile,
         'company_name': "Gigs360 Creative Services", 
         'company_email': request.user.email,
-        'brand_color': request.user.userprofile.invoice_color_theme or '#0f172a'
+        'brand_color': brand_color,
+        'today': timezone.now()
     }
     
-    pdf = render_to_pdf('events/invoice_pdf.html', context)
+    # Uses the engine in utils.py which returns raw bytes
+    pdf_bytes = render_to_pdf('events/invoice_pdf.html', context)
     
-    if pdf:
-        filename = f"{doc.doc_number}_{doc.client_name}.pdf"
-        response = HttpResponse(pdf, content_type='application/pdf')
+    if pdf_bytes:
+        filename = f"{doc.doc_number}_{doc.client_name}.pdf".replace(" ", "_")
+        response = HttpResponse(pdf_bytes, content_type='application/pdf')
         
         if request.GET.get('download'):
             response['Content-Disposition'] = f'attachment; filename="{filename}"'
@@ -418,7 +428,7 @@ def generate_document_pdf(request, pk):
             
         return response
         
-    return HttpResponse("Error generating PDF", status=500)
+    return HttpResponse("Critical Error: PDF Rendering Engine failed to compile the document.", status=500)
 
 @login_required
 @require_POST 

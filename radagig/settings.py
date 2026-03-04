@@ -115,7 +115,8 @@ USE_TZ = True
 # -------------------------------------------------------------------------
 # STATIC & MEDIA FILES (Critical for PDF Engine & QR Codes)
 # -------------------------------------------------------------------------
-STATIC_URL = 'static/'
+# 🚨 FIX APPLIED: Added leading slash to resolve absolute paths for xhtml2pdf
+STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
