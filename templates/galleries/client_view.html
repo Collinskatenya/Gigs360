@@ -1,0 +1,142 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ gallery.name }} | Client Portal</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    
+    <style>
+        body { 
+            background-color: #f8fafc; 
+            font-family: 'Inter', system-ui, -apple-system, sans-serif; 
+        }
+        .bg-slate { background-color: #0F172A; }
+        .text-gold { color: #F59E0B; }
+        .bg-gold { background-color: #F59E0B; }
+        
+        /* 1. Buttery Smooth Image Scaling */
+        .gallery-img {
+            aspect-ratio: 3/4;
+            object-fit: cover;
+            width: 100%;
+            border-radius: 0.75rem;
+            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); 
+        }
+        .img-wrapper {
+            overflow: hidden;
+            border-radius: 0.75rem;
+            position: relative;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: box-shadow 0.4s ease;
+        }
+        .img-wrapper:hover {
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15);
+        }
+        .img-wrapper:hover .gallery-img {
+            transform: scale(1.04);
+        }
+        
+        /* 2. INNOVATION: Frosted Glass Overlay (Glassmorphism) */
+        .img-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.3); 
+            backdrop-filter: blur(5px); 
+            -webkit-backdrop-filter: blur(5px); 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: all 0.4s ease;
+            border-radius: 0.75rem;
+        }
+        .img-wrapper:hover .img-overlay {
+            opacity: 1;
+        }
+
+        /* 3. INNOVATION: The Magnetic Glowing Button */
+        .hover-lift {
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .hover-lift:hover {
+            transform: translateY(-5px) scale(1.03);
+            box-shadow: 0 10px 20px -5px rgba(245, 158, 11, 0.4), 0 0 10px rgba(255, 255, 255, 0.5) !important;
+            background-color: #ffffff;
+            color: #0F172A !important;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark bg-slate py-3 shadow-sm">
+    <div class="container">
+        <span class="navbar-brand fw-bolder tracking-wide">
+            <i class="bi bi-lightning-charge-fill text-gold me-1"></i> Gigs360 Delivery
+        </span>
+        <span class="text-white-50 small d-none d-md-block">Delivered by {{ gallery.vendor.userprofile.business_name|default:gallery.vendor.username }}</span>
+    </div>
+</nav>
+
+<div class="bg-white border-bottom py-5 mb-5">
+    <div class="container text-center">
+        <h1 class="fw-bold text-dark display-5 mb-2">{{ gallery.name }}</h1>
+        <p class="text-muted fs-5 mb-0">{{ gallery.event.title }} • {{ photos.count }} Photos</p>
+    </div>
+</div>
+
+<div class="container pb-5">
+
+    {% if is_unlocked %}
+        <div class="alert bg-success-subtle text-success border-success border-opacity-25 shadow-sm rounded-4 p-4 mb-5 d-flex align-items-center">
+            <i class="bi bi-check-circle-fill fs-3 me-3"></i>
+            <div>
+                <h5 class="fw-bold mb-1">Gallery Unlocked!</h5>
+                <p class="mb-0 small">Payment has been verified via Escrow. You may now download all high-resolution files without watermarks.</p>
+            </div>
+        </div>
+    {% else %}
+        <div class="alert bg-warning-subtle text-dark border-warning border-opacity-50 shadow-sm rounded-4 p-4 mb-5 d-flex align-items-center">
+            <i class="bi bi-shield-lock-fill fs-3 text-gold me-3"></i>
+            <div>
+                <h5 class="fw-bold mb-1">Downloads Locked Pending Payment</h5>
+                <p class="mb-0 small">You can view your beautiful gallery below, but high-resolution downloads will remain locked until the final M-Pesa payment is secured in Escrow.</p>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="row g-4">
+        {% for photo in photos %}
+            <div class="col-6 col-md-4 col-lg-3">
+                <div class="img-wrapper shadow-sm">
+                    <img src="{{ photo.high_res_file.url }}" class="gallery-img" alt="Gallery Photo">
+                    
+                    <div class="img-overlay">
+                        {% if is_unlocked %}
+                            <a href="{{ photo.high_res_file.url }}" download class="btn btn-light rounded-pill px-4 shadow fw-bold text-dark hover-lift">
+                                <i class="bi bi-cloud-download-fill me-1 text-success"></i> Download
+                            </a>
+                        {% else %}
+                            <button class="btn bg-slate text-white rounded-pill px-4 shadow fw-bold border border-secondary" disabled style="cursor: not-allowed; opacity: 0.9;">
+                                <i class="bi bi-lock-fill text-gold me-1"></i> Locked
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-12 text-center py-5">
+                <div class="text-muted mb-3"><i class="bi bi-images display-1 opacity-25"></i></div>
+                <h4 class="text-dark">Gallery is currently empty</h4>
+                <p class="text-muted">The vendor has not uploaded any photos yet.</p>
+            </div>
+        {% endfor %}
+    </div>
+
+</div>
+
+</body>
+</html>

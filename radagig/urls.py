@@ -24,6 +24,9 @@ urlpatterns = [
     
     # 💳 STAGE 4 INJECTED: The Fintech Gateway
     path('finance/', include('finance.urls')),          # Escrow & M-Pesa Webhooks
+    
+    # 📸 STAGE 5 INJECTED: Client Galleries
+    path('galleries/', include('galleries.urls')),      # Escrow-Locked Media Delivery
 ]
 
 # 📁 LOCAL DEVELOPMENT SERVING (Critical for CSS, QR Codes, and PDFs)

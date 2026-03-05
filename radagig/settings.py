@@ -36,7 +36,8 @@ INSTALLED_APPS = [
     
     # ⚠️ These apps don't exist yet. Keeping them active would crash the server.
     # Uncomment them only after you run 'python manage.py startapp finance', etc.
-     'finance',        
+     'finance', 
+     'galleries',       
     # 'community',      
 ]
 
