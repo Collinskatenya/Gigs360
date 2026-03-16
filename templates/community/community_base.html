@@ -1,0 +1,69 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
+    <title>{% block title %}Gigs360 Network{% endblock %}</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    <style>
+        /* 🚨 INNOVATION: CSS Variables for brand consistency */
+        :root {
+            --gigs-navy: #0F172A;
+            --gigs-navy-light: #1E293B;
+            --gigs-gold: #F59E0B;
+            --gigs-bg-slate: #F8FAFC;
+        }
+
+        /* 🚨 INNOVATION: Native App Feel & Crisp Typography */
+        body { 
+            margin: 0; 
+            padding: 0; 
+            height: 100vh; 
+            overflow: hidden; 
+            font-family: 'Inter', system-ui, -apple-system, sans-serif; 
+            background-color: var(--gigs-bg-slate); 
+            color: #334155;
+            -webkit-font-smoothing: antialiased; /* Makes text look sharper */
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .app-wrapper { 
+            display: flex; 
+            height: 100vh; 
+            width: 100vw; 
+            overflow: hidden; 
+        }
+        
+        /* Premium Light Mode Scrollbars */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { 
+            background-color: #CBD5E1; 
+            border-radius: 10px; 
+            border: 2px solid var(--gigs-bg-slate); /* Creates a floating effect */
+            background-clip: padding-box;
+        }
+        ::-webkit-scrollbar-thumb:hover { background-color: #94A3B8; }
+
+        /* Smooth App Initialization */
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="fade-in">
+
+    <div class="app-wrapper">
+        {% block content %}{% endblock %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

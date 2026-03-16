@@ -101,82 +101,102 @@
         </div>
 
         <div class="row g-4">
-            
-            <div class="col-lg-4 col-md-6">
-                <div class="card-modern">
-                    <div class="icon-modern icon-green">
-                        <i class="bi bi-wallet2"></i>
+            {% for service in services %}
+                <div class="col-lg-4 col-md-6">
+                    <div class="card-modern">
+                        <div class="icon-modern {% cycle 'icon-green' 'icon-purple' 'icon-blue' 'icon-gold' 'icon-red' 'icon-cyan' %}">
+                            <i class="bi {{ service.icon }}"></i>
+                        </div>
+                        <h4>{{ service.title }}</h4>
+                        <p>{{ service.description }}</p>
                     </div>
-                    <h4>Secure Payments</h4>
-                    <p>
-                        Never chase a client again. We enforce a 50% deposit via M-Pesa STK Push held in Escrow before the gig even starts.
-                    </p>
                 </div>
-            </div>
-
-            <div class="col-lg-4 col-md-6">
-                <div class="card-modern">
-                    <div class="icon-modern icon-purple">
-                        <i class="bi bi-graph-up-arrow"></i>
+            {% empty %}
+                <div class="col-lg-4 col-md-6">
+                    <div class="card-modern">
+                        <div class="icon-modern icon-green">
+                            <i class="bi bi-wallet2"></i>
+                        </div>
+                        <h4>Secure Payments</h4>
+                        <p>Never chase a client again. We enforce a 50% deposit via M-Pesa STK Push held in Escrow before the gig even starts.</p>
                     </div>
-                    <h4>Business Analytics</h4>
-                    <p>
-                        Stop guessing. View your monthly earnings, top-performing packages, and growth trends directly on your Smart Dashboard.
-                    </p>
                 </div>
-            </div>
-
-            <div class="col-lg-4 col-md-6">
-                <div class="card-modern">
-                    <div class="icon-modern icon-blue">
-                        <i class="bi bi-qr-code-scan"></i>
+                <div class="col-lg-4 col-md-6">
+                    <div class="card-modern">
+                        <div class="icon-modern icon-purple">
+                            <i class="bi bi-graph-up-arrow"></i>
+                        </div>
+                        <h4>Business Analytics</h4>
+                        <p>Stop guessing. View your monthly earnings, top-performing packages, and growth trends directly on your Smart Dashboard.</p>
                     </div>
-                    <h4>Gear Locker</h4>
-                    <p>
-                        Protect your investment. Scan QR codes to check-in/out cameras and lights. Know exactly who has your Sony A7S.
-                    </p>
                 </div>
-            </div>
-
-            <div class="col-lg-4 col-md-6">
-                <div class="card-modern">
-                    <div class="icon-modern icon-gold">
-                        <i class="bi bi-images"></i>
+                <div class="col-lg-4 col-md-6">
+                    <div class="card-modern">
+                        <div class="icon-modern icon-blue">
+                            <i class="bi bi-qr-code-scan"></i>
+                        </div>
+                        <h4>Gear Locker</h4>
+                        <p>Protect your investment. Scan QR codes to check-in/out cameras and lights. Know exactly who has your Sony A7S.</p>
                     </div>
-                    <h4>Professional Albums</h4>
-                    <p>
-                        Deliver photos professionally. Create stunning, shareable digital albums for your clients without paying for extra software.
-                    </p>
                 </div>
-            </div>
-
-            <div class="col-lg-4 col-md-6">
-                <div class="card-modern">
-                    <div class="icon-modern icon-red">
-                        <i class="bi bi-file-earmark-pdf-fill"></i>
+                <div class="col-lg-4 col-md-6">
+                    <div class="card-modern">
+                        <div class="icon-modern icon-gold">
+                            <i class="bi bi-images"></i>
+                        </div>
+                        <h4>Professional Albums</h4>
+                        <p>Deliver photos professionally. Create stunning, shareable digital albums for your clients without paying for extra software.</p>
                     </div>
-                    <h4>Smart Contracts</h4>
-                    <p>
-                        Look professional in seconds. Generate iron-clad PDF quotes, invoices, and contracts and send them via WhatsApp.
-                    </p>
                 </div>
-            </div>
-
-            <div class="col-lg-4 col-md-6">
-                <div class="card-modern">
-                    <div class="icon-modern icon-cyan">
-                        <i class="bi bi-people-fill"></i>
+                <div class="col-lg-4 col-md-6">
+                    <div class="card-modern">
+                        <div class="icon-modern icon-red">
+                            <i class="bi bi-file-earmark-pdf-fill"></i>
+                        </div>
+                        <h4>Smart Contracts</h4>
+                        <p>Look professional in seconds. Generate iron-clad PDF quotes, invoices, and contracts and send them via WhatsApp.</p>
                     </div>
-                    <h4>Get Hired</h4>
-                    <p>
-                        Join the "GigHub" marketplace. Verified profiles get exposure to top Event Planners and Agencies looking for talent.
-                    </p>
                 </div>
-            </div>
-
+                <div class="col-lg-4 col-md-6">
+                    <div class="card-modern">
+                        <div class="icon-modern icon-cyan">
+                            <i class="bi bi-people-fill"></i>
+                        </div>
+                        <h4>Get Hired</h4>
+                        <p>Join the "GigHub" marketplace. Verified profiles get exposure to top Event Planners and Agencies looking for talent.</p>
+                    </div>
+                </div>
+            {% endfor %}
         </div>
     </div>
 </section>
+
+{% if activities %}
+<section class="py-5 bg-light">
+    <div class="container py-5">
+        <div class="text-center mb-5">
+            <span class="badge bg-white text-warning border px-3 py-2 rounded-pill fw-bold mb-3 shadow-sm">
+                <i class="bi bi-calendar-star me-1"></i> MASTERCLASSES & EVENTS
+            </span>
+            <h2 class="fw-bold text-dark">Level Up Your Skills</h2>
+        </div>
+        
+        <div class="row justify-content-center g-4">
+            {% for activity in activities %}
+            <div class="col-md-8 col-lg-4">
+                <div class="card-modern h-100 p-4" style="border-top: 4px solid #d9a60e !important; background: white; border-radius: 1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                    <h5 class="fw-bold text-dark mb-2">{{ activity.title }}</h5>
+                    <p class="text-primary fw-bold small mb-3">
+                        <i class="bi bi-calendar3 me-2"></i>{{ activity.event_date|date:"F j, Y" }}
+                    </p>
+                    <p class="text-muted mb-0">{{ activity.description }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
 
 <section id="pricing" class="section-pricing">
     <div class="container">
@@ -322,143 +342,104 @@
                 <i class="bi bi-heart-fill me-1 text-danger"></i> COMMUNITY LOVE
             </span>
             <h2 class="display-5 fw-bold text-dark">Trusted by the Best</h2>
-            <p class="text-muted lead">See what 500+ Kenyan creatives are saying.</p>
+            <p class="text-muted lead">See what creatives are saying.</p>
         </div>
 
         <div id="testimonialCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="20000" data-bs-pause="hover">
-            
-            <div class="carousel-inner pb-5"> <div class="carousel-item active">
-                    <div class="row g-4">
-                        
-                        <div class="col-lg-4 col-md-6">
-                            <div class="card-testimonial h-100">
-                                <i class="bi bi-quote icon-quote"></i>
-                                <div class="avatar-box">
-                                    <img src="https://i.pravatar.cc/300?img=11" alt="Brian" class="avatar-img">
+            <div class="carousel-inner pb-5"> 
+                
+                {% if testimonials %}
+                    <div class="carousel-item active">
+                        <div class="row g-4 justify-content-center">
+                            {% for testimonial in testimonials %}
+                                <div class="col-lg-4 col-md-6">
+                                    <div class="card-testimonial h-100">
+                                        <i class="bi bi-quote icon-quote"></i>
+                                        <div class="avatar-box">
+                                            <div class="rounded-circle bg-dark d-flex justify-content-center align-items-center text-white fw-bold shadow-sm" style="width: 60px; height: 60px; font-size: 1.5rem; margin: auto;">
+                                                {{ testimonial.client_name|make_list|first|upper }}
+                                            </div>
+                                        </div>
+                                        <div class="star-rating text-warning mt-3">
+                                            {% for i in "12345" %}
+                                                <i class="bi bi-star-fill {% if forloop.counter > testimonial.rating %}text-muted opacity-25{% endif %}"></i>
+                                            {% endfor %}
+                                        </div>
+                                        <p class="testimonial-text">"{{ testimonial.quote }}"</p>
+                                        <div class="text-center">
+                                            <h6 class="client-name">{{ testimonial.client_name }}</h6>
+                                            <span class="client-role">{{ testimonial.role }}</span>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="star-rating">
-                                    <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
-                                </div>
-                                <p class="testimonial-text">
-                                    "Before Gigs360, I was chasing payments for weeks. Now, clients pay the deposit instantly via M-Pesa. It has completely professionalized my photography business."
-                                </p>
-                                <div class="text-center">
-                                    <h6 class="client-name">Brian Mutua</h6>
-                                    <span class="client-role">Wedding Photographer</span>
-                                </div>
-                            </div>
+                            {% endfor %}
                         </div>
-
-                        <div class="col-lg-4 col-md-6">
-                            <div class="card-testimonial h-100">
-                                <i class="bi bi-quote icon-quote"></i>
-                                <div class="avatar-box">
-                                    <img src="https://i.pravatar.cc/300?img=5" alt="Sarah" class="avatar-img">
-                                </div>
-                                <div class="star-rating">
-                                    <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
-                                </div>
-                                <p class="testimonial-text">
-                                    "The gear tracking feature is a lifesaver. We run a busy rental house in Westlands, and knowing exactly who has the 85mm lens has saved us thousands."
-                                </p>
-                                <div class="text-center">
-                                    <h6 class="client-name">Sarah Kamau</h6>
-                                    <span class="client-role">Owner, LensHire KE</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-lg-4 col-md-6">
-                            <div class="card-testimonial h-100">
-                                <i class="bi bi-quote icon-quote"></i>
-                                <div class="avatar-box">
-                                    <img src="https://i.pravatar.cc/300?img=3" alt="David" class="avatar-img">
-                                </div>
-                                <div class="star-rating">
-                                    <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-half"></i>
-                                </div>
-                                <p class="testimonial-text">
-                                    "Generating contracts used to take me hours. Now I do it in the cab on my way to the meeting. My corporate clients take me much more seriously now."
-                                </p>
-                                <div class="text-center">
-                                    <h6 class="client-name">David Ochieng</h6>
-                                    <span class="client-role">Corporate MC & Host</span>
-                                </div>
-                            </div>
-                        </div>
-
                     </div>
-                </div>
+                {% else %}
+                    <div class="carousel-item active">
+                        <div class="row g-4">
+                            <div class="col-lg-4 col-md-6">
+                                <div class="card-testimonial h-100">
+                                    <i class="bi bi-quote icon-quote"></i>
+                                    <div class="avatar-box">
+                                        <img src="https://i.pravatar.cc/300?img=11" alt="Brian" class="avatar-img">
+                                    </div>
+                                    <div class="star-rating">
+                                        <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+                                    </div>
+                                    <p class="testimonial-text">"Before Gigs360, I was chasing payments for weeks. Now, clients pay the deposit instantly via M-Pesa. It has completely professionalized my photography business."</p>
+                                    <div class="text-center">
+                                        <h6 class="client-name">Brian Mutua</h6>
+                                        <span class="client-role">Wedding Photographer</span>
+                                    </div>
+                                </div>
+                            </div>
 
-                <div class="carousel-item">
-                    <div class="row g-4">
-                        
-                        <div class="col-lg-4 col-md-6">
-                            <div class="card-testimonial h-100">
-                                <i class="bi bi-quote icon-quote"></i>
-                                <div class="avatar-box">
-                                    <img src="https://i.pravatar.cc/300?img=9" alt="Grace" class="avatar-img">
+                            <div class="col-lg-4 col-md-6">
+                                <div class="card-testimonial h-100">
+                                    <i class="bi bi-quote icon-quote"></i>
+                                    <div class="avatar-box">
+                                        <img src="https://i.pravatar.cc/300?img=5" alt="Sarah" class="avatar-img">
+                                    </div>
+                                    <div class="star-rating">
+                                        <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+                                    </div>
+                                    <p class="testimonial-text">"The gear tracking feature is a lifesaver. We run a busy rental house in Westlands, and knowing exactly who has the 85mm lens has saved us thousands."</p>
+                                    <div class="text-center">
+                                        <h6 class="client-name">Sarah Kamau</h6>
+                                        <span class="client-role">Owner, LensHire KE</span>
+                                    </div>
                                 </div>
-                                <div class="star-rating">
-                                    <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
-                                </div>
-                                <p class="testimonial-text">
-                                    "The automated receipts are fantastic. I don't have to manually write invoices anymore, and my tax filing is so much easier."
-                                </p>
-                                <div class="text-center">
-                                    <h6 class="client-name">Grace Wanjiku</h6>
-                                    <span class="client-role">Event Planner</span>
+                            </div>
+
+                            <div class="col-lg-4 col-md-6">
+                                <div class="card-testimonial h-100">
+                                    <i class="bi bi-quote icon-quote"></i>
+                                    <div class="avatar-box">
+                                        <img src="https://i.pravatar.cc/300?img=3" alt="David" class="avatar-img">
+                                    </div>
+                                    <div class="star-rating">
+                                        <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-half"></i>
+                                    </div>
+                                    <p class="testimonial-text">"Generating contracts used to take me hours. Now I do it in the cab on my way to the meeting. My corporate clients take me much more seriously now."</p>
+                                    <div class="text-center">
+                                        <h6 class="client-name">David Ochieng</h6>
+                                        <span class="client-role">Corporate MC & Host</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-
-                        <div class="col-lg-4 col-md-6">
-                            <div class="card-testimonial h-100">
-                                <i class="bi bi-quote icon-quote"></i>
-                                <div class="avatar-box">
-                                    <img src="https://i.pravatar.cc/300?img=12" alt="Kevin" class="avatar-img">
-                                </div>
-                                <div class="star-rating">
-                                    <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
-                                </div>
-                                <p class="testimonial-text">
-                                    "Gigs360 helps me manage my DJ bookings perfectly. I never double-book dates anymore, and the deposit system is flawless."
-                                </p>
-                                <div class="text-center">
-                                    <h6 class="client-name">Kevin 'DJ Kev'</h6>
-                                    <span class="client-role">Professional DJ</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-lg-4 col-md-6">
-                            <div class="card-testimonial h-100">
-                                <i class="bi bi-quote icon-quote"></i>
-                                <div class="avatar-box">
-                                    <img src="https://i.pravatar.cc/300?img=1" alt="Alice" class="avatar-img">
-                                </div>
-                                <div class="star-rating">
-                                    <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
-                                </div>
-                                <p class="testimonial-text">
-                                    "Security for my decor items was a nightmare. The QR tracking has held my staff accountable. Loss has dropped to zero."
-                                </p>
-                                <div class="text-center">
-                                    <h6 class="client-name">Alice Nderitu</h6>
-                                    <span class="client-role">Decor Vendor</span>
-                                </div>
-                            </div>
-                        </div>
-
                     </div>
-                </div>
+                {% endif %}
 
             </div>
 
-            <div class="carousel-indicators carousel-indicators-testimonials">
-                <button type="button" data-bs-target="#testimonialCarousel" data-bs-slide-to="0" class="active"></button>
-                <button type="button" data-bs-target="#testimonialCarousel" data-bs-slide-to="1"></button>
-            </div>
+            {% if not testimonials %}
+                <div class="carousel-indicators carousel-indicators-testimonials">
+                    <button type="button" data-bs-target="#testimonialCarousel" data-bs-slide-to="0" class="active"></button>
+                    <button type="button" data-bs-target="#testimonialCarousel" data-bs-slide-to="1"></button>
+                </div>
+            {% endif %}
 
         </div>
     </div>

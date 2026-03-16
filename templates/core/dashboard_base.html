@@ -66,6 +66,11 @@
                 <span class="badge bg-danger rounded-pill" style="font-size: 0.6rem;">NEW</span>
             </a>
 
+            <div class="menu-label mt-3">Network</div>
+            <a href="{% url 'community:hub' %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center {% if 'community' in request.path %}active{% endif %}">
+                <div><i class="bi bi-discord me-1" style="color: #5865F2;"></i> Community Hub</div>
+            </a>
+
             <div class="menu-label mt-3">Account & Support</div>
             
             <a href="{% url 'settings' %}" class="list-group-item list-group-item-action {% if 'settings' in request.path %}active{% endif %}">
@@ -252,7 +257,7 @@
 
                 // Fire background request to mark as read
                 fetch(targetUrl, {
-                    method: 'POST', // Depending on your view, GET or POST might be required. Assuming GET for simple read updates based on standard Django patterns, but if POST, include headers.
+                    method: 'POST', 
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
                         'X-CSRFToken': csrfToken,

@@ -3,10 +3,11 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth import get_user_model
 from django.db.models import Q
 
-# 🚨 PHASE 6: Added SystemConfiguration and updated imports
+# 🚨 PHASE 6 & LANDING PAGE CMS IMPORTS
 from .models import (
     UserProfile, SecurityLog, Notification, HolidayMessage, 
-    SupportTicket, TicketMessage, SystemConfiguration
+    SupportTicket, TicketMessage, SystemConfiguration,
+    UpcomingActivity, ServiceFeature, Testimonial  # <-- INJECTED CMS MODELS
 )
 from inventory.models import InventoryItem  # Needed for safe category querying
 
@@ -186,3 +187,22 @@ except admin.sites.NotRegistered:
 
 admin.site.register(User, CustomUserAdmin)
 admin.site.register(Notification)
+
+# ==========================================
+# 7. LANDING PAGE CMS (Dynamic Content)
+# ==========================================
+
+@admin.register(UpcomingActivity)
+class UpcomingActivityAdmin(admin.ModelAdmin):
+    list_display = ('title', 'event_date', 'is_active')
+    list_filter = ('is_active',)
+
+@admin.register(ServiceFeature)
+class ServiceFeatureAdmin(admin.ModelAdmin):
+    list_display = ('title', 'order', 'is_active')
+    list_editable = ('order', 'is_active')
+
+@admin.register(Testimonial)
+class TestimonialAdmin(admin.ModelAdmin):
+    list_display = ('client_name', 'role', 'rating', 'is_active')
+    list_filter = ('is_active', 'rating')

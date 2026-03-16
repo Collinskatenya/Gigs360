@@ -27,7 +27,12 @@ from .forms import (
 )
 from .tokens import account_activation_token
 
-from .models import Notification, SecurityLog, UserProfile, SupportTicket, TicketMessage, HolidayMessage
+# 🚨 INJECTED CMS MODELS HERE
+from .models import (
+    Notification, SecurityLog, UserProfile, SupportTicket, 
+    TicketMessage, HolidayMessage, UpcomingActivity, 
+    ServiceFeature, Testimonial
+)
 from inventory.models import InventoryItem
 from events.models import Event
 
@@ -38,8 +43,19 @@ User = get_user_model()
 # ==========================================
 
 def home(request):
-    """Renders the Landing Page."""
-    return render(request, 'core/index.html')
+    """
+    Renders the Landing Page - Now powered by dynamic CMS data.
+    """
+    activities = UpcomingActivity.objects.filter(is_active=True)[:3]
+    services = ServiceFeature.objects.filter(is_active=True)
+    testimonials = Testimonial.objects.filter(is_active=True)
+
+    context = {
+        'activities': activities,
+        'services': services,
+        'testimonials': testimonials,
+    }
+    return render(request, 'core/index.html', context)
 
 def signup(request):
     """Handles User Registration."""

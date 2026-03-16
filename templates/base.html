@@ -51,13 +51,13 @@
                         </a>
                         <ul class="dropdown-menu shadow border-0 rounded-3 mt-2">
                             <li><h6 class="dropdown-header text-uppercase small fw-bold opacity-75">Visual & Audio</h6></li>
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-camera-fill text-primary me-2"></i> Photographers</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-camera-reels-fill text-primary me-2"></i> Videographers</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-music-note-beamed text-primary me-2"></i> DJs & Sound</a></li>
+                            <li><a class="dropdown-item" href="{% url 'signup' %}"><i class="bi bi-camera-fill text-primary me-2"></i> Photographers</a></li>
+                            <li><a class="dropdown-item" href="{% url 'signup' %}"><i class="bi bi-camera-reels-fill text-primary me-2"></i> Videographers</a></li>
+                            <li><a class="dropdown-item" href="{% url 'signup' %}"><i class="bi bi-music-note-beamed text-primary me-2"></i> DJs & Sound</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><h6 class="dropdown-header text-uppercase small fw-bold opacity-75">Talent</h6></li>
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-mic-fill text-primary me-2"></i> MCs & Hypemen</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-phone-fill text-primary me-2"></i> Content Creators</a></li>
+                            <li><a class="dropdown-item" href="{% url 'signup' %}"><i class="bi bi-mic-fill text-primary me-2"></i> MCs & Hypemen</a></li>
+                            <li><a class="dropdown-item" href="{% url 'signup' %}"><i class="bi bi-phone-fill text-primary me-2"></i> Content Creators</a></li>
                         </ul>
                     </li>
 
@@ -67,13 +67,15 @@
                         </a>
                         <ul class="dropdown-menu shadow border-0 rounded-3 mt-2">
                             <li><h6 class="dropdown-header text-uppercase small fw-bold opacity-75">Event Setup</h6></li>
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-flower1 text-danger me-2"></i> Decor & Florists</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-house-door-fill text-danger me-2"></i> Tents & Furniture</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-lightbulb-fill text-danger me-2"></i> Lighting & Screens</a></li>
+                            <li><a class="dropdown-item" href="{% url 'signup' %}"><i class="bi bi-flower1 text-danger me-2"></i> Decor & Florists</a></li>
+                            <li><a class="dropdown-item" href="{% url 'signup' %}"><i class="bi bi-house-door-fill text-danger me-2"></i> Tents & Furniture</a></li>
+                            <li><a class="dropdown-item" href="{% url 'signup' %}"><i class="bi bi-lightbulb-fill text-danger me-2"></i> Lighting & Screens</a></li>
                         </ul>
                     </li>
 
                     <li class="nav-item"><a class="nav-link" href="#pricing"><i class="bi bi-tag-fill me-1"></i> Pricing</a></li>
+                    
+                    <li class="nav-item"><a class="nav-link text-warning fw-bold" href="{% url 'community:hub' %}"><i class="bi bi-discord me-1"></i> Community</a></li>
 
                     {% if user.is_authenticated %}
                         <li class="nav-item ms-lg-3">
@@ -82,8 +84,9 @@
                             </a>
                         </li>
                     {% else %}
-                        <li class="nav-item ms-lg-3">
-                            <a class="btn shadow-sm fw-bold rounded-pill px-4 hover-lift" href="{% url 'login' %}" style="background-color: #d9a60e; color: #000; border: none;">
+                        <li class="nav-item ms-lg-2"><a class="nav-link" href="{% url 'login' %}">Log In</a></li>
+                        <li class="nav-item ms-lg-2">
+                            <a class="btn shadow-sm fw-bold rounded-pill px-4 hover-lift" href="{% url 'signup' %}" style="background-color: #d9a60e; color: #000; border: none;">
                                 Get Started
                             </a>
                         </li>

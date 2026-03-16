@@ -199,7 +199,6 @@ class UserProfile(TimeStampedModel):
     dob = models.DateField(null=True, blank=True)
     
     # --- LEGAL & ZERO-UPLOAD KYC ---
-    # Note: In production, consider encrypting these fields using django-cryptography
     kra_pin = models.CharField(max_length=20, blank=True, null=True, unique=True, db_index=True)
     id_number = models.CharField(max_length=20, blank=True, null=True, unique=True, db_index=True)
     is_identity_locked = models.BooleanField(default=False, help_text="If True, user cannot edit ID/KRA without Admin Support Ticket.")
@@ -336,3 +335,43 @@ def save_user_profile(sender, instance, **kwargs):
         instance.userprofile.save()
     except UserProfile.DoesNotExist:
         UserProfile.objects.create(user=instance)
+
+# ==========================================
+# 8. LANDING PAGE CMS (Dynamic Content)
+# ==========================================
+
+class UpcomingActivity(models.Model):
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    event_date = models.DateField()
+    is_active = models.BooleanField(default=True, help_text="Show this on the landing page?")
+    
+    class Meta:
+        ordering = ['event_date']
+        verbose_name_plural = "Upcoming Activities"
+
+    def __str__(self):
+        return self.title
+
+class ServiceFeature(models.Model):
+    title = models.CharField(max_length=100)
+    description = models.TextField()
+    icon = models.CharField(max_length=50, default='bi-star-fill', help_text="Bootstrap icon class (e.g., bi-camera)")
+    order = models.IntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['order']
+
+    def __str__(self):
+        return self.title
+
+class Testimonial(models.Model):
+    client_name = models.CharField(max_length=100)
+    role = models.CharField(max_length=100, help_text="e.g., Lead Photographer, Pixels Ltd")
+    quote = models.TextField()
+    rating = models.IntegerField(default=5)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"{self.client_name} - {self.role}"

@@ -38,7 +38,7 @@ INSTALLED_APPS = [
     # Uncomment them only after you run 'python manage.py startapp finance', etc.
      'finance', 
      'galleries',       
-    # 'community',      
+     'community',      
 ]
 
 MIDDLEWARE = [
