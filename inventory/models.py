@@ -25,8 +25,11 @@ class Category(models.Model):
         ordering = ['name']
 
     def save(self, *args, **kwargs):
+        # 🚨 FIX: Prevent database crash on duplicate category names
         if not self.slug:
-            self.slug = slugify(self.name)
+            base_slug = slugify(self.name)
+            short_uid = str(uuid.uuid4())[:6]
+            self.slug = f"{base_slug}-{short_uid}"
         super().save(*args, **kwargs)
 
     def __str__(self):

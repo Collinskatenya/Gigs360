@@ -2,12 +2,13 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth import get_user_model
 from django.db.models import Q
+from django.utils.html import format_html # 🚨 ADDED FOR STATUS BADGES
 
 # 🚨 PHASE 6 & LANDING PAGE CMS IMPORTS
 from .models import (
     UserProfile, SecurityLog, Notification, HolidayMessage, 
     SupportTicket, TicketMessage, SystemConfiguration,
-    UpcomingActivity, ServiceFeature, Testimonial  # <-- INJECTED CMS MODELS
+    UpcomingActivity, ServiceFeature, Testimonial  
 )
 from inventory.models import InventoryItem  # Needed for safe category querying
 
@@ -22,20 +23,39 @@ class UserProfileInline(admin.StackedInline):
     verbose_name_plural = 'Business Identity & KYC'
     fk_name = 'user'
     
+    # 🚨 ZERO-KNOWLEDGE PROTOCOL: Seal the Inline Backdoor
+    readonly_fields = ('get_masked_kra', 'get_masked_id', 'get_masked_account', 'ai_trust_score')
+    exclude = ('kra_pin', 'id_number', 'account_number')
+    
     fieldsets = (
         ('Identity & KYC', {
-            'fields': ('profile_picture', 'phone_number', 'kra_pin', 'id_number', 'dob')
+            'fields': ('profile_picture', 'phone_number', 'get_masked_kra', 'get_masked_id', 'dob')
         }),
         ('Business Info', {
             'fields': ('business_name', 'business_category', 'bio', 'company_logo', 'invoice_color_theme')
         }),
         ('Finance', {
-            'fields': ('bank_name', 'account_number', 'mpesa_number')
+            'fields': ('bank_name', 'get_masked_account', 'mpesa_number')
         }),
-        ('Status', {
-            'fields': ('plan', 'subscription_end_date', 'is_verified')
+        ('Security & AI Status', {
+            'fields': ('plan', 'subscription_end_date', 'kyc_status', 'rejection_reason', 'ai_trust_score', 'is_verified')
         }),
     )
+
+    def get_masked_kra(self, obj):
+        if obj.kra_pin and len(obj.kra_pin) > 4: return f"********{obj.kra_pin[-4:]}"
+        return "Not Provided"
+    get_masked_kra.short_description = 'KRA PIN'
+
+    def get_masked_id(self, obj):
+        if obj.id_number and len(obj.id_number) > 3: return f"******{obj.id_number[-3:]}"
+        return "Not Provided"
+    get_masked_id.short_description = 'National ID'
+
+    def get_masked_account(self, obj):
+        if obj.account_number and len(obj.account_number) > 4: return f"********{obj.account_number[-4:]}"
+        return "Not Provided"
+    get_masked_account.short_description = 'Bank Account'
 
 # ==========================================
 # 2. CUSTOM USER ADMIN
@@ -56,6 +76,66 @@ class CustomUserAdmin(BaseUserAdmin):
     def get_plan(self, instance):
         return instance.userprofile.plan if hasattr(instance, 'userprofile') else "N/A"
     get_plan.short_description = 'Plan'
+
+    # 🚨 NOTIFICATION LOOP: Catch KYC changes if edited via User page
+    def save_formset(self, request, form, formset, change):
+        if formset.model == UserProfile:
+            instances = formset.save(commit=False)
+            for instance in instances:
+                if change and instance.pk:
+                    old_obj = UserProfile.objects.get(pk=instance.pk)
+                    if instance.kyc_status == 'REJECTED' and old_obj.kyc_status != 'REJECTED':
+                        Notification.objects.create(user=instance.user, title="Verification Failed ❌", message=f"Your KYC verification was rejected. Reason: {instance.rejection_reason}", notification_type="error")
+                    elif instance.kyc_status == 'APPROVED' and old_obj.kyc_status != 'APPROVED':
+                        Notification.objects.create(user=instance.user, title="Account Verified! ✅", message="Your legal identity has been approved. You can now use Escrow.", notification_type="success")
+                instance.save()
+            formset.save_m2m()
+        else:
+            super().save_formset(request, form, formset, change)
+
+
+# ==========================================
+# 2B. DEDICATED KYC DASHBOARD (SENTINEL)
+# ==========================================
+@admin.register(UserProfile)
+class UserProfileAdmin(admin.ModelAdmin):
+    """Standalone Admin for KYC Officers to review flagged accounts safely."""
+    list_display = ('user', 'business_name', 'status_badge', 'ai_trust_score', 'get_masked_kra')
+    list_filter = ('kyc_status', 'plan')
+    search_fields = ('user__email', 'business_name', 'kra_pin')
+    
+    readonly_fields = ('get_masked_kra', 'get_masked_id', 'get_masked_account', 'ai_trust_score')
+    exclude = ('kra_pin', 'id_number', 'account_number')
+
+    def get_masked_kra(self, obj):
+        if obj.kra_pin and len(obj.kra_pin) > 4: return f"********{obj.kra_pin[-4:]}"
+        return "Not Provided"
+    get_masked_kra.short_description = 'KRA PIN'
+
+    def get_masked_id(self, obj):
+        if obj.id_number and len(obj.id_number) > 3: return f"******{obj.id_number[-3:]}"
+        return "Not Provided"
+    get_masked_id.short_description = 'National ID'
+    
+    def get_masked_account(self, obj):
+        if obj.account_number and len(obj.account_number) > 4: return f"********{obj.account_number[-4:]}"
+        return "Not Provided"
+    get_masked_account.short_description = 'Bank Account'
+
+    def status_badge(self, obj):
+        colors = {'APPROVED': 'green', 'PENDING': 'orange', 'FLAGGED': 'red', 'REJECTED': 'black', 'UNVERIFIED': 'gray'}
+        color = colors.get(obj.kyc_status, 'gray')
+        return format_html('<span style="color: white; background-color: {}; padding: 3px 8px; border-radius: 10px; font-weight: bold;">{}</span>', color, obj.kyc_status)
+    status_badge.short_description = 'KYC Status'
+
+    def save_model(self, request, obj, form, change):
+        if change:
+            old_obj = UserProfile.objects.get(pk=obj.pk)
+            if obj.kyc_status == 'REJECTED' and old_obj.kyc_status != 'REJECTED':
+                Notification.objects.create(user=obj.user, title="Verification Failed ❌", message=f"Reason: {obj.rejection_reason}", notification_type="error")
+            elif obj.kyc_status == 'APPROVED' and old_obj.kyc_status != 'APPROVED':
+                Notification.objects.create(user=obj.user, title="Account Verified! ✅", message="Your identity has been approved.", notification_type="success")
+        super().save_model(request, obj, form, change)
 
 
 # ==========================================

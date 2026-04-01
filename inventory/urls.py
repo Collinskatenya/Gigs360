@@ -5,15 +5,27 @@ from . import views
 app_name = 'inventory'
 
 urlpatterns = [
-    # --- Standard Inventory Actions ---
+    # =========================================================================
+    # 0. PUBLIC MARKETPLACE (Phase 3: The Discovery Hub)
+    # =========================================================================
+    # The Global Search Engine (TikTok-style public access)
+    path('discover/', views.marketplace_hub, name='marketplace_hub'),
+    
+    # The Dynamic Asset Showroom (SEO-friendly URL using the item slug)
+    path('rent/<slug:slug>/', views.public_asset_showroom, name='public_asset_showroom'),
+
+
+    # =========================================================================
+    # 1. GEAR LOCKER MANAGEMENT (Internal Vendor Operations)
+    # =========================================================================
     # List all items (The Gear Locker)
     path('', views.inventory_list, name='inventory_list'),
     
     # Add new item
     path('add/', views.add_item, name='add_item'),
     
-    # View Single Item Details
-    # CRITICAL FIX: Restored to <uuid:pk>. Your database generates UUIDs, not integers!
+    # View Single Item Details (Internal)
+    # CRITICAL FIX: Uses <uuid:pk> because the database uses UUIDs, not integers
     path('item/<uuid:pk>/', views.item_detail, name='item_detail'),
     
     # Edit Item
@@ -22,7 +34,10 @@ urlpatterns = [
     # Delete item
     path('delete/<uuid:pk>/', views.delete_item, name='delete_item'),
 
-    # --- QR Scanner Features ---
+
+    # =========================================================================
+    # 2. RAPID SCANNER & HARDWARE APIs
+    # =========================================================================
     # 1. The In-App Scanner UI (For You/Staff)
     path('rapid-scan/', views.rapid_scan, name='rapid_scan'),
     

@@ -10,7 +10,7 @@ import json
 from django.utils import timezone
 
 # MODELS & FORMS
-from .models import InventoryItem, Category, ItemImage # 🚨 Added ItemImage and Category
+from .models import InventoryItem, Category, ItemImage
 from .forms import InventoryItemForm
 from core.models import Notification
 
@@ -53,7 +53,7 @@ def public_asset_showroom(request, slug):
     Uses the SEO Slug for clean URLs.
     """
     item = get_object_or_404(InventoryItem, slug=slug, is_published=True)
-    gallery = item.gallery_images.all() # Fetch the new multi-image gallery
+    gallery = item.gallery_images.all() 
     
     context = {
         'item': item,
@@ -238,10 +238,19 @@ def public_item_verify(request, qr_uuid):
     if request.user.is_authenticated and item.owner == request.user:
         return redirect('inventory:item_detail', pk=item.id)
 
+    # 🚨 SECURITY UPGRADE: Safely extract real business details
+    try:
+        profile = item.owner.userprofile
+        business_name = profile.business_name or item.owner.get_full_name() or item.owner.username
+        contact_phone = profile.phone_number or "support@gigs360.co.ke"
+    except Exception:
+        business_name = item.owner.username
+        contact_phone = "support@gigs360.co.ke"
+
     context = {
         'item': item,
         'item_name': item.name,
-        'owner_contact': item.owner.email or "support@gigs360.co.ke", 
-        'company_name': "Gigs360 Creative Services",
+        'owner_contact': contact_phone, 
+        'company_name': business_name,
     }
     return render(request, 'inventory/verify_asset.html', context)

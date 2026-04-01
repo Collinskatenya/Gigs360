@@ -197,6 +197,7 @@ def settings_view(request):
                 messages.success(request, "Business operations updated successfully.")
                 return redirect(f"{reverse('settings')}#business")
 
+        # 🚨 THE SENTINEL INTERCEPTOR (Identity)
         elif 'submit_identity' in request.POST:
             active_tab = 'identity'
             identity_form = LegalIdentityForm(request.POST, instance=profile)
@@ -204,14 +205,30 @@ def settings_view(request):
             if not user.check_password(current_password):
                  identity_form.add_error('current_password', "Incorrect password. Changes not saved.")
             elif identity_form.is_valid():
-                identity_form.save()
-                SecurityLog.objects.create(
-                    user=user, action="KYC Details Updated", 
-                    ip_address=request.META.get('REMOTE_ADDR'), details="Legal identity details modified."
-                )
-                messages.success(request, "Legal identity submitted for verification.")
+                profile = identity_form.save(commit=False)
+                
+                is_fraud, reason = profile.scan_for_fraud()
+                if is_fraud:
+                    profile.kyc_status = 'FLAGGED'
+                    profile.rejection_reason = reason
+                    profile.ai_trust_score -= 20.0
+                    SecurityLog.objects.create(
+                        user=user, action="CRITICAL: Fraudulent Data Detected", 
+                        ip_address=request.META.get('REMOTE_ADDR'), details=reason
+                    )
+                    messages.warning(request, "Identity submitted, but flagged for manual HQ review.")
+                else:
+                    profile.kyc_status = 'PENDING'
+                    SecurityLog.objects.create(
+                        user=user, action="KYC Details Updated", 
+                        ip_address=request.META.get('REMOTE_ADDR'), details="Clean legal identity details submitted."
+                    )
+                    messages.success(request, "Legal identity submitted for verification.")
+                
+                profile.save()
                 return redirect(f"{reverse('settings')}#identity")
 
+        # 🚨 THE SENTINEL INTERCEPTOR (Finance)
         elif 'submit_finance' in request.POST:
             active_tab = 'finance'
             finance_form = FinancialPayoutForm(request.POST, instance=profile)
@@ -219,12 +236,26 @@ def settings_view(request):
             if not user.check_password(current_password):
                  finance_form.add_error('current_password', "Incorrect password. Payout details not saved.")
             elif finance_form.is_valid():
-                finance_form.save()
-                SecurityLog.objects.create(
-                    user=user, action="Financial Info Updated", 
-                    ip_address=request.META.get('REMOTE_ADDR'), details="Payout routing details modified."
-                )
-                messages.success(request, "Financial payout details secured.")
+                profile = finance_form.save(commit=False)
+                
+                is_fraud, reason = profile.scan_for_fraud()
+                if is_fraud:
+                    profile.kyc_status = 'FLAGGED'
+                    profile.rejection_reason = reason
+                    profile.ai_trust_score -= 20.0
+                    SecurityLog.objects.create(
+                        user=user, action="CRITICAL: Fraudulent Bank Data Detected", 
+                        ip_address=request.META.get('REMOTE_ADDR'), details=reason
+                    )
+                    messages.warning(request, "Payout details saved, but account flagged for manual review.")
+                else:
+                    SecurityLog.objects.create(
+                        user=user, action="Financial Info Updated", 
+                        ip_address=request.META.get('REMOTE_ADDR'), details="Clean payout routing details modified."
+                    )
+                    messages.success(request, "Financial payout details secured.")
+                
+                profile.save()
                 return redirect(f"{reverse('settings')}#finance")
                 
         if 'submit_personal' not in request.POST: 
@@ -312,7 +343,10 @@ def staff_dashboard(request):
     active_events = Event.objects.filter(start_time__gte=timezone.now()).count()
     platform_value = InventoryItem.objects.aggregate(Sum('daily_rate'))['daily_rate__sum'] or 0
 
-    pending_profiles = UserProfile.objects.filter(is_verified=False).exclude(kra_pin__isnull=True).exclude(kra_pin__exact='').select_related('user')
+    # 🚨 UPDATED KYC PIPELINE: Grabs Pending AND Flagged users
+    pending_profiles = UserProfile.objects.filter(
+        Q(kyc_status='PENDING') | Q(kyc_status='FLAGGED')
+    ).select_related('user')
     pending_count = pending_profiles.count()
     
     if request.user.is_superuser:
@@ -345,6 +379,7 @@ def verify_user(request, user_id):
     user_to_verify = get_object_or_404(User, pk=user_id)
     try:
         profile = user_to_verify.userprofile
+        profile.kyc_status = 'APPROVED'
         profile.is_verified = True
         profile.save()
         SecurityLog.objects.create(

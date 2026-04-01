@@ -44,10 +44,11 @@ body {
     display: flex;
     flex-direction: column;
     transition: margin 0.3s ease-out;
-    box-shadow: 4px 0 10px rgba(0,0,0,0.1); /* Subtle depth */
+    box-shadow: 4px 0 10px rgba(0,0,0,0.1); 
 }
 
-.sidebar-heading {
+/* 🚨 DOM TRAPPED: Prefixed with #wrapper */
+#wrapper .sidebar-heading {
     padding: 0 1.5rem;
     height: var(--header-height);
     display: flex; align-items: center;
@@ -56,8 +57,7 @@ body {
     letter-spacing: -0.5px;
 }
 
-/* Links */
-.list-group-item {
+#wrapper .list-group-item {
     background: transparent;
     color: var(--text-muted);
     border: none;
@@ -65,16 +65,16 @@ body {
     font-weight: 500;
     display: flex; align-items: center; gap: 12px;
     transition: all 0.2s ease;
+    text-decoration: none;
 }
 
-.list-group-item:hover {
+#wrapper .list-group-item:hover {
     color: white;
     background-color: rgba(255,255,255,0.08);
-    padding-left: 1.75rem; /* Slide Effect */
+    padding-left: 1.75rem; 
 }
 
-/* Active State - Gold Accent */
-.list-group-item.active {
+#wrapper .list-group-item.active {
     background-color: var(--brand-gold);
     color: white;
     font-weight: 700;
@@ -82,7 +82,7 @@ body {
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
-.menu-label {
+#wrapper .menu-label {
     padding: 1.5rem 1.5rem 0.5rem;
     font-size: 0.7rem;
     text-transform: uppercase;
@@ -91,33 +91,24 @@ body {
     letter-spacing: 1px;
 }
 
-/* Footer Profile */
-.sidebar-footer {
+#wrapper .sidebar-footer {
     margin-top: auto;
     padding: 1rem;
     border-top: 1px solid rgba(255,255,255,0.1);
     background-color: rgba(0,0,0,0.2);
 }
 
-.user-profile-btn {
-    width: 100%;
-    display: flex; align-items: center; gap: 10px;
-    color: white; background: transparent; border: none;
-    padding: 0.5rem; border-radius: 8px;
-    transition: background 0.2s;
-}
-.user-profile-btn:hover { background-color: rgba(255,255,255,0.1); }
-
 /* =========================================
    4. TOPBAR (The Gold Header)
    ========================================= */
-.topbar {
+/* 🚨 DOM TRAPPED: Prefixed with #wrapper */
+#wrapper .topbar {
     height: var(--header-height);
-    background-color: var(--brand-gold); /* RESTORED GOLD */
+    background-color: var(--brand-gold); 
     padding: 0 2rem;
     display: flex; align-items: center;
     position: sticky; top: 0; z-index: 900;
-    box-shadow: 0 2px 15px rgba(217, 166, 14, 0.3); /* Gold Glow */
+    box-shadow: 0 2px 15px rgba(217, 166, 14, 0.3); 
     color: white;
 }
 
@@ -129,30 +120,21 @@ body {
     display: flex; flex-direction: column;
 }
 
-/* Content Area */
-.content-scrollable { padding: 2rem; flex: 1; }
-
 /* =========================================
    5. UTILITIES & CARDS
    ========================================= */
-.card {
+/* 🚨 DOM TRAPPED: Prefixed with #wrapper */
+#wrapper .card {
     border: none;
     box-shadow: 0 2px 6px rgba(0,0,0,0.04);
     border-radius: 12px;
     background: white;
 }
 
-/* Hover Animation */
-.hover-lift { transition: transform 0.2s, box-shadow 0.2s; }
-.hover-lift:hover { 
+#wrapper .hover-lift { transition: transform 0.2s, box-shadow 0.2s; }
+#wrapper .hover-lift:hover { 
     transform: translateY(-4px); 
     box-shadow: 0 10px 20px rgba(0,0,0,0.08); 
-}
-
-.icon-square {
-    width: 48px; height: 48px;
-    display: flex; align-items: center; justify-content: center;
-    border-radius: 12px; font-size: 1.5rem;
 }
 
 /* =========================================
@@ -162,4 +144,36 @@ body {
     #sidebar-wrapper { margin-left: calc(-1 * var(--sidebar-width)); }
     #page-content-wrapper { margin-left: 0; }
     #wrapper.toggled #sidebar-wrapper { margin-left: 0; }
+}
+
+/* =========================================
+   7. 🚨 GLOBAL: INVENTORY & FORM MODULES
+   ========================================= */
+/* Left Global: These are standard inputs that should apply everywhere safely */
+.form-control:focus, .form-select:focus, textarea:focus {
+    border-color: var(--brand-navy);
+    box-shadow: 0 0 0 0.25rem rgba(15, 23, 42, 0.1);
+    outline: none;
+}
+
+input[type="file"] {
+    display: block;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9rem;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    cursor: pointer;
+}
+
+.btn-navy {
+    background-color: var(--brand-navy);
+    border-color: var(--brand-navy);
+    color: #ffffff;
+}
+
+.btn-navy:hover {
+    background-color: #1e293b;
+    color: #ffffff;
 }

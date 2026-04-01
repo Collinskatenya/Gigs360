@@ -4,12 +4,21 @@ from . import views
 app_name = 'galleries'
 
 urlpatterns = [
-    # 🚨 CRITICAL FIX: Master List (Resolves the NoReverseMatch error)
-    path('', views.gallery_list, name='gallery_list'),
+    # ==========================================
+    # 1. PUBLIC FACING (The Client's View)
+    # ==========================================
+    # Example: /collection/the-smith-wedding-ab12cd34/
+    path('collection/<slug:slug>/', views.client_gallery_view, name='client_gallery'),
+
+    # ==========================================
+    # 2. INTERNAL DASHBOARD (The Photographer's Control Room)
+    # ==========================================
+    # Example: /delivery/ (The main list with the 3GB tracker)
+    path('delivery/', views.dashboard_gallery_list, name='list'),
     
-    # Vendor Route: e.g., /galleries/manage/2/
-    path('manage/<int:event_id>/', views.manage_gallery, name='manage_gallery'),
+    # Example: /delivery/new/ (The creation form)
+    path('delivery/new/', views.dashboard_gallery_create, name='create'),
     
-    # Client Route: e.g., /galleries/view/abc12345-def6.../
-    path('view/<uuid:gallery_id>/', views.client_gallery_view, name='client_gallery_view'),
+    # Example: /delivery/a1b2c3d4.../manage/ (The drag-and-drop upload zone)
+    path('delivery/<uuid:uuid>/manage/', views.dashboard_gallery_manage, name='manage_gallery'),
 ]

@@ -1,6 +1,7 @@
 import uuid
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.db.models import Q
 from django.conf import settings
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -203,6 +204,20 @@ class UserProfile(TimeStampedModel):
     id_number = models.CharField(max_length=20, blank=True, null=True, unique=True, db_index=True)
     is_identity_locked = models.BooleanField(default=False, help_text="If True, user cannot edit ID/KRA without Admin Support Ticket.")
     
+    # 🚨 THE NEW KYC STATE MACHINE
+    VERIFICATION_STATUS_CHOICES = [
+        ('UNVERIFIED', 'Unverified'),
+        ('PENDING', 'Pending Review'),
+        ('APPROVED', 'Verified & Active'),
+        ('FLAGGED', 'Flagged for Fraud/Duplicate'),
+        ('REJECTED', 'Rejected'),
+    ]
+    kyc_status = models.CharField(max_length=20, choices=VERIFICATION_STATUS_CHOICES, default='UNVERIFIED')
+    rejection_reason = models.TextField(blank=True, null=True, help_text="Reason sent to user if rejected.")
+    
+    # 🤖 AI FUTURE-PROOFING
+    ai_trust_score = models.FloatField(default=50.0, help_text="0-100 score updated by future ML microservices.")
+    
     # --- BUSINESS MIS & OPERATIONS ---
     business_name = models.CharField(max_length=100, blank=True, null=True)
     company_logo = models.ImageField(upload_to='company_logos/', blank=True, null=True)
@@ -239,10 +254,10 @@ class UserProfile(TimeStampedModel):
     auto_renew = models.BooleanField(default=False)
     
     # --- SECURITY & PRESENCE ---
-    is_verified = models.BooleanField(default=False)
+    is_verified = models.BooleanField(default=False) # Retained for legacy checks
     is_2fa_enabled = models.BooleanField(default=False)
     last_login_ip = models.GenericIPAddressField(null=True, blank=True)
-    last_active = models.DateTimeField(default=timezone.now, db_index=True) # Asymmetric Presence Tracker
+    last_active = models.DateTimeField(default=timezone.now, db_index=True)
 
     terms_accepted = models.BooleanField(default=False)
     terms_version = models.CharField(max_length=50, blank=True, null=True)
@@ -263,9 +278,30 @@ class UserProfile(TimeStampedModel):
         
     @property
     def is_online(self):
-        """Returns True if the user was active in the last 3 minutes."""
         now = timezone.now()
         return self.last_active >= now - timezone.timedelta(minutes=3)
+
+    # 🚨 THE SENTINEL PROTOCOL: DATA SCANNER
+    def scan_for_fraud(self):
+        """
+        The Sentinel Tripwire. Scans the database for stolen or duplicate data.
+        Returns a tuple: (is_fraudulent, reason)
+        """
+        others = UserProfile.objects.exclude(pk=self.pk)
+
+        if self.kra_pin and others.filter(kra_pin__iexact=self.kra_pin).exists():
+            return True, "This KRA PIN is already registered to another account."
+            
+        if self.id_number and others.filter(id_number=self.id_number).exists():
+            return True, "This National ID / Passport is already registered."
+            
+        if self.account_number and others.filter(account_number=self.account_number).exists():
+            return True, "This Bank Account number is currently linked to another user."
+            
+        if self.phone_number and others.filter(phone_number=self.phone_number).exists():
+            return True, "This Phone Number is associated with another account."
+
+        return False, "Clean"
 
 
 # ==========================================

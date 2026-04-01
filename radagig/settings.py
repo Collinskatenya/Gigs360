@@ -68,6 +68,9 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 
+                # 🚨 BUG FIX 1: Added media processor so HTML templates can render images
+                'django.template.context_processors.media', 
+                
                 # 🚨 GLOBAL NOTIFICATIONS (Verified)
                 'core.context_processors.notifications', 
             ],
@@ -118,12 +121,14 @@ USE_TZ = True
 # -------------------------------------------------------------------------
 # 🚨 FIX APPLIED: Added leading slash to resolve absolute paths for xhtml2pdf
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [BASE_DIR / 'static']
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# 🚨 BUG FIX 2: Used os.path.join. Some third-party packages (like your PDF engine) crash with Pathlib objects.
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Media Files (User Uploads: Logos, Profile Pics, Generated PDFs)
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # -------------------------------------------------------------------------
 # DEVELOPMENT SECURITY SETTINGS

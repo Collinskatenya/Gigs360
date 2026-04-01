@@ -1,0 +1,103 @@
+{% extends 'core/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}New Collection | Gigs360{% endblock %}
+
+{% block content %}
+<style>
+    /* Match the new minimal Pixieset layout */
+    .gallery-sidebar { width: 240px; min-height: calc(100vh - 70px); border-right: 1px solid #e5e7eb; background-color: #f9fafb; position: fixed; left: 250px; top: 70px; z-index: 10; display: flex; flex-direction: column; justify-content: space-between; }
+    .gallery-main-content { margin-left: 240px; padding: 40px; min-height: calc(100vh - 70px); background-color: #ffffff; display: flex; justify-content: center; }
+    
+    .sidebar-link { display: flex; align-items: center; padding: 12px 20px; color: #4b5563; text-decoration: none; font-weight: 500; font-size: 0.95rem; border-radius: 8px; margin: 4px 12px; transition: all 0.2s; }
+    .sidebar-link:hover { background-color: #f3f4f6; color: #111827; }
+    .sidebar-icon { font-size: 1.1rem; margin-right: 12px; width: 24px; text-align: center; }
+
+    /* Form Styles */
+    .form-card { width: 100%; max-width: 650px; }
+    .form-label { font-size: 0.75rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+    .form-control, .form-select { border: 1px solid #d1d5db; border-radius: 4px; padding: 12px 16px; font-size: 0.95rem; color: #111827; box-shadow: none; transition: border-color 0.2s; }
+    .form-control:focus, .form-select:focus { border-color: #111827; box-shadow: none; }
+    .btn-dark-custom { background-color: #111827; color: white; font-weight: 500; padding: 12px 24px; border-radius: 4px; transition: opacity 0.2s; border: none; }
+    .btn-dark-custom:hover { opacity: 0.85; color: white; }
+
+    @media (max-width: 991px) {
+        .gallery-sidebar { display: none; }
+        .gallery-main-content { margin-left: 0; padding: 20px; }
+    }
+</style>
+
+<div class="gallery-sidebar d-none d-lg-flex">
+    <div class="pt-4">
+        <div class="dropdown px-3 mb-4">
+            <button class="btn btn-white border-0 fw-bold d-flex align-items-center w-100 text-start" type="button" disabled>
+                <div class="bg-info bg-opacity-25 rounded-circle me-2 d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
+                    <i class="bi bi-pie-chart-fill text-info" style="font-size: 0.8rem;"></i>
+                </div>
+                Client Gallery
+            </button>
+        </div>
+        <a href="{% url 'galleries:list' %}" class="sidebar-link">
+            <i class="bi bi-images sidebar-icon"></i> Collections
+        </a>
+    </div>
+</div>
+
+<div class="gallery-main-content">
+    <div class="form-card mt-4">
+        <a href="{% url 'galleries:list' %}" class="text-muted text-decoration-none fw-medium mb-4 d-inline-block" style="font-size: 0.9rem;">
+            <i class="bi bi-arrow-left me-2"></i> Back to Collections
+        </a>
+        
+        <h3 class="fw-semibold mb-1" style="color: #111827;">New Collection</h3>
+        <p class="text-muted small mb-4 pb-3 border-bottom">Set up the details for your client's gallery.</p>
+        
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            {% if form.errors %}
+                <div class="alert alert-danger p-3 mb-4 rounded-2" style="font-size: 0.85rem;">
+                    Please correct the errors below.
+                </div>
+            {% endif %}
+
+            <div class="mb-4">
+                <label class="form-label">Collection Title <span class="text-danger">*</span></label>
+                {{ form.title }}
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label">Link to Gigs360 Event (Optional)</label>
+                {{ form.event }}
+                <div class="form-text" style="font-size: 0.75rem; color: #6b7280;">Leave as 'None' for a standalone Pixieset-style gallery.</div>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label">Event Date</label>
+                {{ form.event_date }}
+            </div>
+            
+            <div class="mb-4">
+                <label class="form-label">Client Email</label>
+                {{ form.client_email }}
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label">Access PIN (Optional)</label>
+                {{ form.access_pin }}
+                <div class="form-text" style="font-size: 0.75rem; color: #6b7280;">6-digit code for client security.</div>
+            </div>
+
+            <div class="mb-5">
+                <label class="form-label">Cover Image</label>
+                {{ form.cover_image }}
+            </div>
+
+            <div class="d-flex gap-3 pt-4 border-top">
+                <a href="{% url 'galleries:list' %}" class="btn btn-light fw-medium px-4 border" style="color: #4b5563;">Cancel</a>
+                <button type="submit" class="btn-dark-custom">Create Collection</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

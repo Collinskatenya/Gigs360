@@ -1,0 +1,86 @@
+/* ==========================================
+   GIGS360 COMMUNITY CORE STYLES (Tier 3)
+   ========================================== */
+
+/* 1. APP WRAPPER LAYOUT */
+.app-wrapper {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    /* Falls back to standard hex if the variable isn't loaded yet */
+    background-color: var(--bg-body, #F8FAFC); 
+}
+
+/* 2. SMOOTH INITIALIZATION ANIMATION */
+.app-wrapper.fade-in {
+    animation: fadeIn 0.4s ease-out forwards;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ==========================================
+   3. COMMUNITY SCROLLBARS (Native App Feel)
+   ========================================== */
+/* We target .custom-scrollbar so it only applies to the sidebar and feed, not the whole window */
+.app-wrapper .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.app-wrapper .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.app-wrapper .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #CBD5E1;
+    border-radius: 10px;
+}
+
+.app-wrapper .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: #94A3B8;
+}
+
+/* ==========================================
+   4. FEED CARDS & HOVER PHYSICS
+   ========================================== */
+.app-wrapper .post-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.app-wrapper .hover-lift {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.app-wrapper .hover-lift:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 15px rgba(0,0,0,0.1) !important;
+}
+
+/* ==========================================
+   5. NAVIGATION & INTERACTIONS
+   ========================================== */
+.app-wrapper .active-nav {
+    /* Uses the Gold variable from styles.css */
+    background-color: var(--brand-gold, #d9a60e) !important; 
+    color: var(--brand-navy, #0f172a) !important;
+}
+
+.app-wrapper .hover-gold {
+    transition: color 0.2s ease;
+}
+
+.app-wrapper .hover-gold:hover {
+    color: var(--brand-gold, #d9a60e) !important;
+}
+
+.app-wrapper .hover-bg-light {
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.app-wrapper .hover-bg-light:hover {
+    background-color: rgba(255,255,255,0.1);
+    color: #ffffff !important;
+}

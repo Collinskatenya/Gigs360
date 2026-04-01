@@ -1,0 +1,211 @@
+{% extends 'core/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Collections | Gigs360{% endblock %}
+
+{% block content %}
+<style>
+    /* Custom Styling to Match Pixieset Precisely */
+    .gallery-sidebar { width: 240px; min-height: calc(100vh - 70px); border-right: 1px solid #e5e7eb; background-color: #f9fafb; position: fixed; left: 250px; top: 70px; z-index: 10; display: flex; flex-direction: column; justify-content: space-between; }
+    .gallery-main-content { margin-left: 240px; padding: 40px; min-height: calc(100vh - 70px); background-color: #ffffff; }
+    
+    .sidebar-link { display: flex; align-items: center; padding: 12px 20px; color: #4b5563; text-decoration: none; font-weight: 500; font-size: 0.95rem; border-radius: 8px; margin: 4px 12px; transition: all 0.2s; }
+    .sidebar-link:hover { background-color: #f3f4f6; color: #111827; }
+    .sidebar-link.active { background-color: #ffffff; color: #111827; font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .sidebar-icon { font-size: 1.1rem; margin-right: 12px; width: 24px; text-align: center; }
+    
+    /* The Filter Pills */
+    .filter-pill { background: white; border: 1px solid #e5e7eb; border-radius: 20px; padding: 6px 16px; font-size: 0.85rem; color: #4b5563; font-weight: 500; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; }
+    .filter-pill:hover, .filter-pill[aria-expanded="true"] { background: #f9fafb; border-color: #d1d5db; color: #111827; }
+    
+    .storage-widget { background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 16px; margin: 20px; position: relative; }
+    .storage-icon { color: #ef4444; font-size: 1.5rem; }
+    .storage-text { color: #b91c1c; font-size: 0.75rem; font-weight: 500; }
+    .plus-icon { color: #ef4444; position: absolute; right: 16px; top: 20px; cursor: pointer; transition: transform 0.2s; }
+    .plus-icon:hover { transform: scale(1.2); }
+    
+    .card-hover { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .card-hover:hover { transform: translateY(-4px); box-shadow: 0 10px 25px rgba(0,0,0,0.05)!important; }
+
+    @media (max-width: 991px) {
+        .gallery-sidebar { display: none; }
+        .gallery-main-content { margin-left: 0; padding: 20px; }
+    }
+</style>
+
+<div class="gallery-sidebar d-none d-lg-flex">
+    <div class="pt-4">
+        <div class="dropdown px-3 mb-4">
+            <button class="btn btn-white border-0 fw-bold d-flex align-items-center w-100 text-start" type="button" data-bs-toggle="dropdown">
+                <div class="bg-info bg-opacity-25 rounded-circle me-2 d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
+                    <i class="bi bi-pie-chart-fill text-info" style="font-size: 0.8rem;"></i>
+                </div>
+                Client Gallery
+                <i class="bi bi-chevron-down ms-auto text-muted" style="font-size: 0.75rem;"></i>
+            </button>
+            <ul class="dropdown-menu shadow border-0 w-100 mt-1">
+                <li><a class="dropdown-item fw-medium" href="#"><i class="bi bi-images me-2 text-muted"></i> Client Gallery</a></li>
+                <li><a class="dropdown-item fw-medium" href="#"><i class="bi bi-shop me-2 text-muted"></i> Store</a></li>
+                <li><a class="dropdown-item fw-medium" href="#"><i class="bi bi-laptop me-2 text-muted"></i> Website</a></li>
+            </ul>
+        </div>
+
+        <a href="{% url 'galleries:list' %}" class="sidebar-link active">
+            <i class="bi bi-images sidebar-icon"></i> Collections
+        </a>
+        <a href="#" class="sidebar-link">
+            <i class="bi bi-star sidebar-icon"></i> Starred
+        </a>
+        <a href="#" class="sidebar-link">
+            <i class="bi bi-layout-sidebar sidebar-icon"></i> Homepage
+        </a>
+        <a href="#" class="sidebar-link">
+            <i class="bi bi-gear sidebar-icon"></i> Settings
+        </a>
+    </div>
+
+    <div class="storage-widget shadow-sm">
+        <div class="d-flex align-items-start">
+            <i class="bi bi-server storage-icon me-3 mt-1"></i>
+            <div>
+                <h6 class="mb-1 text-danger fw-bold" style="font-size: 0.85rem;">Storage</h6>
+                <div class="storage-text">{{ used_gb }} GB of {{ limit_gb }} GB used</div>
+            </div>
+        </div>
+        <i class="bi bi-plus-circle plus-icon" title="Upgrade Storage"></i>
+        <div class="progress mt-3" style="height: 4px; background-color: #fecaca;">
+            <div class="progress-bar bg-danger" role="progressbar" style="width: {{ storage_pct }}%"></div>
+        </div>
+    </div>
+</div>
+
+<div class="gallery-main-content">
+    
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-5 gap-3">
+        <div class="d-flex align-items-center gap-4">
+            <h2 class="fw-semibold mb-0" style="font-size: 2rem; color: #111827;">Collections</h2>
+            <div class="position-relative d-none d-md-block">
+                <i class="bi bi-search position-absolute text-muted" style="top: 50%; left: 12px; transform: translateY(-50%); font-size: 0.85rem;"></i>
+                <input type="text" class="form-control border-0 bg-light rounded-pill ps-5" placeholder="Search" style="width: 240px; font-size: 0.9rem;">
+            </div>
+        </div>
+        
+        <div class="d-flex align-items-center gap-3">
+            <a href="#" class="text-decoration-none text-muted fw-medium" style="font-size: 0.9rem;">View Presets</a>
+            
+            <div class="btn-group shadow-sm">
+                <a href="{% url 'galleries:create' %}" class="btn text-white fw-medium px-4" style="background-color: #2dd4bf; border-color: #2dd4bf; font-size: 0.95rem;">New Collection</a>
+                <button type="button" class="btn text-white dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false" style="background-color: #2dd4bf; border-color: #2dd4bf; border-left: 1px solid rgba(255,255,255,0.2);">
+                    <span class="visually-hidden">Toggle Dropdown</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end border-0 shadow">
+                    <li><a class="dropdown-item" href="{% url 'galleries:create' %}">Standard Collection</a></li>
+                    <li><a class="dropdown-item" href="#">Event Locked Collection</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2 mb-4">
+        
+        <div class="dropdown">
+            <button class="filter-pill" type="button" data-bs-toggle="dropdown">
+                Status <i class="bi bi-chevron-down ms-2 text-muted" style="font-size: 0.7rem;"></i>
+            </button>
+            <ul class="dropdown-menu shadow-sm border-0 mt-1" style="font-size: 0.9rem;">
+                <li><a class="dropdown-item py-2" href="#">Published</a></li>
+                <li><a class="dropdown-item py-2" href="#">Hidden</a></li>
+                <li><a class="dropdown-item py-2" href="#">Draft</a></li>
+            </ul>
+        </div>
+        
+        <div class="dropdown">
+            <button class="filter-pill" type="button" data-bs-toggle="dropdown">
+                Category Tag <i class="bi bi-chevron-down ms-2 text-muted" style="font-size: 0.7rem;"></i>
+            </button>
+            <div class="dropdown-menu shadow-sm border-0 p-3 mt-1" style="width: 250px;">
+                <p class="text-muted small mb-0 text-center">You don't have category tags yet. <a href="#" class="text-info text-decoration-none">Learn more</a></p>
+            </div>
+        </div>
+
+        <div class="dropdown">
+            <button class="filter-pill" type="button" data-bs-toggle="dropdown">
+                Event Date <i class="bi bi-chevron-down ms-2 text-muted" style="font-size: 0.7rem;"></i>
+            </button>
+            <ul class="dropdown-menu shadow-sm border-0 mt-1" style="font-size: 0.9rem;">
+                <li><h6 class="dropdown-header text-uppercase text-muted" style="font-size: 0.7rem; letter-spacing: 1px;">Quick Search</h6></li>
+                <li><a class="dropdown-item py-2" href="#">Last 7 days</a></li>
+                <li><a class="dropdown-item py-2" href="#">Last 30 days</a></li>
+                <li><a class="dropdown-item py-2" href="#">This Year</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item py-2 text-info" href="#"><i class="bi bi-calendar3 me-2"></i>Custom Range...</a></li>
+            </ul>
+        </div>
+
+        <div class="dropdown">
+            <button class="filter-pill" type="button" data-bs-toggle="dropdown">
+                Expiry Date <i class="bi bi-chevron-down ms-2 text-muted" style="font-size: 0.7rem;"></i>
+            </button>
+            <ul class="dropdown-menu shadow-sm border-0 mt-1" style="font-size: 0.9rem;">
+                <li><h6 class="dropdown-header text-uppercase text-muted" style="font-size: 0.7rem; letter-spacing: 1px;">Quick Search</h6></li>
+                <li><a class="dropdown-item py-2" href="#">Next week</a></li>
+                <li><a class="dropdown-item py-2" href="#">Next month</a></li>
+                <li><a class="dropdown-item py-2" href="#">Next 6 months</a></li>
+            </ul>
+        </div>
+
+        <div class="dropdown">
+            <button class="filter-pill" type="button" data-bs-toggle="dropdown">
+                Starred <i class="bi bi-chevron-down ms-2 text-muted" style="font-size: 0.7rem;"></i>
+            </button>
+            <ul class="dropdown-menu shadow-sm border-0 mt-1" style="font-size: 0.9rem;">
+                <li><a class="dropdown-item py-2" href="#">Yes</a></li>
+                <li><a class="dropdown-item py-2" href="#">No</a></li>
+            </ul>
+        </div>
+        
+        <div class="ms-auto d-flex gap-2">
+            <button class="btn btn-sm btn-light border-0 text-muted" style="background-color: transparent;" title="Sort Order"><i class="bi bi-sort-down fs-5"></i></button>
+            <button class="btn btn-sm btn-light border-0 text-muted" style="background-color: transparent;" title="Grid View"><i class="bi bi-grid fs-5"></i></button>
+            <button class="btn btn-sm btn-light border-0 text-muted" style="background-color: transparent;" title="List View"><i class="bi bi-list-ul fs-5"></i></button>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        {% for collection in galleries %}
+        <div class="col-sm-6 col-lg-4 col-xl-3">
+            <a href="{% url 'galleries:manage_gallery' collection.id %}" class="text-decoration-none">
+                <div class="card border-0 bg-transparent card-hover">
+                    <div class="position-relative overflow-hidden mb-2" style="aspect-ratio: 4/3; background-color: #f3f4f6; border-radius: 4px;">
+                        {% if collection.cover_image %}
+                            <img src="{{ collection.cover_image.url }}" class="w-100 h-100" style="object-fit: cover;" alt="{{ collection.title }}">
+                        {% else %}
+                            <div class="w-100 h-100 d-flex align-items-center justify-content-center">
+                                <i class="bi bi-image text-muted opacity-25" style="font-size: 3rem;"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="px-1">
+                        <h6 class="fw-medium text-dark mb-1 text-truncate" style="font-size: 1.05rem;">{{ collection.title }}</h6>
+                        <div class="d-flex align-items-center text-muted" style="font-size: 0.85rem;">
+                            <span class="d-inline-block rounded-circle me-2" style="width: 6px; height: 6px; background-color: #10b981;"></span>
+                            {{ collection.photos.count }} items &nbsp;&bull;&nbsp; {{ collection.event_date|date:"M d, Y"|default:collection.created_at|date:"M d, Y" }}
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5 mt-4">
+            <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                <i class="bi bi-images fs-2 text-muted opacity-50"></i>
+            </div>
+            <h4 class="fw-semibold text-dark mb-2">No Collections Yet</h4>
+            <p class="text-muted mb-4">Create your first gallery to share photos with clients.</p>
+            <a href="{% url 'galleries:create' %}" class="btn text-white px-4 fw-medium" style="background-color: #111827;">Create Collection</a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

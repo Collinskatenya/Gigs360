@@ -87,7 +87,7 @@
                         </div>
                     </div>
 
-                    <form method="POST" enctype="multipart/form-data" id="personal-edit-mode" class="edit-mode-form d-none">
+                    <form method="POST" action="{% url 'settings' %}" enctype="multipart/form-data" id="personal-edit-mode" class="edit-mode-form d-none">
                         {% csrf_token %}
                         <div class="bg-white p-4 p-md-5 rounded-4 shadow-sm border">
                             
@@ -101,10 +101,12 @@
                                         </div>
                                         <img src="" id="profile-pic-preview" class="rounded-circle border shadow-sm object-fit-cover d-none" style="width: 150px; height: 150px;">
                                     {% endif %}
-                                    {{ demo_form.profile_picture }}
+                                    <div class="d-none">
+                                        {{ demo_form.profile_picture }}
+                                    </div>
                                 </div>
                                 <div>
-                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold me-2" onclick="document.getElementById('id_profile_picture_input').click();">
+                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold me-2" onclick="document.getElementById('id_profile_picture').click();">
                                         <i class="bi bi-upload me-1"></i> Change Photo
                                     </button>
                                 </div>
@@ -211,7 +213,7 @@
                          </div>
                     </div>
                     
-                     <form method="POST" enctype="multipart/form-data" id="business-edit-mode" class="edit-mode-form d-none">
+                     <form method="POST" action="{% url 'settings' %}" enctype="multipart/form-data" id="business-edit-mode" class="edit-mode-form d-none">
                         {% csrf_token %}
                         <div class="bg-white p-4 p-md-5 rounded-4 shadow-sm border">
                             
@@ -227,8 +229,10 @@
                                         {% endif %}
                                      </div>
                                      <div>
-                                         {{ business_form.company_logo }}
-                                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold mb-2" onclick="document.getElementById('id_company_logo_input').click();">
+                                        <div class="d-none">
+                                            {{ business_form.company_logo }}
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold mb-2" onclick="document.getElementById('id_company_logo').click();">
                                             <i class="bi bi-upload me-1"></i> Upload Logo
                                         </button>
                                      </div>
@@ -315,7 +319,7 @@
                         </div>
                     </div>
                     
-                     <form method="POST" id="identity-edit-mode" class="edit-mode-form d-none">
+                     <form method="POST" action="{% url 'settings' %}" id="identity-edit-mode" class="edit-mode-form d-none">
                         {% csrf_token %}
                         <div class="bg-white p-4 p-md-5 rounded-4 shadow-sm border position-relative overflow-hidden">
                             <div class="position-absolute top-50 start-50 translate-middle text-muted opacity-10 display-1 fw-bold" style="z-index: 0; pointer-events: none;">CONFIDENTIAL</div>
@@ -403,7 +407,7 @@
                          </div>
                     </div>
 
-                    <form method="POST" id="finance-edit-mode" class="edit-mode-form d-none">
+                    <form method="POST" action="{% url 'settings' %}" id="finance-edit-mode" class="edit-mode-form d-none">
                         {% csrf_token %}
                         <div class="bg-white p-4 p-md-5 rounded-4 shadow-sm border">
                             
@@ -468,7 +472,8 @@
         }
     }
 
-    const profileInput = document.getElementById('id_profile_picture_input');
+    // 🚨 FIXED: Target Django's default ID for the File Input
+    const profileInput = document.getElementById('id_profile_picture');
     const profilePreview = document.getElementById('profile-pic-preview');
     const profilePlaceholder = document.getElementById('profile-pic-placeholder');
 
@@ -487,7 +492,8 @@
         });
     }
 
-    const logoInput = document.getElementById('id_company_logo_input');
+    // 🚨 FIXED: Target Django's default ID for the Logo Input
+    const logoInput = document.getElementById('id_company_logo');
     const logoPreview = document.getElementById('company-logo-preview');
     const logoPlaceholder = document.getElementById('company-logo-placeholder');
 
@@ -506,7 +512,7 @@
         });
     }
 
-    // 🚨 SMART TAB RETENTION: Auto-open tab based on URL hash
+    // SMART TAB RETENTION: Auto-open tab based on URL hash
     document.addEventListener("DOMContentLoaded", function() {
         let hash = window.location.hash;
         if (hash) {
@@ -517,30 +523,4 @@
         }
     });
 </script>
-
-<style>
-    .tab-bar-modern .nav-link {
-        color: #6c757d;
-        transition: all 0.2s ease;
-        border-radius: 50rem !important;
-        padding: 0.75rem 1.5rem;
-        margin: 0.25rem;
-    }
-    .tab-bar-modern .nav-link:hover {
-        background-color: rgba(0,0,0,0.03);
-        color: #0f172a;
-    }
-    .tab-bar-modern .nav-link.active {
-        background-color: #0f172a !important;
-        color: white !important;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    }
-    .hover-lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
-    .hover-lift:hover { transform: translateY(-3px); box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15) !important; }
-    
-    /* 🚨 Clean up password fields visually */
-    input[type="password"] {
-        letter-spacing: 0.2em;
-    }
-</style>
 {% endblock %}

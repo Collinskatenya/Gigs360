@@ -3,6 +3,10 @@
 
 {% block title %}{{ title }} | Gigs360{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/inventory.css' %}">
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid px-4">
     
@@ -21,7 +25,7 @@
         <i class="bi bi-info-circle-fill fs-4 me-3 text-info"></i>
         <div>
             <strong>Free Plan Limit:</strong> You can add up to 5 items. 
-            <a href="{% url 'pricing' %}" class="fw-bold text-decoration-underline text-info">Upgrade to Pro</a> for 50 items & Advanced Tracking.
+            <a href="{% url 'pricing' %}" class="fw-bold text-decoration-underline text-info">Upgrade to Pro</a>.
         </div>
     </div>
     {% endif %}
@@ -56,12 +60,10 @@
                                             Publish to Discovery Hub
                                         </label>
                                     </div>
-                                    <div class="form-text small ms-3 mt-0">Turn off to keep gear internal.</div>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold small text-uppercase text-muted">Search Location</label>
                                     {{ form.search_location }}
-                                    <div class="form-text small">City/region for the Global Search Engine.</div>
                                 </div>
                             </div>
                         </div>
@@ -84,7 +86,6 @@
                     <div class="col-md-6">
                         <label class="form-label fw-bold small text-uppercase text-muted">Tracking Type</label>
                         {{ form.tracking_type }}
-                        <div class="form-text small">Use 'Unique' for expensive gear (Cameras), 'Bulk' for cables.</div>
                     </div>
 
                     <div class="col-md-6">
@@ -99,8 +100,9 @@
                             {{ form.daily_rate }}
                         </div>
                     </div>
+
                     <div class="col-md-6">
-                        <label class="form-label fw-bold small text-uppercase text-muted">Insurance Value (KES)</label>
+                        <label class="form-label fw-bold small text-uppercase text-muted">Insurance Value</label>
                         <div class="input-group">
                             <span class="input-group-text bg-light border-end-0 fw-bold text-muted">KES</span>
                             {{ form.replacement_value }}
@@ -108,7 +110,7 @@
                     </div>
 
                     <div class="col-12 mt-4">
-                        <h6 class="text-primary fw-bold border-bottom pb-2" style="color: #0f172a !important;">Identification & State</h6>
+                        <h6 class="text-primary fw-bold border-bottom pb-2" style="color: #0f172a !important;">Identification</h6>
                     </div>
 
                     <div class="col-md-6" id="serialNumberSection">
@@ -116,21 +118,8 @@
                         {{ form.serial_number }}
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label fw-bold small text-uppercase text-muted">Asset Tag (Internal ID)</label>
+                        <label class="form-label fw-bold small text-uppercase text-muted">Asset Tag</label>
                         {{ form.asset_tag }}
-                    </div>
-
-                    <div class="col-md-4">
-                        <label class="form-label fw-bold small text-uppercase text-muted">Color</label>
-                        {{ form.color }}
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label fw-bold small text-uppercase text-muted">Weight</label>
-                        {{ form.weight }}
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label fw-bold small text-uppercase text-muted">Condition</label>
-                        {{ form.condition }}
                     </div>
 
                     <div class="col-12">
@@ -145,25 +134,24 @@
                     <div class="col-md-6">
                         <label class="form-label fw-bold small text-uppercase text-muted">Primary Cover Photo</label>
                         {{ form.image }}
-                        <div class="form-text small">Main thumbnail displayed in searches (Max 5MB).</div>
                     </div>
                     
                     <div class="col-md-6">
-                        <label class="form-label fw-bold small text-uppercase text-muted">Showroom Gallery <span class="badge bg-secondary ms-1">New</span></label>
-                        {{ form.gallery_images }}
-                        <div class="form-text small text-primary">Hold CTRL/CMD to select multiple images. These appear on your public listing.</div>
+                        <label class="form-label fw-bold small text-uppercase text-muted">Showroom Gallery</label>
+                        <input type="file" name="gallery_images" class="form-control" multiple accept="image/png, image/jpeg">
+                        <small class="text-muted d-block mt-1">Select multiple photos to build a carousel.</small>
                     </div>
                 </div>
 
-                <div class="mt-5 pt-4 border-top d-flex flex-column flex-md-row justify-content-between align-items-center">
-                    <span class="text-muted small mb-3 mb-md-0">
-                        {% if user.userprofile.plan|upper == 'FREE' %}
-                            <i class="bi bi-circle-fill text-success me-1" style="font-size: 8px;"></i> Free Plan Active
+                <div class="mt-5 pt-4 border-top d-flex justify-content-between align-items-center">
+                    <span class="text-muted small">
+                         {% if user.userprofile.plan|upper == 'FREE' %}
+                            <i class="bi bi-circle-fill text-success small me-1"></i> Free Plan Active
                         {% else %}
-                            <i class="bi bi-star-fill text-warning me-1"></i> Pro Features Enabled
+                            <i class="bi bi-star-fill text-warning me-1"></i> Pro Enabled
                         {% endif %}
                     </span>
-                    <button type="submit" class="btn btn-primary fw-bold px-5 py-3 rounded-pill shadow-sm hover-lift text-white w-100 w-md-auto" style="background-color: #0f172a; border-color: #0f172a;">
+                    <button type="submit" class="btn fw-bold px-5 py-3 rounded-pill shadow-sm text-white" style="background-color: #0f172a;">
                         <i class="bi bi-save2-fill me-2"></i> Save to Gear Locker
                     </button>
                 </div>
@@ -174,41 +162,23 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Robust selection by Name
         const trackingSelect = document.querySelector('select[name="tracking_type"]');
         const serialSection = document.getElementById('serialNumberSection');
         
         function toggleSerial() {
             if (!trackingSelect || !serialSection) return;
-
-            // Check for 'BULK' regardless of case
             const value = trackingSelect.value.toUpperCase();
-            
+            serialSection.style.display = (value === 'BULK') ? 'none' : 'block';
             if (value === 'BULK') {
-                serialSection.style.display = 'none';
-                // Clear input if hidden to avoid validation errors
-                const serialInput = serialSection.querySelector('input');
-                if(serialInput) serialInput.value = '';
-            } else {
-                serialSection.style.display = 'block';
+                const input = serialSection.querySelector('input');
+                if(input) input.value = '';
             }
         }
 
         if (trackingSelect) {
-            toggleSerial(); // Run on load
+            toggleSerial();
             trackingSelect.addEventListener('change', toggleSerial);
         }
     });
 </script>
-
-<style>
-    .hover-lift:hover { transform: translateY(-2px); transition: transform 0.2s; box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; }
-    textarea { width: 100%; border: 1px solid #dee2e6; border-radius: 0.375rem; padding: 0.5rem; }
-    
-    /* Ensure form controls match the theme */
-    .form-control:focus, .form-select:focus {
-        border-color: #0f172a;
-        box-shadow: 0 0 0 0.25rem rgba(15, 23, 42, 0.1);
-    }
-</style>
 {% endblock %}

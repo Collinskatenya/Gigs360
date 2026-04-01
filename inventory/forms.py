@@ -6,7 +6,7 @@ class MultipleFileInput(forms.ClearableFileInput):
     allow_multiple_selected = True
 
 class InventoryItemForm(forms.ModelForm):
-    # 🚨 Using the custom Django 5 widget here
+    # Using the custom Django 5 widget for the showroom gallery
     gallery_images = forms.FileField(
         widget=MultipleFileInput(attrs={'multiple': True, 'class': 'form-control'}),
         required=False,
@@ -20,7 +20,7 @@ class InventoryItemForm(forms.ModelForm):
             'name', 'category', 'tracking_type', 'quantity', 
             'daily_rate', 'replacement_value', 
             'serial_number', 'asset_tag', 'color', 'weight',
-            'condition', 'description', 'image',
+            'condition', 'status', 'description', 'image', # 🚨 Added 'status'
             'is_published', 'search_location'
         ]
         
@@ -34,12 +34,13 @@ class InventoryItemForm(forms.ModelForm):
             'daily_rate': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'KES (Optional)'}),
             'replacement_value': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Insurance Value (Optional)'}),
             
-            # Traceability & Identification
+            # Traceability & Lifecycle
             'serial_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Manufacturer S/N'}),
             'asset_tag': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Internal ID (e.g. CAM-01)'}),
             'color': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Matte Black'}),
             'weight': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. 2.5kg'}),
             'condition': forms.Select(attrs={'class': 'form-select'}),
+            'status': forms.Select(attrs={'class': 'form-select'}), # 🚨 Added explicit widget for Status
             
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Notes on condition or specs...'}),
             'image': forms.FileInput(attrs={'class': 'form-control'}),
